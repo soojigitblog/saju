@@ -1,0 +1,10 @@
+{
+  "label": "wood-heavy",
+  "birth": {
+    "gender": "male",
+    "calendarType": "solar",
+    "birthDate": "1988-03-15",
+    "birthTime": "09:00",
+    "birthTimeUnknown": false
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "label": "balanced-elements",
+  "birth": {
+    "gender": "female",
+    "calendarType": "solar",
+    "birthDate": "1992-10-24",
+    "birthTime": "14:30",
+    "birthTimeUnknown": false
+  }
+}

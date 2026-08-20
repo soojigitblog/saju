@@ -1,0 +1,10 @@
+{
+  "label": "minimal-data",
+  "birth": {
+    "gender": "male",
+    "calendarType": "solar",
+    "birthDate": "2000-01-10",
+    "birthTime": "12:00",
+    "birthTimeUnknown": false
+  }
+}

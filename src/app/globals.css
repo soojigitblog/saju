@@ -1,26 +1,201 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Deep night palette */
+  --bg-deep: #080d12;
+  --bg-base: #0b1118;
+  --bg-elevated: #111318;
+
+  /* Surfaces */
+  --paper: #101820;
+  --surface: #151a1f;
+  --surface-strong: #1a2229;
+  --surface-hover: #1f2830;
+
+  /* Text */
+  --ink: #d8d2c7;
+  --ink-muted: #8e9499;
+  --ink-faint: #5c6368;
+  --ink-bright: #e8d5b0;
+
+  /* Gold / bronze accents */
+  --gold: #b8935a;
+  --gold-light: #c89b5c;
+  --gold-bright: #d4af70;
+  --gold-soft: #f0dfc1;
+  --gold-muted: rgba(184, 147, 90, 0.35);
+
+  /* Lines & borders */
+  --line: rgba(184, 147, 90, 0.22);
+  --line-strong: rgba(184, 147, 90, 0.45);
+
+  /* Semantic aliases (legacy var names) */
+  --accent: var(--gold);
+  --accent-soft: rgba(184, 147, 90, 0.12);
+  --accent-foreground: #0b1118;
+  --background: var(--bg-deep);
+  --foreground: var(--ink);
+
+  /* Error */
+  --error-bg: rgba(138, 59, 45, 0.18);
+  --error-text: #c9958a;
+
+  /* Shadows & glow */
+  --shadow-deep: 0 24px 64px rgba(0, 0, 0, 0.55);
+  --glow-gold: 0 0 32px rgba(184, 147, 90, 0.15);
+  --glow-warm: 0 0 48px rgba(212, 175, 112, 0.08);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-body);
+  --font-display: var(--font-display);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  margin: 0;
+  min-height: 100%;
+  background:
+    radial-gradient(ellipse 900px 500px at 15% -5%, rgba(184, 147, 90, 0.06), transparent 60%),
+    radial-gradient(ellipse 700px 400px at 95% 10%, rgba(60, 80, 100, 0.12), transparent 55%),
+    radial-gradient(ellipse 600px 300px at 50% 100%, rgba(184, 147, 90, 0.04), transparent 50%),
+    linear-gradient(180deg, var(--bg-deep) 0%, var(--bg-base) 45%, var(--bg-elevated) 100%);
+  color: var(--ink);
+  font-family: var(--font-body), "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+}
+
+a {
+  text-decoration: none;
+}
+
+/* Prefer explicit text-* utilities on links; bare anchors keep body color */
+a:not([class]) {
+  color: inherit;
+}
+
+::selection {
+  background: rgba(184, 147, 90, 0.35);
+  color: var(--gold-soft);
+}
+
+/* ── Form controls ── */
+.field-select {
+  display: flex;
+  height: 3rem;
+  width: 100%;
+  appearance: none;
+  border-radius: 0.5rem;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  padding: 0 1rem;
+  font-size: 1rem;
+  color: var(--ink);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23B8935A' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  padding-right: 2.25rem;
+}
+
+.field-select:focus-visible {
+  outline: none;
+  border-color: var(--line-strong);
+  box-shadow: var(--glow-gold);
+}
+
+/* ── Utility classes ── */
+.mystic-card {
+  border-radius: 0.625rem;
+  border: 1px solid var(--line);
+  background: linear-gradient(165deg, var(--paper) 0%, var(--surface) 100%);
+  box-shadow: var(--shadow-deep);
+}
+
+.mystic-card-hover {
+  transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+}
+
+.mystic-card-hover:hover {
+  border-color: var(--line-strong);
+  box-shadow: var(--shadow-deep), var(--glow-gold);
+  transform: translateY(-2px);
+}
+
+.gold-divider {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--gold-muted) 20%,
+    var(--gold) 50%,
+    var(--gold-muted) 80%,
+    transparent
+  );
+}
+
+.display-title {
+  font-family: var(--font-display), "Noto Serif KR", serif;
+  letter-spacing: -0.02em;
+  color: var(--ink-bright);
+}
+
+.hanja-accent {
+  font-family: var(--font-display), "Noto Serif KR", serif;
+  color: var(--gold-muted);
+  font-size: 0.75rem;
+  letter-spacing: 0.3em;
+}
+
+/* ── Animations ── */
+@keyframes twinkle {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
+}
+
+@keyframes candle-flicker {
+  0%, 100% { opacity: 0.85; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.03); }
+}
+
+@keyframes slow-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-twinkle {
+  animation: twinkle 4s ease-in-out infinite;
+}
+
+.animate-candle {
+  animation: candle-flicker 3s ease-in-out infinite;
+}
+
+.animate-slow-spin {
+  animation: slow-spin 48s linear infinite;
+}
+
+.animate-fade-up {
+  animation: fade-up 0.6s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-twinkle,
+  .animate-candle,
+  .animate-slow-spin,
+  .animate-fade-up {
+    animation: none;
+  }
 }

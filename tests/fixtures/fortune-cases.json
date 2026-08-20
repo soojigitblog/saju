@@ -1,0 +1,264 @@
+[
+  {
+    "name": "solar_ordinary_1992",
+    "input": {
+      "gender": "female",
+      "calendarType": "solar",
+      "birthDate": "1992-10-24",
+      "birthTime": "05:30",
+      "birthTimeUnknown": false,
+      "timezone": "Asia/Seoul",
+      "countryCode": "KR"
+    },
+    "expected": {
+      "year": "壬申",
+      "month": "庚戌",
+      "day": "癸酉",
+      "hour": "乙卯"
+    },
+    "source": "Cross-agreed: manseryeok@2.0.0 == lunar-javascript@1.7.7 EightChar; also documented in manseryeok README sample",
+    "notes": "Ordinary solar daytime birth"
+  },
+  {
+    "name": "solar_ordinary_1990",
+    "input": {
+      "gender": "male",
+      "calendarType": "solar",
+      "birthDate": "1990-05-15",
+      "birthTime": "14:30",
+      "birthTimeUnknown": false,
+      "timezone": "Asia/Seoul",
+      "countryCode": "KR"
+    },
+    "expected": {
+      "year": "庚午",
+      "month": "辛巳",
+      "day": "庚辰",
+      "hour": "癸未"
+    },
+    "source": "Cross-agreed: manseryeok@2.0.0 == lunar-javascript@1.7.7",
+    "notes": "Afternoon birth"
+  },
+  {
+    "name": "leap_day_2000",
+    "input": {
+      "gender": "female",
+      "calendarType": "solar",
+      "birthDate": "2000-02-29",
+      "birthTime": "12:00",
+      "birthTimeUnknown": false,
+      "timezone": "Asia/Seoul",
+      "countryCode": "KR"
+    },
+    "expected": {
+      "year": "庚辰",
+      "month": "戊寅",
+      "day": "丁巳",
+      "hour": "丙午"
+    },
+    "source": "Cross-agreed: manseryeok@2.0.0 == lunar-javascript@1.7.7",
+    "notes": "Gregorian leap day"
+  },
+  {
+    "name": "lunar_non_leap_1992",
+    "input": {
+      "gender": "female",
+      "calendarType": "lunar",
+      "birthDate": "1992-09-29",
+      "birthTime": "05:30",
+      "birthTimeUnknown": false,
+      "lunarLeapMonth": false,
+      "timezone": "Asia/Seoul",
+      "countryCode": "KR"
+    },
+    "expected": {
+      "year": "壬申",
+      "month": "庚戌",
+      "day": "癸酉",
+      "hour": "乙卯"
+    },
+    "source": "KASI lunar→solar via manseryeok equals solar 1992-10-24 case (cross-agreed pillars)",
+    "notes": "Lunar input must match corresponding solar pillars"
+  },
+  {
+    "name": "lunar_leap_2020_04",
+    "input": {
+      "gender": "male",
+      "calendarType": "lunar",
+      "birthDate": "2020-04-01",
+      "birthTime": "10:00",
+      "birthTimeUnknown": false,
+      "lunarLeapMonth": true,
+      "timezone": "Asia/Seoul",
+      "countryCode": "KR"
+    },
+    "expected": {
+      "year": "庚子",
+      "month": "辛巳",
+      "day": "丙寅",
+      "hour": "癸巳"
+    },
+    "source": "KASI leap 4th month → solar 2020-05-23; pillars cross-checked manseryeok vs lunar-javascript on converted solar datetime",
+    "notes": "윤달"
+  },
+  {
+    "name": "time_unknown",
+    "input": {
+      "gender": "female",
+      "calendarType": "solar",
+      "birthDate": "1992-10-24",
+      "birthTime": null,
+      "birthTimeUnknown": true,
+      "timezone": "Asia/Seoul",
+      "countryCode": "KR"
+    },
+    "expected": {
+      "year": "壬申",
+      "month": "庚戌",
+      "day": "癸酉",
+      "hour": null
+    },
+    "source": "Same Y/M/D as solar_ordinary_1992; hour must be null by product rule",
+    "notes": "No invented hour pillar"
+  },
+  {
+    "name": "before_23_00",
+    "input": {
+      "gender": "male",
+      "calendarType": "solar",
+      "birthDate": "2024-03-10",
+      "birthTime": "22:59",
+      "birthTimeUnknown": false,
+      "timezone": "Asia/Seoul",
+      "countryCode": "KR"
+    },
+    "expected": {
+      "year": "甲辰",
+      "month": "丁卯",
+      "day": "癸酉",
+      "hour": "癸亥"
+    },
+    "source": "Cross-agreed manseryeok == lunar-javascript at 22:59",
+    "notes": "亥시 boundary before 子"
+  },
+  {
+    "name": "at_23_00_midnight_convention",
+    "input": {
+      "gender": "male",
+      "calendarType": "solar",
+      "birthDate": "2024-03-10",
+      "birthTime": "23:00",
+      "birthTimeUnknown": false,
+      "timezone": "Asia/Seoul",
+      "countryCode": "KR"
+    },
+    "expected": {
+      "year": "甲辰",
+      "month": "丁卯",
+      "day": "癸酉",
+      "hour": "壬子"
+    },
+    "source": "manseryeok dayBoundary=midnight (product convention). lunar-javascript returns 甲子 hour stem — documented divergence",
+    "notes": "Zi hour start; day stays same calendar day under midnight convention"
+  },
+  {
+    "name": "at_00_00",
+    "input": {
+      "gender": "male",
+      "calendarType": "solar",
+      "birthDate": "2024-03-10",
+      "birthTime": "00:00",
+      "birthTimeUnknown": false,
+      "timezone": "Asia/Seoul",
+      "countryCode": "KR"
+    },
+    "expected": {
+      "year": "甲辰",
+      "month": "丁卯",
+      "day": "癸酉",
+      "hour": "壬子"
+    },
+    "source": "Cross-agreed manseryeok == lunar-javascript",
+    "notes": "Still 子시 after midnight"
+  },
+  {
+    "name": "lichun_minus_1min_kst",
+    "input": {
+      "gender": "female",
+      "calendarType": "solar",
+      "birthDate": "2024-02-04",
+      "birthTime": "17:26",
+      "birthTimeUnknown": false,
+      "timezone": "Asia/Seoul",
+      "countryCode": "KR"
+    },
+    "expected": {
+      "year": "癸卯",
+      "month": "乙丑",
+      "day": "戊戌",
+      "hour": "辛酉"
+    },
+    "source": "KASI/manseryeok 2024 입춘 = 2024-02-04 17:27 KST. lunar-javascript (often CST-oriented term table) may already show 甲辰/丙寅 — Korea product uses KST",
+    "notes": "Year/month must remain pre-lichun"
+  },
+  {
+    "name": "lichun_plus_1min_kst",
+    "input": {
+      "gender": "female",
+      "calendarType": "solar",
+      "birthDate": "2024-02-04",
+      "birthTime": "17:28",
+      "birthTimeUnknown": false,
+      "timezone": "Asia/Seoul",
+      "countryCode": "KR"
+    },
+    "expected": {
+      "year": "甲辰",
+      "month": "丙寅",
+      "day": "戊戌",
+      "hour": "辛酉"
+    },
+    "source": "KASI/manseryeok 입춘+1m; agrees with lunar-javascript after term",
+    "notes": "Year/month flip at lichun"
+  },
+  {
+    "name": "year_end_2025",
+    "input": {
+      "gender": "male",
+      "calendarType": "solar",
+      "birthDate": "2025-12-31",
+      "birthTime": "12:00",
+      "birthTimeUnknown": false,
+      "timezone": "Asia/Seoul",
+      "countryCode": "KR"
+    },
+    "expected": {
+      "year": "乙巳",
+      "month": "戊子",
+      "day": "甲戌",
+      "hour": "庚午"
+    },
+    "source": "Cross-check noon (non zi-boundary) manseryeok vs lunar-javascript",
+    "notes": "Avoid 23:30 zi-stem divergence for golden hour"
+  },
+  {
+    "name": "year_start_2026",
+    "input": {
+      "gender": "male",
+      "calendarType": "solar",
+      "birthDate": "2026-01-01",
+      "birthTime": "00:00",
+      "birthTimeUnknown": false,
+      "timezone": "Asia/Seoul",
+      "countryCode": "KR"
+    },
+    "expected": {
+      "year": "乙巳",
+      "month": "戊子",
+      "day": "乙亥",
+      "hour": "丙子"
+    },
+    "source": "Cross-agreed manseryeok == lunar-javascript",
+    "notes": "Civil year change before lichun — saju year still 乙巳 until lichun 2026"
+  }
+]

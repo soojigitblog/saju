@@ -1,0 +1,31 @@
+# AI 운세 플랫폼 — Supabase local config (minimal)
+# Full defaults are applied by Supabase CLI when you run `supabase init` / `supabase start`.
+
+project_id = "fortune-platform"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "storage"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+major_version = 15
+
+[db.seed]
+enabled = true
+sql_paths = ["./seed.sql"]
+
+[studio]
+enabled = true
+port = 54323
+
+[auth]
+enabled = true
+site_url = "http://localhost:3000"
+
+[storage]
+enabled = true
+file_size_limit = "50MiB"

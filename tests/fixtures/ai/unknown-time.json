@@ -1,0 +1,10 @@
+{
+  "label": "unknown-time",
+  "birth": {
+    "gender": "female",
+    "calendarType": "solar",
+    "birthDate": "1995-06-01",
+    "birthTime": null,
+    "birthTimeUnknown": true
+  }
+}
