@@ -260,7 +260,8 @@ export function buildMockFreeResult(ctx: FortuneAiContext): FreeFortuneResult {
 
 export function buildMockPaidResult(
   ctx: FortuneAiContext,
-  productName: string
+  productName: string,
+  options?: { productSlug?: string; targetYear?: number }
 ): PaidFortuneReport {
   const hourNote = ctx.birthTimeUnknown
     ? "출생시간이 확인되지 않아 시주 해석은 포함하지 않았습니다. "
@@ -280,16 +281,62 @@ export function buildMockPaidResult(
     cautions: ["확정적 미래 예측으로 해석하지 마십시오."],
   });
 
+  const year =
+    options?.targetYear ??
+    (options?.productSlug?.match(/^(\d{4})-/)?.[1]
+      ? Number(options.productSlug.match(/^(\d{4})-/)![1])
+      : 2026);
+
+  const monthlyThemes = [
+    ["정비", "기준 잡기", "무리한 확장보다 정리"],
+    ["관계 점검", "소통", "약속과 일정 재확인"],
+    ["실행 준비", "작은 시도", "루틴 만들기"],
+    ["재정 점검", "고정비", "지출 패턴 돌아보기"],
+    ["외부 활동", "네트워크", "정보 수집"],
+    ["중간 점검", "페이스 조절", "과로 주의"],
+    ["재정비", "우선순위", "불필요한 약속 줄이기"],
+    ["실행 가속", "선택 좁히기", "결정 근거 정리"],
+    ["성과 확인", "피드백", "관계 온도 맞추기"],
+    ["수확 준비", "문서화", "다음 분기 계획"],
+    ["정리·마감", "감사·정산", "과한 신규 착수 자제"],
+    ["내년 준비", "휴식", "방향 스케치"],
+  ] as const;
+
+  const seed = chartSeed(ctx);
+  const monthlyOutlook =
+    options?.productSlug && /-(total)$/i.test(options.productSlug)
+      ? monthlyThemes.map((theme, i) => {
+          const month = i + 1;
+          const tone = (seed + month) % 3;
+          const pace =
+            tone === 0 ? "차분히" : tone === 1 ? "조금씩" : "선별적으로";
+          return {
+            month,
+            title: `${year}년 ${month}월 · ${theme[0]}`,
+            summary: `${theme[1]}에 무게를 두고 ${pace} 움직이는 달이 될 수 있습니다.`,
+            detail:
+              `${year}년 ${month}월은 ${theme[0]}의 흐름으로 읽힐 수 있습니다. ` +
+              `${theme[2]} 쪽이 비교적 잘 맞을 수 있으며, 일간 ${ctx.dayMaster.hangul} 성향상 ` +
+              `남의 속도보다 스스로 납득한 뒤 움직이는 편이 안정적입니다. ` +
+              `확정적 길흉이 아니라, 한 달의 리듬과 주의점을 점검하는 참고 프레임으로 봐 주세요.`,
+            focus: [theme[0], theme[1]],
+          };
+        })
+      : undefined;
+
   return {
     title: `${productName} 상세 해석`,
     executiveSummary:
       hourNote +
-      `일간 ${ctx.dayMaster.hangul}과 오행 분포를 중심으로 보면, 올해는 확장보다 정리를 통해 방향을 선명히 하는 태도가 도움이 될 수 있습니다. ` +
-      `재물·직업·관계 모두에서 충동적인 결정보다 근거를 모아 선택하는 방식이 안정적으로 읽힐 수 있습니다.`,
+      `일간 ${ctx.dayMaster.hangul}과 오행 분포를 중심으로 보면, ${year}년은 확장보다 정리를 통해 방향을 선명히 하는 태도가 도움이 될 수 있습니다. ` +
+      `재물·직업·관계 모두에서 충동적인 결정보다 근거를 모아 선택하는 방식이 안정적으로 읽힐 수 있습니다.` +
+      (monthlyOutlook
+        ? ` 아래 월별 운세에서 ${year}년 1~12월 리듬을 함께 확인해 보세요.`
+        : ""),
     keywords: ["자기기준", "균형", "계획", "소통", "리듬", "점검"],
     sections: [
       mk("personality", "성향"),
-      mk("overall", "전체 흐름"),
+      mk("overall", `${year} 전체 흐름`),
       mk("money", "재물"),
       mk("career", "직업"),
       mk("love", "연애"),
@@ -297,6 +344,7 @@ export function buildMockPaidResult(
       mk("timing", "타이밍"),
       mk("advice", "조언"),
     ],
+    monthlyOutlook,
     actionGuide: [
       "중요한 결정은 하루 이상 간격을 두고 근거를 적어 보세요.",
       "재정·일정 기록을 주 1회 점검하는 루틴을 만들어 보세요.",

@@ -6,6 +6,7 @@ import {
 import type { FreeFortuneResult } from "@/lib/ai/schemas/free-result";
 import {
   REQUIRED_PAID_SECTION_KEYS,
+  isYearTotalProductSlug,
   type PaidFortuneReport,
 } from "@/lib/ai/schemas/paid-report";
 import { validateHookQuality } from "@/lib/ai/validators/hook-quality";
@@ -271,14 +272,16 @@ export function validateFreeSemantics(
 
   if (errors.length > 0) {
     throw new AiEngineError("SEMANTIC_VALIDATION_FAILED", errors.join("; "), {
-      retryable: false,
+      // Content quality is flaky across LLM draws — callers may regenerate.
+      retryable: true,
     });
   }
 }
 
 export function validatePaidSemantics(
   result: PaidFortuneReport,
-  ctx: FortuneAiContext
+  ctx: FortuneAiContext,
+  options?: { productSlug?: string | null }
 ): void {
   const errors: string[] = [];
   const keys = new Set(result.sections.map((s) => s.key));
@@ -292,6 +295,23 @@ export function validatePaidSemantics(
   }
   errors.push(...validateEvidence(result.evidence, ctx, "paid.root"));
 
+  const needsMonthly = isYearTotalProductSlug(options?.productSlug);
+  if (needsMonthly) {
+    if (!result.monthlyOutlook || result.monthlyOutlook.length !== 12) {
+      errors.push("year-total product requires monthlyOutlook[12]");
+    }
+  }
+  if (result.monthlyOutlook) {
+    const months = result.monthlyOutlook.map((m) => m.month);
+    const uniq = new Set(months);
+    if (uniq.size !== 12 || months.some((m) => m < 1 || m > 12)) {
+      errors.push("monthlyOutlook must cover months 1..12 uniquely");
+    }
+    for (const m of result.monthlyOutlook) {
+      if (!m.detail.trim()) errors.push(`empty monthly detail: ${m.month}`);
+    }
+  }
+
   const blob = collectText([
     result.title,
     result.executiveSummary,
@@ -302,6 +322,12 @@ export function validatePaidSemantics(
       s.summary,
       s.detail,
       ...s.cautions,
+    ]),
+    ...(result.monthlyOutlook ?? []).flatMap((m) => [
+      m.title,
+      m.summary,
+      m.detail,
+      ...(m.focus ?? []),
     ]),
   ]);
 
@@ -325,11 +351,13 @@ export function validatePaidSemantics(
 
   const totalLen = [...blob].length;
   if (totalLen < 800) errors.push(`paid report too short (${totalLen})`);
-  if (totalLen > 12_000) errors.push(`paid report too long (${totalLen})`);
+  // Year-total with 12 months can be longer
+  const maxLen = needsMonthly || result.monthlyOutlook ? 20_000 : 12_000;
+  if (totalLen > maxLen) errors.push(`paid report too long (${totalLen})`);
 
   if (errors.length > 0) {
     throw new AiEngineError("SEMANTIC_VALIDATION_FAILED", errors.join("; "), {
-      retryable: false,
+      retryable: true,
     });
   }
 }

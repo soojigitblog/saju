@@ -3,47 +3,49 @@ import "server-only";
 import { getDataMode } from "@/lib/repositories/data-mode";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { mockStore } from "@/lib/mock-store";
 import type { Tables, TablesInsert, TablesUpdate } from "@/types/database.types";
 
 export type Order = Tables<"orders">;
 
-/** Customer-safe order fields (no payment secrets). */
-export type OrderPublicDTO = Pick<
-  Order,
-  | "id"
-  | "order_no"
-  | "profile_id"
-  | "product_id"
-  | "amount"
-  | "status"
-  | "paid_at"
-  | "cancelled_at"
-  | "refunded_at"
-  | "created_at"
-  | "updated_at"
->;
+/** Customer-safe order fields (no payment secrets / guest ids). */
+export type OrderPublicDTO = {
+  id: string;
+  orderNo: string;
+  productId: string;
+  productName: string | null;
+  amount: number;
+  currency: string;
+  status: Order["status"];
+  paymentMethod: "BANK_TRANSFER" | "TOSS";
+  paidAt: string | null;
+  createdAt: string;
+  expiresAt: string | null;
+};
 
 export function toOrderPublicDTO(order: Order): OrderPublicDTO {
   return {
     id: order.id,
-    order_no: order.order_no,
-    profile_id: order.profile_id,
-    product_id: order.product_id,
+    orderNo: order.order_no,
+    productId: order.product_id,
+    productName: order.product_name_snapshot,
     amount: order.amount,
+    currency: order.currency ?? "KRW",
     status: order.status,
-    paid_at: order.paid_at,
-    cancelled_at: order.cancelled_at,
-    refunded_at: order.refunded_at,
-    created_at: order.created_at,
-    updated_at: order.updated_at,
+    paymentMethod: order.payment_method ?? "BANK_TRANSFER",
+    paidAt: order.paid_at,
+    createdAt: order.created_at,
+    expiresAt: order.expires_at ?? null,
   };
 }
 
 export async function getOrderById(id: string): Promise<Order | null> {
-  if (getDataMode() === "mock") return null;
+  if (getDataMode() === "mock") {
+    return mockStore.orders.get(id) ?? null;
+  }
 
-  const supabase = await createClient();
-  const { data, error } = await supabase
+  const admin = createAdminClient();
+  const { data, error } = await admin
     .from("orders")
     .select("*")
     .eq("id", id)
@@ -56,13 +58,56 @@ export async function getOrderById(id: string): Promise<Order | null> {
 export async function getOrderByOrderNo(
   orderNo: string
 ): Promise<Order | null> {
-  if (getDataMode() === "mock") return null;
+  if (getDataMode() === "mock") {
+    for (const order of mockStore.orders.values()) {
+      if (order.order_no === orderNo) return order;
+    }
+    return null;
+  }
 
-  const supabase = await createClient();
-  const { data, error } = await supabase
+  const admin = createAdminClient();
+  const { data, error } = await admin
     .from("orders")
     .select("*")
     .eq("order_no", orderNo)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function findReusablePendingOrder(input: {
+  guestSessionId: string;
+  productId: string;
+  sourceResultId: string;
+  expectedAmount: number;
+}): Promise<Order | null> {
+  if (getDataMode() === "mock") {
+    for (const order of mockStore.orders.values()) {
+      if (
+        order.guest_session_id === input.guestSessionId &&
+        order.product_id === input.productId &&
+        order.source_result_id === input.sourceResultId &&
+        order.status === "PENDING" &&
+        order.amount === input.expectedAmount
+      ) {
+        return order;
+      }
+    }
+    return null;
+  }
+
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("orders")
+    .select("*")
+    .eq("guest_session_id", input.guestSessionId)
+    .eq("product_id", input.productId)
+    .eq("source_result_id", input.sourceResultId)
+    .eq("status", "PENDING")
+    .eq("amount", input.expectedAmount)
+    .order("created_at", { ascending: false })
+    .limit(1)
     .maybeSingle();
 
   if (error) throw error;
@@ -76,7 +121,7 @@ export async function getOrderByOrderNo(
 export async function createAuthenticatedOrder(
   input: TablesInsert<"orders"> & { user_id: string }
 ): Promise<Order> {
-  if (getDataMode() === "mock") return mockOrder(input);
+  if (getDataMode() === "mock") return mockInsertOrder(input);
 
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -90,12 +135,11 @@ export async function createAuthenticatedOrder(
 
 /**
  * Guest checkout — Route Handler only, after validating guest_session_id cookie.
- * Does not treat guest_session_id as report authentication (use access_token_hash).
  */
 export async function createGuestOrder(
   input: TablesInsert<"orders"> & { guest_session_id: string }
 ): Promise<Order> {
-  if (getDataMode() === "mock") return mockOrder(input);
+  if (getDataMode() === "mock") return mockInsertOrder(input);
 
   const admin = createAdminClient();
   const { data, error } = await admin
@@ -128,10 +172,17 @@ export async function updateOrder(
   input: TablesUpdate<"orders">
 ): Promise<Order> {
   if (getDataMode() === "mock") {
-    throw new Error("Order update requires Supabase configuration.");
+    const existing = mockStore.orders.get(id);
+    if (!existing) throw new Error("Order not found");
+    const next: Order = {
+      ...existing,
+      ...input,
+      updated_at: new Date().toISOString(),
+    } as Order;
+    mockStore.orders.set(id, next);
+    return next;
   }
 
-  // Payment confirmation / status machine — trusted backend only.
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("orders")
@@ -144,8 +195,52 @@ export async function updateOrder(
   return data;
 }
 
+/**
+ * Atomic PENDING → PAID. Returns null if already transitioned (race).
+ */
+export async function markOrderPaidIfPending(input: {
+  orderId: string;
+  paidAt: string;
+  accessTokenHash: string;
+}): Promise<Order | null> {
+  if (getDataMode() === "mock") {
+    const existing = mockStore.orders.get(input.orderId);
+    if (!existing) return null;
+    if (existing.status !== "PENDING") return null;
+    const next: Order = {
+      ...existing,
+      status: "PAID",
+      paid_at: input.paidAt,
+      access_token_hash: input.accessTokenHash,
+      updated_at: new Date().toISOString(),
+    };
+    mockStore.orders.set(input.orderId, next);
+    return next;
+  }
+
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("orders")
+    .update({
+      status: "PAID",
+      paid_at: input.paidAt,
+      access_token_hash: input.accessTokenHash,
+    })
+    .eq("id", input.orderId)
+    .eq("status", "PENDING")
+    .select("*")
+    .maybeSingle();
+
+  if (error) throw error;
+  return data;
+}
+
 export async function listOrdersForAdmin(limit = 50): Promise<Order[]> {
-  if (getDataMode() === "mock") return [];
+  if (getDataMode() === "mock") {
+    return [...mockStore.orders.values()].sort((a, b) =>
+      b.created_at.localeCompare(a.created_at)
+    );
+  }
 
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -158,15 +253,12 @@ export async function listOrdersForAdmin(limit = 50): Promise<Order[]> {
   return data ?? [];
 }
 
-/**
- * Attach guest order to auth user after identity verification (future login).
- */
 export async function attachOrderToUser(input: {
   orderId: string;
   userId: string;
 }): Promise<Order> {
   if (getDataMode() === "mock") {
-    throw new Error("attachOrderToUser requires Supabase");
+    return updateOrder(input.orderId, { user_id: input.userId });
   }
 
   const admin = createAdminClient();
@@ -181,21 +273,82 @@ export async function attachOrderToUser(input: {
   return data;
 }
 
-function mockOrder(input: TablesInsert<"orders">): Order {
-  return {
+function mockInsertOrder(input: TablesInsert<"orders">): Order {
+  const now = new Date().toISOString();
+  const order: Order = {
     id: crypto.randomUUID(),
     order_no: input.order_no,
     user_id: input.user_id ?? null,
     guest_session_id: input.guest_session_id ?? null,
     profile_id: input.profile_id,
     product_id: input.product_id,
+    source_result_id: input.source_result_id ?? null,
     amount: input.amount,
+    currency: input.currency ?? "KRW",
+    product_name_snapshot: input.product_name_snapshot ?? null,
+    payment_method: input.payment_method ?? "BANK_TRANSFER",
+    depositor_name: input.depositor_name ?? null,
+    depositor_name_normalized: input.depositor_name_normalized ?? null,
+    expires_at: input.expires_at ?? null,
     status: input.status ?? "PENDING",
     access_token_hash: input.access_token_hash ?? null,
     paid_at: input.paid_at ?? null,
     cancelled_at: input.cancelled_at ?? null,
     refunded_at: input.refunded_at ?? null,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
+    created_at: now,
+    updated_at: now,
   };
+  mockStore.orders.set(order.id, order);
+  return order;
+}
+
+export async function listPendingBankTransferOrders(): Promise<Order[]> {
+  if (getDataMode() === "mock") {
+    return [...mockStore.orders.values()].filter(
+      (o) =>
+        o.status === "PENDING" &&
+        (o.payment_method ?? "BANK_TRANSFER") === "BANK_TRANSFER"
+    );
+  }
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("orders")
+    .select("*")
+    .eq("status", "PENDING")
+    .eq("payment_method", "BANK_TRANSFER");
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function expireStaleBankOrders(now = new Date()): Promise<number> {
+  const iso = now.toISOString();
+  if (getDataMode() === "mock") {
+    let n = 0;
+    for (const [id, o] of mockStore.orders) {
+      if (
+        o.status === "PENDING" &&
+        o.payment_method === "BANK_TRANSFER" &&
+        o.expires_at &&
+        o.expires_at < iso
+      ) {
+        mockStore.orders.set(id, {
+          ...o,
+          status: "EXPIRED",
+          updated_at: iso,
+        });
+        n += 1;
+      }
+    }
+    return n;
+  }
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("orders")
+    .update({ status: "EXPIRED" })
+    .eq("status", "PENDING")
+    .eq("payment_method", "BANK_TRANSFER")
+    .lt("expires_at", iso)
+    .select("id");
+  if (error) throw error;
+  return data?.length ?? 0;
 }

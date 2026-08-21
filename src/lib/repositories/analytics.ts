@@ -22,6 +22,19 @@ export type AnalyticsEventName =
   | "report_generated"
   | "report_view"
   | "pdf_download"
+  | "tarot_entry_view"
+  | "tarot_question_selected"
+  | "tarot_cards_started"
+  | "tarot_card_selected"
+  | "tarot_draw_completed"
+  | "tarot_reading_generated"
+  | "tarot_reading_failed"
+  | "fortune_feedback_submitted"
+  | "tarot_feedback_submitted"
+  | "cross_feedback_submitted"
+  | "payment_request"
+  | "paid_report_start"
+  | "paid_report_completed"
   | (string & {});
 
 export async function upsertAnalyticsSession(input: {

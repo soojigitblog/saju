@@ -18,7 +18,7 @@ import {
   createGuestProfile,
   findGuestProfileByCanonicalInput,
   getProfileById,
-  updateProfileNickname,
+  updateProfileLifeContext,
 } from "@/lib/repositories/profiles";
 import {
   createFortuneChart,
@@ -40,6 +40,7 @@ import { mockStore } from "@/lib/mock-store";
 import { FORTUNE_RELEASE_MANIFEST } from "@/lib/fortune-engine/release-manifest";
 import {
   freeFortuneRequestSchema,
+  buildLifeContextKey,
   type FreeFortuneRequest,
 } from "@/lib/services/free-fortune-schema";
 import {
@@ -123,26 +124,34 @@ export async function createFreeFortune(input: {
 
   const provider = resolveAiProviderName();
   const model = getAiModelFree(provider);
+  const lifeContextKey = buildLifeContextKey({
+    maritalStatus: body.maritalStatus,
+    hasChildren:
+      body.maritalStatus === "married" ? body.hasChildren ?? null : null,
+  });
+  // Scope by profile so guest A never receives guest B's freeResultId
+  // (status/result ownership is guest_session_id on the profile).
   const generationKey = buildGenerationKey({
     calculationHash: chart.engine.calculationHash,
     promptVersionId: FREE_PROMPT_VERSION.id,
     provider,
     model,
     resultType: "free",
+    lifeContextKey: `${lifeContextKey}|owner:${profile.id}`,
   });
 
   const existing = await getFreeResultByGenerationKey(generationKey);
-  if (existing) {
+  if (existing && existing.profile_id === profile.id) {
     if (existing.generation_status === "COMPLETED") {
       return { freeResultId: existing.id, status: "COMPLETED" };
     }
     if (existing.generation_status === "GENERATING") {
       return { freeResultId: existing.id, status: "GENERATING" };
     }
-    if (existing.generation_status === "FAILED") {
-      return { freeResultId: existing.id, status: "FAILED" };
-    }
-    if (existing.generation_status === "PENDING") {
+    if (
+      existing.generation_status === "FAILED" ||
+      existing.generation_status === "PENDING"
+    ) {
       return runAiGeneration({
         freeResultId: existing.id,
         chart,
@@ -150,7 +159,7 @@ export async function createFreeFortune(input: {
         profileId: profile.id,
         generationKey,
         model,
-        attemptCount: Math.max(1, existing.attempt_count ?? 0),
+        attemptCount: Math.max(1, (existing.attempt_count ?? 0) + 1),
       });
     }
   }
@@ -168,7 +177,7 @@ export async function createFreeFortune(input: {
 
   const canonical = await getFreeResultByGenerationKey(generationKey);
   const freeResultId = canonical?.id ?? pending.id;
-  if (canonical && canonical.id !== pending.id) {
+  if (canonical && canonical.id !== pending.id && canonical.profile_id === profile.id) {
     if (canonical.generation_status === "COMPLETED") {
       return { freeResultId: canonical.id, status: "COMPLETED" };
     }
@@ -176,7 +185,15 @@ export async function createFreeFortune(input: {
       return { freeResultId: canonical.id, status: "GENERATING" };
     }
     if (canonical.generation_status === "FAILED") {
-      return { freeResultId: canonical.id, status: "FAILED" };
+      return runAiGeneration({
+        freeResultId: canonical.id,
+        chart,
+        chartId: chartRow.id,
+        profileId: profile.id,
+        generationKey,
+        model,
+        attemptCount: Math.max(1, (canonical.attempt_count ?? 0) + 1),
+      });
     }
   }
 
@@ -267,10 +284,12 @@ async function resolveProfile(
   });
 
   if (existing) {
-    if (existing.nickname !== body.nickname) {
-      return updateProfileNickname(existing.id, body.nickname);
-    }
-    return existing;
+    return updateProfileLifeContext(existing.id, {
+      nickname: body.nickname,
+      marital_status: body.maritalStatus,
+      has_children:
+        body.maritalStatus === "married" ? body.hasChildren ?? null : null,
+    });
   }
 
   return createGuestProfile({
@@ -282,6 +301,9 @@ async function resolveProfile(
     birth_time_unknown: body.birthTimeUnknown,
     calendar_type: body.calendarType,
     birth_place: body.birthPlace,
+    marital_status: body.maritalStatus,
+    has_children:
+      body.maritalStatus === "married" ? body.hasChildren ?? null : null,
   });
 }
 
@@ -323,6 +345,7 @@ async function runAiGeneration(input: {
   }
 
   try {
+    const profile = await getProfileById(input.profileId);
     const interpreter = createFortuneInterpreter("auto");
     const result = await generateFreeInterpretation(
       input.chart,
@@ -339,6 +362,11 @@ async function runAiGeneration(input: {
         product: {
           slug: FREE_PROMPT_DEFINITION.slug,
           name: FREE_PROMPT_DEFINITION.name,
+        },
+        presentation: {
+          nickname: profile?.nickname,
+          maritalStatus: profile?.marital_status ?? undefined,
+          hasChildren: profile?.has_children ?? null,
         },
       }
     );
@@ -374,10 +402,22 @@ async function runAiGeneration(input: {
   } catch (error) {
     const code =
       error instanceof AiEngineError ? error.code : "AI_GENERATION_FAILED";
+    const diagnostic =
+      error instanceof AiEngineError
+        ? error.message.slice(0, 800)
+        : error instanceof Error
+          ? error.message.slice(0, 800)
+          : "unknown";
     const safeMessage =
       code === "OPENAI_RATE_LIMIT"
         ? "현재 분석 요청이 많습니다. 잠시 후 다시 시도해 주세요."
         : "결과 생성 중 문제가 발생했습니다. 잠시 후 다시 시도해 주세요.";
+
+    console.error("[createFreeFortune] generation failed", {
+      freeResultId: input.freeResultId,
+      code,
+      diagnostic,
+    });
 
     await updateFreeResult(input.freeResultId, {
       generation_status: "FAILED",
@@ -390,7 +430,7 @@ async function runAiGeneration(input: {
         await updateAiGeneration(generationId, {
           status: "FAILED",
           error_code: code,
-          error_message: safeMessage,
+          error_message: diagnostic,
           completed_at: new Date().toISOString(),
         });
       } catch {

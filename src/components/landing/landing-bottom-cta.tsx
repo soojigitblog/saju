@@ -15,8 +15,8 @@ export function LandingBottomCta() {
             회원가입 없이 약 1분이면 첫 해석을 받아볼 수 있습니다.
           </p>
           <div className="mt-8 flex justify-center">
-            <Button asChild variant="outline" size="lg" className="min-w-[220px]">
-              <Link href="/fortune">무료 사주 보기</Link>
+            <Button asChild variant="default" size="lg" className="min-w-[220px]">
+              <Link href="/fortune">무료 사주 풀어보기</Link>
             </Button>
           </div>
         </OrnateFrame>

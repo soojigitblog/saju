@@ -21,6 +21,22 @@ const ALLOWED_EVENTS = new Set<AnalyticsEventName>([
   "fortune_form_complete",
   "free_result_view",
   "product_view",
+  "tarot_entry_view",
+  "tarot_question_selected",
+  "tarot_cards_started",
+  "tarot_card_selected",
+  "tarot_draw_completed",
+  "tarot_reading_generated",
+  "tarot_reading_failed",
+  "fortune_feedback_submitted",
+  "tarot_feedback_submitted",
+  "cross_feedback_submitted",
+  "checkout_start",
+  "payment_request",
+  "payment_success",
+  "payment_fail",
+  "paid_report_start",
+  "paid_report_completed",
 ]);
 
 const bodySchema = z.object({

@@ -7,6 +7,20 @@ export const GUEST_SESSION_COOKIE = "fortune_guest_session";
 
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 180; // 180 days
 
+/**
+ * `next start` sets NODE_ENV=production. Local/tunnel friend tests keep
+ * APP_ENV=development — Secure cookies then fail on http://localhost and can
+ * be dropped by some reverse-proxy setups. Real deploys keep Secure.
+ */
+function shouldUseSecureCookies(): boolean {
+  if (process.env.NODE_ENV !== "production") return false;
+  const appEnv = (process.env.APP_ENV ?? "").toLowerCase();
+  if (appEnv === "development" || appEnv === "local" || appEnv === "test") {
+    return false;
+  }
+  return true;
+}
+
 export async function getGuestSessionId(): Promise<string | undefined> {
   const jar = await cookies();
   const value = jar.get(GUEST_SESSION_COOKIE)?.value?.trim();
@@ -24,7 +38,7 @@ export async function ensureGuestSessionId(): Promise<string> {
   const jar = await cookies();
   jar.set(GUEST_SESSION_COOKIE, id, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: shouldUseSecureCookies(),
     sameSite: "lax",
     path: "/",
     maxAge: COOKIE_MAX_AGE,

@@ -9,17 +9,17 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "rounded-md border border-[var(--gold-light)] bg-gradient-to-b from-[var(--gold-light)] to-[var(--gold)] !text-[var(--accent-foreground)] shadow-[var(--glow-gold)] hover:brightness-110 hover:!text-[var(--accent-foreground)] active:scale-[0.98]",
+          "rounded-sm border border-[var(--gold-light)] bg-[var(--gold-primary)] !text-[var(--accent-foreground)] shadow-[var(--glow-gold)] hover:bg-[var(--gold-light)] hover:!text-[var(--accent-foreground)] active:scale-[0.98]",
         secondary:
-          "rounded-md border border-[var(--line)] bg-[var(--surface-strong)] text-[var(--ink)] hover:border-[var(--line-strong)] hover:bg-[var(--surface-hover)]",
+          "rounded-sm border border-[var(--border-subtle)] bg-[var(--surface-strong)] text-[var(--ink)] hover:border-[var(--border-gold)] hover:bg-[var(--surface-hover)]",
         outline:
-          "rounded-md border border-[var(--line-strong)] bg-transparent text-[var(--gold-soft)] hover:bg-[var(--accent-soft)] hover:border-[var(--gold)]",
+          "rounded-sm border border-[var(--border-gold)] bg-transparent text-[var(--gold-light)] hover:bg-[var(--accent-soft)]",
         ghost:
-          "rounded-md text-[var(--ink-muted)] hover:bg-[var(--surface)] hover:text-[var(--ink)]",
+          "rounded-sm text-[var(--ink-muted)] hover:bg-[var(--surface)] hover:text-[var(--ink)]",
         lock:
-          "rounded-md border border-[var(--gold)] bg-[var(--surface-strong)] text-[var(--gold-soft)] hover:bg-[var(--accent-soft)] hover:shadow-[var(--glow-gold)]",
+          "rounded-sm border border-[var(--gold-primary)] bg-[var(--surface-strong)] text-[var(--gold-soft)] hover:bg-[var(--accent-soft)] hover:shadow-[var(--glow-gold)]",
         parchment:
-          "rounded-sm border border-[#c4b08a] bg-gradient-to-b from-[#ebe3d0] via-[#ddd0b4] to-[#c9b896] !text-[#1a1510] shadow-[inset_0_1px_0_rgba(255,255,255,0.35),0_2px_8px_rgba(0,0,0,0.25)] hover:brightness-105 hover:!text-[#1a1510] active:scale-[0.98]",
+          "rounded-sm border border-[var(--gold-dim)] bg-gradient-to-b from-[var(--gold-light)] via-[var(--gold-primary)] to-[#b8903e] !text-[var(--accent-foreground)] shadow-[inset_0_1px_0_rgba(255,255,255,0.25),0_2px_10px_rgba(0,0,0,0.3)] hover:brightness-105 hover:!text-[var(--accent-foreground)] active:scale-[0.98]",
       },
       size: {
         default: "h-12 px-5",

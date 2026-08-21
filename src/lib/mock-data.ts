@@ -11,6 +11,7 @@ export const MOCK_PRODUCT_IDS = {
   money: "33333333-3333-3333-3333-333333333302",
   career: "33333333-3333-3333-3333-333333333303",
   love: "33333333-3333-3333-3333-333333333304",
+  total2027: "33333333-3333-3333-3333-333333333305",
 } as const;
 
 export const mockProducts: Product[] = [
@@ -18,9 +19,9 @@ export const mockProducts: Product[] = [
     id: MOCK_PRODUCT_IDS.total,
     name: "2026년 종합운세",
     slug: "2026-total",
-    shortDescription: "올해의 흐름과 중요한 시기를 한눈에",
+    shortDescription: "올해의 흐름과 월별 운세까지 한눈에",
     description:
-      "타고난 성향, 재물·직업·연애운, 월별 흐름까지 2026년 전체를 상세히 풀어드립니다. 지금 내게 중요한 시기와 행동을 확인하세요.",
+      "타고난 성향, 재물·직업·연애운, 1~12월 월별 흐름까지 2026년 전체를 상세히 풀어드립니다. 지금 내게 중요한 시기와 행동을 확인하세요.",
     regularPrice: 19900,
     salePrice: 12900,
     thumbnailUrl: "/images/product-total.svg",
@@ -29,6 +30,22 @@ export const mockProducts: Product[] = [
     templateId: "standard-report",
     status: "ACTIVE",
     sortOrder: 1,
+  },
+  {
+    id: MOCK_PRODUCT_IDS.total2027,
+    name: "2027년 종합운세",
+    slug: "2027-total",
+    shortDescription: "내년의 흐름과 월별 운세까지 미리 보기",
+    description:
+      "2027년 전체 흐름과 재물·직업·연애, 1~12월 월별 리듬을 상세히 풀어드립니다. 한 해 앞을 준비할 때 참고하세요.",
+    regularPrice: 19900,
+    salePrice: 12900,
+    thumbnailUrl: "/images/product-total.svg",
+    freeRatio: 30,
+    promptName: "2027-total@v1",
+    templateId: "standard-report",
+    status: "ACTIVE",
+    sortOrder: 2,
   },
   {
     id: MOCK_PRODUCT_IDS.money,
@@ -44,7 +61,7 @@ export const mockProducts: Product[] = [
     promptName: "money@v1",
     templateId: "standard-report",
     status: "ACTIVE",
-    sortOrder: 2,
+    sortOrder: 3,
   },
   {
     id: MOCK_PRODUCT_IDS.career,
@@ -60,7 +77,7 @@ export const mockProducts: Product[] = [
     promptName: "career@v1",
     templateId: "standard-report",
     status: "ACTIVE",
-    sortOrder: 3,
+    sortOrder: 4,
   },
   {
     id: MOCK_PRODUCT_IDS.love,
@@ -76,7 +93,7 @@ export const mockProducts: Product[] = [
     promptName: "love@v1",
     templateId: "standard-report",
     status: "ACTIVE",
-    sortOrder: 4,
+    sortOrder: 5,
   },
 ];
 
@@ -187,24 +204,33 @@ export const mockPaidReport: PaidReport = {
     },
     {
       number: "06",
-      title: "월별 흐름",
-      body: "봄철에는 정리와 준비, 여름에는 실행, 가을에는 성과 확인, 겨울에는 다음 해를 위한 재배치가 자연스러운 리듬으로 보입니다. 월별 세부 타이밍은 리포트 PDF에서도 확인할 수 있습니다.",
-    },
-    {
-      number: "07",
       title: "주의할 시기",
       body: "결정을 서두르거나, 주변의 기대에 맞춰 방향을 바꾸는 구간에서는 피로가 커질 수 있습니다. 특히 감정적으로 흔들릴 때는 큰 금전·계약 결정을 하루 미뤄보는 것이 도움이 됩니다.",
     },
     {
-      number: "08",
+      number: "07",
       title: "기회를 잡을 시기",
       body: "준비가 끝난 뒤의 실행 구간에서 기회가 더 잘 열릴 수 있습니다. 혼자 판단하기 어렵다면, 신뢰하는 사람의 조언을 ‘결정’이 아니라 ‘관점’으로 활용하는 방식이 맞습니다.",
     },
     {
-      number: "09",
+      number: "08",
       title: "나를 위한 행동 가이드",
       body: "1) 이번 달의 우선순위 3가지만 적어두기 2) 지출 패턴을 한 줄로 기록하기 3) 이직·관계·투자 중 한 번에 하나만 크게 움직이기. 운세는 참고이며, 선택은 언제나 본인의 기준에서 시작됩니다.",
     },
+  ],
+  monthlyOutlook: [
+    { month: 1, title: "2026년 1월 · 정비", summary: "기준 잡기", detail: "무리한 확장보다 정리와 방향 설정에 무게를 두는 달이 될 수 있습니다.", focus: ["정비", "기준"] },
+    { month: 2, title: "2026년 2월 · 관계 점검", summary: "소통", detail: "약속과 일정을 다시 맞추며 관계 온도를 점검하기 좋은 흐름입니다.", focus: ["관계", "소통"] },
+    { month: 3, title: "2026년 3월 · 실행 준비", summary: "작은 시도", detail: "큰 결정보다 작은 루틴을 만들어 실행력을 키우는 달이 될 수 있습니다.", focus: ["준비", "루틴"] },
+    { month: 4, title: "2026년 4월 · 재정 점검", summary: "고정비", detail: "지출 패턴을 돌아보고 고정비·변동비를 나누어 보면 안정감이 커질 수 있습니다.", focus: ["재정", "점검"] },
+    { month: 5, title: "2026년 5월 · 외부 활동", summary: "네트워크", detail: "정보 수집과 외부 만남이 도움이 될 수 있으나, 과한 약속은 줄이는 편이 좋습니다.", focus: ["활동", "정보"] },
+    { month: 6, title: "2026년 6월 · 중간 점검", summary: "페이스 조절", detail: "상반기 성과를 정리하고 과로를 경계하며 페이스를 맞추는 달이 될 수 있습니다.", focus: ["점검", "휴식"] },
+    { month: 7, title: "2026년 7월 · 재정비", summary: "우선순위", detail: "불필요한 약속을 줄이고 우선순위를 다시 세우는 흐름이 잘 맞을 수 있습니다.", focus: ["정리", "우선순위"] },
+    { month: 8, title: "2026년 8월 · 실행 가속", summary: "선택 좁히기", detail: "결정을 미루기보다 근거를 적고 선택지를 좁혀 가는 달이 될 수 있습니다.", focus: ["실행", "선택"] },
+    { month: 9, title: "2026년 9월 · 성과 확인", summary: "피드백", detail: "결과와 관계 온도를 함께 확인하며 피드백을 반영하기 좋은 시기입니다.", focus: ["성과", "피드백"] },
+    { month: 10, title: "2026년 10월 · 수확 준비", summary: "문서화", detail: "다음 분기를 위해 기록을 남기고 계획을 스케치하는 달이 될 수 있습니다.", focus: ["수확", "계획"] },
+    { month: 11, title: "2026년 11월 · 정리·마감", summary: "정산", detail: "신규 착수보다 마감과 감사·정산에 무게를 두는 편이 안정적일 수 있습니다.", focus: ["마감", "정리"] },
+    { month: 12, title: "2026년 12월 · 내년 준비", summary: "방향 스케치", detail: "휴식과 함께 내년 방향을 가볍게 스케치하는 달이 될 수 있습니다.", focus: ["휴식", "준비"] },
   ],
 };
 

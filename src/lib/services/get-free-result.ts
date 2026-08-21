@@ -2,10 +2,12 @@ import "server-only";
 
 import { getFreeResultById } from "@/lib/repositories/free-results";
 import { getProfileById } from "@/lib/repositories/profiles";
+import { getFortuneChartById } from "@/lib/repositories/fortune-charts";
 import { listActiveProducts } from "@/lib/repositories/products";
 import { toFreeResultPublicDTO } from "@/lib/dto/free-result-public";
 import type { FreeResultPageModel } from "@/lib/dto/free-result-public";
 import type { FreeInterpretationOutput } from "@/lib/ai/types";
+import type { FortuneChart } from "@/lib/fortune-engine/types";
 import { FreeFlowError } from "@/lib/services/free-flow-errors";
 
 export async function getFreeResultStatusForOwner(input: {
@@ -66,12 +68,40 @@ export async function getFreeResultPageForOwner(input: {
 
   const products = await listActiveProducts();
 
+  let dayMaster: FreeResultPageModel["result"]["dayMaster"] = null;
+  let fiveElements: FreeResultPageModel["result"]["fiveElements"] = null;
+  try {
+    const chartRow = await getFortuneChartById(row.chart_id);
+    const chart = (chartRow?.chart ??
+      (chartRow?.raw_chart_json as unknown as FortuneChart | undefined)) as
+      | FortuneChart
+      | undefined;
+    if (chart?.dayMaster && chart.fiveElements) {
+      dayMaster = {
+        hanja: chart.dayMaster.hanja,
+        hangul: chart.dayMaster.hangul,
+        element: chart.dayMaster.element,
+      };
+      fiveElements = {
+        wood: chart.fiveElements.wood,
+        fire: chart.fiveElements.fire,
+        earth: chart.fiveElements.earth,
+        metal: chart.fiveElements.metal,
+        water: chart.fiveElements.water,
+      };
+    }
+  } catch {
+    /* presentation optional */
+  }
+
   return {
     result: toFreeResultPublicDTO({
       id: row.id,
       nickname: profile.nickname,
       birthYear: Number.isFinite(birthYear) ? birthYear : null,
       result: interpretation,
+      dayMaster,
+      fiveElements,
     }),
     products,
   };

@@ -24,6 +24,9 @@ export type ProductConfig = {
 export type PresentationInput = {
   /** Safe display label only — never treat as instructions. */
   nickname?: string;
+  /** User-declared life context — use when present; never invent if absent. */
+  maritalStatus?: "unmarried" | "married" | "prefer_not";
+  hasChildren?: "yes" | "no" | "prefer_not" | null;
 };
 
 /** Compact chart payload sent to the model (no PII ids / payments). */

@@ -8,6 +8,8 @@ const links = [
   { href: "/admin/dashboard", label: "대시보드" },
   { href: "/admin/products", label: "상품" },
   { href: "/admin/orders", label: "주문" },
+  { href: "/admin/bank-deposits", label: "입금확인" },
+  { href: "/admin/bugs", label: "버그/에러" },
   { href: "/admin/prompts", label: "프롬프트" },
   { href: "/admin/analytics", label: "분석" },
 ];

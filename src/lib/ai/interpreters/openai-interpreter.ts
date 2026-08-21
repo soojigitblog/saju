@@ -30,6 +30,7 @@ import {
   validatePaidSemantics,
 } from "@/lib/ai/validators/semantic-validator";
 import { generateStructuredResult } from "@/lib/ai/wrapper/generate-structured";
+import { withValidationRetry } from "@/lib/ai/interpreters/with-validation-retry";
 import type {
   FreeInterpretationOutput,
   PaidInterpretationOutput,
@@ -51,58 +52,60 @@ export class OpenAIFortuneInterpreter implements FortuneInterpreter {
       productInstruction: args.promptVersion.productInstruction,
     });
 
-    const generated = await generateStructuredResult({
-      model,
-      systemPrompt,
-      userPrompt,
-      schema: freeFortuneResultStrictSchema,
-      schemaName: "free_fortune_result",
-    });
-
-    let data = generated.data;
-    try {
-      data = freeFortuneResultStrictSchema.parse({
-        ...data,
-        disclaimer: data.disclaimer || USER_FACING_DISCLAIMER,
+    return withValidationRetry(async () => {
+      const generated = await generateStructuredResult({
+        model,
+        systemPrompt,
+        userPrompt,
+        schema: freeFortuneResultStrictSchema,
+        schemaName: "free_fortune_result",
       });
-    } catch (error) {
-      throw new AiEngineError(
-        "SCHEMA_VALIDATION_FAILED",
-        "Free result failed Zod validation",
-        { retryable: false, cause: error, providerRequestId: generated.providerRequestId }
-      );
-    }
 
-    validateFreeSemantics(data, ctx);
+      let data = generated.data;
+      try {
+        data = freeFortuneResultStrictSchema.parse({
+          ...data,
+          disclaimer: data.disclaimer || USER_FACING_DISCLAIMER,
+        });
+      } catch (error) {
+        throw new AiEngineError(
+          "SCHEMA_VALIDATION_FAILED",
+          "Free result failed Zod validation",
+          { retryable: true, cause: error, providerRequestId: generated.providerRequestId }
+        );
+      }
 
-    const generationKey = buildGenerationKey({
-      calculationHash: args.chart.engine.calculationHash,
-      promptVersionId: args.promptVersion.promptVersionId,
-      provider: "openai",
-      model: generated.model,
-      resultType: "free",
-      productSlug: args.product?.slug,
-    });
+      validateFreeSemantics(data, ctx);
 
-    return {
-      ...data,
-      meta: {
-        schemaVersion: AI_SCHEMA_VERSION,
-        engineVersion: FORTUNE_RELEASE_MANIFEST.engineVersion,
-        providerVersion: FORTUNE_RELEASE_MANIFEST.provider.version,
-        provider: "openai",
-        promptDefinitionId: args.promptVersion.promptDefinitionId,
+      const generationKey = buildGenerationKey({
+        calculationHash: args.chart.engine.calculationHash,
         promptVersionId: args.promptVersion.promptVersionId,
-        promptVersionNumber: args.promptVersion.promptVersionNumber,
+        provider: "openai",
         model: generated.model,
-        scoreSource: AI_SCORE_SOURCE,
-        generationKey,
-        generationKeyVersion: GENERATION_KEY_VERSION,
-        generatedAt: new Date().toISOString(),
-        usage: generated.usage,
-        providerRequestId: generated.providerRequestId,
-      },
-    };
+        resultType: "free",
+        productSlug: args.product?.slug,
+      });
+
+      return {
+        ...data,
+        meta: {
+          schemaVersion: AI_SCHEMA_VERSION,
+          engineVersion: FORTUNE_RELEASE_MANIFEST.engineVersion,
+          providerVersion: FORTUNE_RELEASE_MANIFEST.provider.version,
+          provider: "openai",
+          promptDefinitionId: args.promptVersion.promptDefinitionId,
+          promptVersionId: args.promptVersion.promptVersionId,
+          promptVersionNumber: args.promptVersion.promptVersionNumber,
+          model: generated.model,
+          scoreSource: AI_SCORE_SOURCE,
+          generationKey,
+          generationKeyVersion: GENERATION_KEY_VERSION,
+          generatedAt: new Date().toISOString(),
+          usage: generated.usage,
+          providerRequestId: generated.providerRequestId,
+        },
+      };
+    });
   }
 
   async generatePaid(args: PaidGenerateArgs): Promise<PaidInterpretationOutput> {
@@ -119,57 +122,59 @@ export class OpenAIFortuneInterpreter implements FortuneInterpreter {
       productInstruction: args.promptVersion.productInstruction,
     });
 
-    const generated = await generateStructuredResult({
-      model,
-      systemPrompt,
-      userPrompt,
-      schema: paidFortuneReportStrictSchema,
-      schemaName: "paid_fortune_report",
-    });
-
-    let data = generated.data;
-    try {
-      data = paidFortuneReportStrictSchema.parse({
-        ...data,
-        disclaimer: data.disclaimer || USER_FACING_DISCLAIMER,
+    return withValidationRetry(async () => {
+      const generated = await generateStructuredResult({
+        model,
+        systemPrompt,
+        userPrompt,
+        schema: paidFortuneReportStrictSchema,
+        schemaName: "paid_fortune_report",
       });
-    } catch (error) {
-      throw new AiEngineError(
-        "SCHEMA_VALIDATION_FAILED",
-        "Paid result failed Zod validation",
-        { retryable: false, cause: error, providerRequestId: generated.providerRequestId }
-      );
-    }
 
-    validatePaidSemantics(data, ctx);
+      let data = generated.data;
+      try {
+        data = paidFortuneReportStrictSchema.parse({
+          ...data,
+          disclaimer: data.disclaimer || USER_FACING_DISCLAIMER,
+        });
+      } catch (error) {
+        throw new AiEngineError(
+          "SCHEMA_VALIDATION_FAILED",
+          "Paid result failed Zod validation",
+          { retryable: true, cause: error, providerRequestId: generated.providerRequestId }
+        );
+      }
 
-    const generationKey = buildGenerationKey({
-      calculationHash: args.chart.engine.calculationHash,
-      promptVersionId: args.promptVersion.promptVersionId,
-      provider: "openai",
-      model: generated.model,
-      resultType: "paid",
-      productSlug: args.product.slug,
-    });
+      validatePaidSemantics(data, ctx, { productSlug: args.product.slug });
 
-    return {
-      ...data,
-      meta: {
-        schemaVersion: AI_SCHEMA_VERSION,
-        engineVersion: FORTUNE_RELEASE_MANIFEST.engineVersion,
-        providerVersion: FORTUNE_RELEASE_MANIFEST.provider.version,
-        provider: "openai",
-        promptDefinitionId: args.promptVersion.promptDefinitionId,
+      const generationKey = buildGenerationKey({
+        calculationHash: args.chart.engine.calculationHash,
         promptVersionId: args.promptVersion.promptVersionId,
-        promptVersionNumber: args.promptVersion.promptVersionNumber,
+        provider: "openai",
         model: generated.model,
-        scoreSource: AI_SCORE_SOURCE,
-        generationKey,
-        generationKeyVersion: GENERATION_KEY_VERSION,
-        generatedAt: new Date().toISOString(),
-        usage: generated.usage,
-        providerRequestId: generated.providerRequestId,
-      },
-    };
+        resultType: "paid",
+        productSlug: args.product.slug,
+      });
+
+      return {
+        ...data,
+        meta: {
+          schemaVersion: AI_SCHEMA_VERSION,
+          engineVersion: FORTUNE_RELEASE_MANIFEST.engineVersion,
+          providerVersion: FORTUNE_RELEASE_MANIFEST.provider.version,
+          provider: "openai",
+          promptDefinitionId: args.promptVersion.promptDefinitionId,
+          promptVersionId: args.promptVersion.promptVersionId,
+          promptVersionNumber: args.promptVersion.promptVersionNumber,
+          model: generated.model,
+          scoreSource: AI_SCORE_SOURCE,
+          generationKey,
+          generationKeyVersion: GENERATION_KEY_VERSION,
+          generatedAt: new Date().toISOString(),
+          usage: generated.usage,
+          providerRequestId: generated.providerRequestId,
+        },
+      };
+    });
   }
 }

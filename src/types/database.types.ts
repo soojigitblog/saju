@@ -178,6 +178,8 @@ export type Database = {
           birth_time_unknown: boolean;
           calendar_type: "solar" | "lunar";
           birth_place: string;
+          marital_status: "unmarried" | "married" | "prefer_not" | null;
+          has_children: "yes" | "no" | "prefer_not" | null;
           contact_email: string | null;
           contact_phone: string | null;
           created_at: string;
@@ -194,6 +196,8 @@ export type Database = {
           birth_time_unknown?: boolean;
           calendar_type: "solar" | "lunar";
           birth_place: string;
+          marital_status?: "unmarried" | "married" | "prefer_not" | null;
+          has_children?: "yes" | "no" | "prefer_not" | null;
           contact_email?: string | null;
           contact_phone?: string | null;
           created_at?: string;
@@ -210,6 +214,8 @@ export type Database = {
           birth_time_unknown?: boolean;
           calendar_type?: "solar" | "lunar";
           birth_place?: string;
+          marital_status?: "unmarried" | "married" | "prefer_not" | null;
+          has_children?: "yes" | "no" | "prefer_not" | null;
           contact_email?: string | null;
           contact_phone?: string | null;
           created_at?: string;
@@ -323,7 +329,14 @@ export type Database = {
           guest_session_id: string | null;
           profile_id: string;
           product_id: string;
+          source_result_id: string | null;
           amount: number;
+          currency: string;
+          product_name_snapshot: string | null;
+          payment_method: "BANK_TRANSFER" | "TOSS";
+          depositor_name: string | null;
+          depositor_name_normalized: string | null;
+          expires_at: string | null;
           status:
             | "PENDING"
             | "PAID"
@@ -331,7 +344,8 @@ export type Database = {
             | "COMPLETED"
             | "FAILED"
             | "CANCELLED"
-            | "REFUNDED";
+            | "REFUNDED"
+            | "EXPIRED";
           access_token_hash: string | null;
           paid_at: string | null;
           cancelled_at: string | null;
@@ -346,7 +360,14 @@ export type Database = {
           guest_session_id?: string | null;
           profile_id: string;
           product_id: string;
+          source_result_id?: string | null;
           amount: number;
+          currency?: string;
+          product_name_snapshot?: string | null;
+          payment_method?: "BANK_TRANSFER" | "TOSS";
+          depositor_name?: string | null;
+          depositor_name_normalized?: string | null;
+          expires_at?: string | null;
           status?:
             | "PENDING"
             | "PAID"
@@ -354,7 +375,8 @@ export type Database = {
             | "COMPLETED"
             | "FAILED"
             | "CANCELLED"
-            | "REFUNDED";
+            | "REFUNDED"
+            | "EXPIRED";
           access_token_hash?: string | null;
           paid_at?: string | null;
           cancelled_at?: string | null;
@@ -369,7 +391,14 @@ export type Database = {
           guest_session_id?: string | null;
           profile_id?: string;
           product_id?: string;
+          source_result_id?: string | null;
           amount?: number;
+          currency?: string;
+          product_name_snapshot?: string | null;
+          payment_method?: "BANK_TRANSFER" | "TOSS";
+          depositor_name?: string | null;
+          depositor_name_normalized?: string | null;
+          expires_at?: string | null;
           status?:
             | "PENDING"
             | "PAID"
@@ -377,7 +406,8 @@ export type Database = {
             | "COMPLETED"
             | "FAILED"
             | "CANCELLED"
-            | "REFUNDED";
+            | "REFUNDED"
+            | "EXPIRED";
           access_token_hash?: string | null;
           paid_at?: string | null;
           cancelled_at?: string | null;
@@ -391,11 +421,14 @@ export type Database = {
         Row: {
           id: string;
           order_id: string;
-          provider: "TOSS" | "KAKAO" | "NAVER";
+          provider: "TOSS" | "KAKAO" | "NAVER" | "BANK_TRANSFER";
           payment_key: string | null;
           payment_method: string | null;
           provider_status: string | null;
           amount: number;
+          requested_amount: number | null;
+          approved_amount: number | null;
+          provider_order_id: string | null;
           approved_at: string | null;
           cancelled_at: string | null;
           raw_response: Json;
@@ -405,11 +438,14 @@ export type Database = {
         Insert: {
           id?: string;
           order_id: string;
-          provider?: "TOSS" | "KAKAO" | "NAVER";
+          provider?: "TOSS" | "KAKAO" | "NAVER" | "BANK_TRANSFER";
           payment_key?: string | null;
           payment_method?: string | null;
           provider_status?: string | null;
           amount: number;
+          requested_amount?: number | null;
+          approved_amount?: number | null;
+          provider_order_id?: string | null;
           approved_at?: string | null;
           cancelled_at?: string | null;
           raw_response?: Json;
@@ -419,11 +455,14 @@ export type Database = {
         Update: {
           id?: string;
           order_id?: string;
-          provider?: "TOSS" | "KAKAO" | "NAVER";
+          provider?: "TOSS" | "KAKAO" | "NAVER" | "BANK_TRANSFER";
           payment_key?: string | null;
           payment_method?: string | null;
           provider_status?: string | null;
           amount?: number;
+          requested_amount?: number | null;
+          approved_amount?: number | null;
+          provider_order_id?: string | null;
           approved_at?: string | null;
           cancelled_at?: string | null;
           raw_response?: Json;
@@ -439,6 +478,90 @@ export type Database = {
             referencedColumns: ["id"];
           },
         ];
+      };
+      bank_transactions: {
+        Row: {
+          id: string;
+          provider: "HANA";
+          external_transaction_id: string | null;
+          fingerprint: string;
+          occurred_at: string;
+          amount: number;
+          depositor_name_masked: string | null;
+          match_status: "UNMATCHED" | "MATCHED" | "AMBIGUOUS" | "IGNORED";
+          matched_order_id: string | null;
+          manual_approved_by: string | null;
+          manual_approved_at: string | null;
+          manual_reason: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          provider?: "HANA";
+          external_transaction_id?: string | null;
+          fingerprint: string;
+          occurred_at: string;
+          amount: number;
+          depositor_name_masked?: string | null;
+          match_status?: "UNMATCHED" | "MATCHED" | "AMBIGUOUS" | "IGNORED";
+          matched_order_id?: string | null;
+          manual_approved_by?: string | null;
+          manual_approved_at?: string | null;
+          manual_reason?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          provider?: "HANA";
+          external_transaction_id?: string | null;
+          fingerprint?: string;
+          occurred_at?: string;
+          amount?: number;
+          depositor_name_masked?: string | null;
+          match_status?: "UNMATCHED" | "MATCHED" | "AMBIGUOUS" | "IGNORED";
+          matched_order_id?: string | null;
+          manual_approved_by?: string | null;
+          manual_approved_at?: string | null;
+          manual_reason?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      bank_poller_health: {
+        Row: {
+          id: string;
+          status: "IDLE" | "RUNNING" | "ERROR";
+          last_success_at: string | null;
+          last_error_safe: string | null;
+          last_fetched_count: number;
+          last_matched_count: number;
+          last_ambiguous_count: number;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          status?: "IDLE" | "RUNNING" | "ERROR";
+          last_success_at?: string | null;
+          last_error_safe?: string | null;
+          last_fetched_count?: number;
+          last_matched_count?: number;
+          last_ambiguous_count?: number;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          status?: "IDLE" | "RUNNING" | "ERROR";
+          last_success_at?: string | null;
+          last_error_safe?: string | null;
+          last_fetched_count?: number;
+          last_matched_count?: number;
+          last_ambiguous_count?: number;
+          updated_at?: string;
+        };
+        Relationships: [];
       };
       reports: {
         Row: {
@@ -519,7 +642,7 @@ export type Database = {
         Row: {
           id: string;
           generation_key: string;
-          result_type: "free" | "paid";
+          result_type: "free" | "paid" | "tarot_cross";
           profile_id: string | null;
           chart_id: string | null;
           order_id: string | null;
@@ -544,7 +667,7 @@ export type Database = {
         Insert: {
           id?: string;
           generation_key: string;
-          result_type: "free" | "paid";
+          result_type: "free" | "paid" | "tarot_cross";
           profile_id?: string | null;
           chart_id?: string | null;
           order_id?: string | null;
@@ -569,7 +692,7 @@ export type Database = {
         Update: {
           id?: string;
           generation_key?: string;
-          result_type?: "free" | "paid";
+          result_type?: "free" | "paid" | "tarot_cross";
           profile_id?: string | null;
           chart_id?: string | null;
           order_id?: string | null;
@@ -663,6 +786,87 @@ export type Database = {
           event_name?: string;
           product_id?: string | null;
           order_id?: string | null;
+          metadata?: Json;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      feedbacks: {
+        Row: {
+          id: string;
+          guest_session_id: string;
+          user_id: string | null;
+          target_type: "FORTUNE" | "TAROT" | "CROSS_READING";
+          target_id: string;
+          rating: number | null;
+          tags: string[];
+          more_fun_than_saju_alone: "YES" | "NO" | null;
+          most_resonant: "SAJU" | "TAROT" | "CROSS" | "SIMILAR" | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          guest_session_id: string;
+          user_id?: string | null;
+          target_type: "FORTUNE" | "TAROT" | "CROSS_READING";
+          target_id: string;
+          rating?: number | null;
+          tags?: string[];
+          more_fun_than_saju_alone?: "YES" | "NO" | null;
+          most_resonant?: "SAJU" | "TAROT" | "CROSS" | "SIMILAR" | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          guest_session_id?: string;
+          user_id?: string | null;
+          target_type?: "FORTUNE" | "TAROT" | "CROSS_READING";
+          target_id?: string;
+          rating?: number | null;
+          tags?: string[];
+          more_fun_than_saju_alone?: "YES" | "NO" | null;
+          most_resonant?: "SAJU" | "TAROT" | "CROSS" | "SIMILAR" | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      client_issues: {
+        Row: {
+          id: string;
+          kind: "BUG_REPORT" | "CLIENT_ERROR";
+          guest_session_id: string | null;
+          analytics_session_id: string | null;
+          path: string | null;
+          user_agent: string | null;
+          message: string;
+          details: string | null;
+          metadata: Json;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          kind: "BUG_REPORT" | "CLIENT_ERROR";
+          guest_session_id?: string | null;
+          analytics_session_id?: string | null;
+          path?: string | null;
+          user_agent?: string | null;
+          message: string;
+          details?: string | null;
+          metadata?: Json;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          kind?: "BUG_REPORT" | "CLIENT_ERROR";
+          guest_session_id?: string | null;
+          analytics_session_id?: string | null;
+          path?: string | null;
+          user_agent?: string | null;
+          message?: string;
+          details?: string | null;
           metadata?: Json;
           created_at?: string;
         };

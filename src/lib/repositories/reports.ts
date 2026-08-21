@@ -3,17 +3,18 @@ import "server-only";
 import { getDataMode } from "@/lib/repositories/data-mode";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { mockStore } from "@/lib/mock-store";
 import type { Tables, TablesInsert, TablesUpdate } from "@/types/database.types";
 
 export type Report = Tables<"reports">;
 
 export async function getReportById(id: string): Promise<Report | null> {
   if (getDataMode() === "mock") {
-    return null;
+    return mockStore.reports.get(id) ?? null;
   }
 
-  const supabase = await createClient();
-  const { data, error } = await supabase
+  const admin = createAdminClient();
+  const { data, error } = await admin
     .from("reports")
     .select("*")
     .eq("id", id)
@@ -27,11 +28,14 @@ export async function getReportByOrderId(
   orderId: string
 ): Promise<Report | null> {
   if (getDataMode() === "mock") {
+    for (const r of mockStore.reports.values()) {
+      if (r.order_id === orderId) return r;
+    }
     return null;
   }
 
-  const supabase = await createClient();
-  const { data, error } = await supabase
+  const admin = createAdminClient();
+  const { data, error } = await admin
     .from("reports")
     .select("*")
     .eq("order_id", orderId)
@@ -47,8 +51,12 @@ export async function getReportByOrderId(
 export async function createReportIfAbsent(
   input: TablesInsert<"reports">
 ): Promise<Report> {
+  const existing = await getReportByOrderId(input.order_id);
+  if (existing) return existing;
+
   if (getDataMode() === "mock") {
-    return {
+    const now = new Date().toISOString();
+    const row: Report = {
       id: crypto.randomUUID(),
       order_id: input.order_id,
       profile_id: input.profile_id,
@@ -69,13 +77,12 @@ export async function createReportIfAbsent(
       provider_request_id: input.provider_request_id ?? null,
       generation_key: input.generation_key ?? null,
       generated_at: input.generated_at ?? null,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+      created_at: now,
+      updated_at: now,
     };
+    mockStore.reports.set(row.id, row);
+    return row;
   }
-
-  const existing = await getReportByOrderId(input.order_id);
-  if (existing) return existing;
 
   const admin = createAdminClient();
   const { data, error } = await admin
@@ -85,7 +92,6 @@ export async function createReportIfAbsent(
     .single();
 
   if (error) {
-    // concurrent insert race → unique violation → re-read
     const again = await getReportByOrderId(input.order_id);
     if (again) return again;
     throw error;
@@ -99,7 +105,15 @@ export async function updateReport(
   input: TablesUpdate<"reports">
 ): Promise<Report> {
   if (getDataMode() === "mock") {
-    throw new Error("Report update requires Supabase configuration.");
+    const existing = mockStore.reports.get(id);
+    if (!existing) throw new Error("Report not found");
+    const next = {
+      ...existing,
+      ...input,
+      updated_at: new Date().toISOString(),
+    } as Report;
+    mockStore.reports.set(id, next);
+    return next;
   }
 
   const admin = createAdminClient();
@@ -110,6 +124,21 @@ export async function updateReport(
     .select("*")
     .single();
 
+  if (error) throw error;
+  return data;
+}
+
+/** Unused user client helper kept for authenticated report reads later. */
+export async function getReportByIdForUser(
+  id: string
+): Promise<Report | null> {
+  if (getDataMode() === "mock") return getReportById(id);
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("reports")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
   if (error) throw error;
   return data;
 }

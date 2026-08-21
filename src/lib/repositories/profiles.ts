@@ -129,12 +129,23 @@ export async function updateProfileNickname(
   profileId: string,
   nickname: string
 ): Promise<Profile> {
+  return updateProfileLifeContext(profileId, { nickname });
+}
+
+export async function updateProfileLifeContext(
+  profileId: string,
+  input: {
+    nickname?: string;
+    marital_status?: Profile["marital_status"];
+    has_children?: Profile["has_children"];
+  }
+): Promise<Profile> {
   if (getDataMode() === "mock") {
     const existing = mockStore.profiles.get(profileId);
     if (!existing) throw new Error("Profile not found");
     const next = {
       ...existing,
-      nickname,
+      ...input,
       updated_at: new Date().toISOString(),
     };
     mockStore.profiles.set(profileId, next);
@@ -144,7 +155,7 @@ export async function updateProfileNickname(
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("profiles")
-    .update({ nickname })
+    .update(input)
     .eq("id", profileId)
     .select("*")
     .single();
@@ -183,6 +194,8 @@ function persistMockProfile(input: TablesInsert<"profiles">): Profile {
     birth_time_unknown: input.birth_time_unknown ?? false,
     calendar_type: input.calendar_type,
     birth_place: input.birth_place,
+    marital_status: input.marital_status ?? null,
+    has_children: input.has_children ?? null,
     contact_email: input.contact_email ?? null,
     contact_phone: input.contact_phone ?? null,
     created_at: new Date().toISOString(),

@@ -17,6 +17,8 @@ export function buildGenerationKey(input: {
   model: string;
   resultType: ResultType;
   productSlug?: string;
+  /** Optional life-context segment (marital/children) for free/paid differentiation. */
+  lifeContextKey?: string;
   version?: string;
 }): string {
   const version = input.version ?? GENERATION_KEY_VERSION;
@@ -28,6 +30,7 @@ export function buildGenerationKey(input: {
     input.model,
     input.resultType,
     input.productSlug ?? "",
+    input.lifeContextKey ?? "",
   ].join("|");
 
   return createHash("sha256").update(payload, "utf8").digest("hex");

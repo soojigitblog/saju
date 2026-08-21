@@ -14,7 +14,9 @@
     "test:ai:integration": "vitest run tests/ai-integration.test.ts",
     "test:ai:gemini": "vitest run tests/ai-gemini.integration.test.ts",
     "test:phase51-live": "vitest run tests/phase51-live-e2e.test.ts tests/ai-gemini.integration.test.ts",
-    "test:e2e": "vitest run tests/free-fortune-e2e.test.ts",
+    "test:e2e": "vitest run tests/free-fortune-e2e.test.ts tests/tarot-engine.test.ts tests/feedback-gate.test.ts tests/payment-e2e.test.ts tests/bank-transfer-e2e.test.ts",
+    "bank:poll": "npx tsx scripts/bank-poll.ts",
+    "test:tarot": "vitest run tests/tarot-engine.test.ts",
     "verify:phase51-env": "node scripts/verify-phase51-env.cjs",
     "verify:phase51-db": "node scripts/phase51-live-db.cjs",
     "env:local-from-supabase": "node scripts/write-local-env-from-supabase.cjs",
@@ -31,6 +33,7 @@
     "@radix-ui/react-slot": "^1.3.3",
     "@supabase/ssr": "^0.12.4",
     "@supabase/supabase-js": "^2.112.3",
+    "@tosspayments/tosspayments-sdk": "^2.8.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^1.33.0",
@@ -53,6 +56,7 @@
     "lunar-javascript": "1.7.7",
     "supabase": "^2.115.0",
     "tailwindcss": "^4",
+    "tsx": "^4.23.12",
     "typescript": "^5",
     "vitest": "^3.2.6"
   }

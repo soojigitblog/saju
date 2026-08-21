@@ -22,6 +22,8 @@ const sampleInput = {
   birthTimeUnknown: false,
   lunarLeapMonth: false,
   birthPlace: "서울",
+  maritalStatus: "unmarried" as const,
+  hasChildren: null,
   timezone: "Asia/Seoul" as const,
 };
 

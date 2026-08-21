@@ -73,9 +73,11 @@ export class MockFortuneInterpreter implements FortuneInterpreter {
   async generatePaid(args: PaidGenerateArgs): Promise<PaidInterpretationOutput> {
     const ctx = buildFortuneAiContext(args.chart);
     const model = args.model ?? getAiModelPaid("mock");
-    const raw = buildMockPaidResult(ctx, args.product.name);
+    const raw = buildMockPaidResult(ctx, args.product.name, {
+      productSlug: args.product.slug,
+    });
     const parsed = paidFortuneReportStrictSchema.parse(raw);
-    validatePaidSemantics(parsed, ctx);
+    validatePaidSemantics(parsed, ctx, { productSlug: args.product.slug });
 
     const generationKey = buildGenerationKey({
       calculationHash: args.chart.engine.calculationHash,

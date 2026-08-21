@@ -11,16 +11,20 @@ export function trackClientEvent(input: {
   path?: string;
   productId?: string;
   metadata?: Record<string, unknown>;
+  /** When true, allow re-fire (e.g. feedback re-submit). */
+  skipDedupe?: boolean;
 }) {
   if (typeof window === "undefined") return;
 
   const path = input.path ?? window.location.pathname;
-  const dedupeKey = `analytics:${input.eventName}:${path}`;
-  try {
-    if (sessionStorage.getItem(dedupeKey)) return;
-    sessionStorage.setItem(dedupeKey, "1");
-  } catch {
-    /* private mode */
+  if (!input.skipDedupe) {
+    const dedupeKey = `analytics:${input.eventName}:${path}`;
+    try {
+      if (sessionStorage.getItem(dedupeKey)) return;
+      sessionStorage.setItem(dedupeKey, "1");
+    } catch {
+      /* private mode */
+    }
   }
 
   const params = new URLSearchParams(window.location.search);

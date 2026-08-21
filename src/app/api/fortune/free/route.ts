@@ -79,6 +79,22 @@ export async function POST(request: Request) {
         { status: error.status }
       );
     }
+    console.error("[api/fortune/free] UNKNOWN", {
+      name: error instanceof Error ? error.name : typeof error,
+      message: error instanceof Error ? error.message : String(error),
+      details:
+        error && typeof error === "object" && "details" in error
+          ? (error as { details?: unknown }).details
+          : undefined,
+      hint:
+        error && typeof error === "object" && "hint" in error
+          ? (error as { hint?: unknown }).hint
+          : undefined,
+      code:
+        error && typeof error === "object" && "code" in error
+          ? (error as { code?: unknown }).code
+          : undefined,
+    });
     return NextResponse.json(
       {
         code: "UNKNOWN",

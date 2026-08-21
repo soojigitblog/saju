@@ -12,8 +12,21 @@ export const freeFortuneRequestSchema = z
     lunarLeapMonth: z.boolean().optional().default(false),
     birthPlace: z.string().trim().min(1).max(40),
     timezone: z.literal("Asia/Seoul").default("Asia/Seoul"),
+    maritalStatus: z.enum(["unmarried", "married", "prefer_not"]),
+    /** Required when maritalStatus=married; otherwise ignored. */
+    hasChildren: z.enum(["yes", "no", "prefer_not"]).nullable().optional(),
   })
   .superRefine((value, ctx) => {
+    if (value.maritalStatus === "married") {
+      if (!value.hasChildren) {
+        ctx.addIssue({
+          code: "custom",
+          message: "기혼이시면 자녀 유무를 선택해 주세요.",
+          path: ["hasChildren"],
+        });
+      }
+    }
+
     const birth = birthInputSchema.safeParse({
       gender: value.gender,
       calendarType: value.calendarType,
@@ -48,4 +61,14 @@ export function buildCanonicalBirthKey(input: FreeFortuneRequest): string {
     input.timezone,
     input.birthPlace,
   ].join("|");
+}
+
+/** Included in AI generation key so life-context changes regenerate. */
+export function buildLifeContextKey(input: {
+  maritalStatus: FreeFortuneRequest["maritalStatus"];
+  hasChildren?: FreeFortuneRequest["hasChildren"];
+}): string {
+  const children =
+    input.maritalStatus === "married" ? input.hasChildren ?? "unset" : "na";
+  return `life:${input.maritalStatus}:${children}`;
 }

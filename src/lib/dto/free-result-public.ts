@@ -15,6 +15,19 @@ export type FreeResultPublicDTO = {
     career: number;
     love: number;
   };
+  /** Presentation-only chart summary — no calculationHash / raw chart */
+  dayMaster: {
+    hanja: string;
+    hangul: string;
+    element: "wood" | "fire" | "earth" | "metal" | "water";
+  } | null;
+  fiveElements: {
+    wood: number;
+    fire: number;
+    earth: number;
+    metal: number;
+    water: number;
+  } | null;
   outerVsInner: {
     outer: string;
     inner: string;
@@ -46,6 +59,8 @@ export function toFreeResultPublicDTO(input: {
   nickname: string;
   birthYear?: number | null;
   result: FreeInterpretationOutput;
+  dayMaster?: FreeResultPublicDTO["dayMaster"];
+  fiveElements?: FreeResultPublicDTO["fiveElements"];
 }): FreeResultPublicDTO {
   const r = input.result as FreeInterpretationOutput & {
     hookLine?: string;
@@ -72,6 +87,8 @@ export function toFreeResultPublicDTO(input: {
       career: clampScore(scores.career),
       love: clampScore(scores.love),
     },
+    dayMaster: input.dayMaster ?? null,
+    fiveElements: input.fiveElements ?? null,
     outerVsInner: r.outerVsInner
       ? {
           outer: r.outerVsInner.outer,

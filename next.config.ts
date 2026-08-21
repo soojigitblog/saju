@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Friend-test: hide the on-screen Next indicator (dev overlay still surfaces real errors).
+  devIndicators: false,
   async headers() {
     return [
       {

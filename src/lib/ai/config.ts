@@ -47,12 +47,21 @@ function isProductionRuntime(): boolean {
   return process.env.NODE_ENV === "production" && !isBuildLifecycle();
 }
 
+/**
+ * Mock AI is blocked in real production deploys.
+ * Local friend-testing often uses `next start` (NODE_ENV=production) with
+ * APP_ENV=development — allow mock there, or with ALLOW_MOCK_AI=1.
+ */
 export function assertMockAllowed(): void {
-  if (isProductionRuntime()) {
-    throw new Error(
-      "AI_PROVIDER=mock is forbidden in production. Set AI_PROVIDER=gemini or openai."
-    );
+  if (!isProductionRuntime()) return;
+  if (process.env.ALLOW_MOCK_AI === "1") return;
+  const appEnv = (process.env.APP_ENV ?? "").toLowerCase();
+  if (appEnv === "development" || appEnv === "local" || appEnv === "test") {
+    return;
   }
+  throw new Error(
+    "AI_PROVIDER=mock is forbidden in production. Set AI_PROVIDER=gemini or openai (or APP_ENV=development / ALLOW_MOCK_AI=1 for local next start)."
+  );
 }
 
 /**

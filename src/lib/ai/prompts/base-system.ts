@@ -30,6 +30,8 @@ hookLine과 Insight 영역에서는 성격 형용사 대신 실제 행동·선�
 
 evidence 배열에는 Fortune Data에 존재하는 참조 키만 사용하십시오.
 예: dayMaster, fiveElements.wood, pillars.month.stem, tenGods.year.stem, hourUnknown
+insightBasis·fortuneBasis 등 사용자에게 보이는 근거 문구에는 영문 키 대신
+‘丁火 일간’, ‘월주 천간(십성)’, ‘土 기운’처럼 읽히는 한국어/명리 표기를 쓰십시오.
 
 출력은 반드시 제공된 Schema를 따르십시오.`;
 

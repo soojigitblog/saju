@@ -8,7 +8,8 @@ export type OrderStatus =
   | "COMPLETED"
   | "FAILED"
   | "CANCELLED"
-  | "REFUNDED";
+  | "REFUNDED"
+  | "EXPIRED";
 export type GenerationStatus = "PENDING" | "GENERATING" | "COMPLETED" | "FAILED";
 export type PromptStatus = "DRAFT" | "ACTIVE" | "ARCHIVED";
 export type UserRole = "USER" | "ADMIN";
@@ -65,6 +66,13 @@ export type PaidReport = {
     title: string;
     body: string;
   }[];
+  monthlyOutlook?: {
+    month: number;
+    title: string;
+    summary: string;
+    detail: string;
+    focus?: string[];
+  }[];
 };
 
 export type AdminDashboardStats = {
@@ -88,6 +96,8 @@ export type FortuneFormValues = {
   birthTimeKnown: boolean;
   birthTime: string;
   birthPlace: string;
+  maritalStatus: "unmarried" | "married" | "prefer_not" | "";
+  hasChildren: "yes" | "no" | "prefer_not" | "";
 };
 
 export type DbProduct = Tables<"products">;

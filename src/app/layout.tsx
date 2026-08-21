@@ -19,14 +19,14 @@ export const metadata: Metadata = {
     default: "운의결 — AI 운세 리포트",
     template: "%s | 운의결",
   },
-  description: "생년월일로 확인하는 나의 운과 타이밍. 무료 사주 후 상세 리포트까지.",
+  description: "사주로 타고난 흐름을 읽고, 타로로 지금의 고민을 들여다보며 두 흐름을 연결하는 프리미엄 리딩.",
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
-  themeColor: "#080d12",
+  themeColor: "#07111F",
 };
 
 export default function RootLayout({

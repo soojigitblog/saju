@@ -8,7 +8,8 @@ insert into public.prompt_definitions (id, name, slug) values
   ('11111111-1111-1111-1111-111111111101', '2026 종합운세', '2026-total'),
   ('11111111-1111-1111-1111-111111111102', '재물운 집중분석', 'money'),
   ('11111111-1111-1111-1111-111111111103', '직장·이직운', 'career'),
-  ('11111111-1111-1111-1111-111111111104', '연애운', 'love');
+  ('11111111-1111-1111-1111-111111111104', '연애운', 'love'),
+  ('11111111-1111-1111-1111-111111111105', '2027 종합운세', '2027-total');
 
 insert into public.prompt_versions (
   id,
@@ -54,6 +55,15 @@ insert into public.prompt_versions (
   '다음 명리 데이터를 기반으로 연애운을 작성하십시오.\n{{chart_json}}',
   '{"type":"object","required":["headline","summary","sections","keywords"]}'::jsonb,
   'ACTIVE'
+),
+(
+  '22222222-2222-2222-2222-222222222205',
+  '11111111-1111-1111-1111-111111111105',
+  1,
+  '당신은 동양 명리 데이터를 쉬운 한국어로 설명하는 콘텐츠 작성 AI입니다. 확정적 표현을 피하십시오. 월별 운세를 포함하십시오.',
+  '다음 명리 데이터를 기반으로 2027 종합운세와 1~12월 월별 흐름을 작성하십시오.\n{{chart_json}}',
+  '{"type":"object","required":["headline","summary","scores","sections","keywords","monthlyOutlook"]}'::jsonb,
+  'ACTIVE'
 );
 
 insert into public.products (
@@ -89,6 +99,22 @@ insert into public.products (
   1
 ),
 (
+  '33333333-3333-3333-3333-333333333305',
+  '2027년 종합운세',
+  '2027-total',
+  '내년의 흐름과 월별 운세까지 미리 보기',
+  '2027년 전체 흐름과 재물·직업·연애, 1~12월 월별 리듬을 상세히 풀어드립니다.',
+  19900,
+  12900,
+  null,
+  'fortune',
+  '22222222-2222-2222-2222-222222222205',
+  'standard-report',
+  30,
+  'ACTIVE',
+  2
+),
+(
   '33333333-3333-3333-3333-333333333302',
   '재물운 집중분석',
   '2026-money',
@@ -102,7 +128,7 @@ insert into public.products (
   'standard-report',
   30,
   'ACTIVE',
-  2
+  3
 ),
 (
   '33333333-3333-3333-3333-333333333303',
@@ -118,7 +144,7 @@ insert into public.products (
   'standard-report',
   30,
   'ACTIVE',
-  3
+  4
 ),
 (
   '33333333-3333-3333-3333-333333333304',
@@ -134,5 +160,5 @@ insert into public.products (
   'standard-report',
   30,
   'ACTIVE',
-  4
+  5
 );
