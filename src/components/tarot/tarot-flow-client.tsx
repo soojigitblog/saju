@@ -125,6 +125,7 @@ export function TarotFlowClient({ freeResultId }: { freeResultId: string }) {
   }
 
   function toggleSlot(i: number) {
+    if (busy) return;
     setSelected((prev) => {
       if (prev.includes(i)) return prev.filter((x) => x !== i);
       if (prev.length >= 3) return prev;
@@ -138,8 +139,13 @@ export function TarotFlowClient({ freeResultId }: { freeResultId: string }) {
     });
   }
 
+  function handleSlotPointer(i: number) {
+    if (busy) return;
+    toggleSlot(i);
+  }
+
   async function confirmDraw() {
-    if (!readingId || selected.length !== 3) return;
+    if (!readingId || selected.length !== 3 || busy) return;
     setBusy(true);
     setError(null);
     try {
@@ -343,33 +349,69 @@ export function TarotFlowClient({ freeResultId }: { freeResultId: string }) {
             </h2>
 
             <div
-              className="-mx-2 mt-8 flex justify-center overflow-x-auto px-2 pb-6 pt-4"
+              className="mt-8 grid grid-cols-5 gap-2 sm:hidden"
               role="listbox"
               aria-label="타로 카드 선택"
               aria-multiselectable="true"
             >
-              <div className="relative flex h-44 min-w-[min(100%,520px)] items-end justify-center">
+              {slots.map((i) => {
+                const order = selected.indexOf(i);
+                const isOn = order >= 0;
+                return (
+                  <TarotCardBack
+                    key={i}
+                    role="option"
+                    aria-selected={isOn}
+                    aria-label={`카드 ${i + 1}${isOn ? `, ${order + 1}번째로 선택됨` : ""}`}
+                    disabled={busy}
+                    onPointerDown={(e) => {
+                      e.preventDefault();
+                      handleSlotPointer(i);
+                    }}
+                    selected={isOn}
+                    order={isOn ? order + 1 : undefined}
+                    className={cn(
+                      "relative h-24 w-full touch-manipulation",
+                      isOn && "-translate-y-1"
+                    )}
+                  />
+                );
+              })}
+            </div>
+
+            <div
+              className="mt-8 hidden justify-center overflow-x-auto px-2 pb-6 pt-4 sm:flex"
+              role="listbox"
+              aria-label="타로 카드 선택"
+              aria-multiselectable="true"
+            >
+              <div className="relative flex h-44 min-w-[min(100%,560px)] items-end justify-center">
                 {slots.map((i) => {
                   const order = selected.indexOf(i);
                   const isOn = order >= 0;
                   const mid = (slotCount - 1) / 2;
                   const rot = (i - mid) * 3.2;
-                  const x = (i - mid) * 18;
+                  const x = (i - mid) * 22;
                   return (
                     <TarotCardBack
                       key={i}
                       role="option"
                       aria-selected={isOn}
                       aria-label={`카드 ${i + 1}${isOn ? `, ${order + 1}번째로 선택됨` : ""}`}
-                      onClick={() => toggleSlot(i)}
+                      disabled={busy}
+                      onPointerDown={(e) => {
+                        e.preventDefault();
+                        handleSlotPointer(i);
+                      }}
                       selected={isOn}
                       order={isOn ? order + 1 : undefined}
                       className={cn(
-                        "absolute bottom-0 h-36 w-[4.4rem]",
-                        isOn ? "z-20" : "z-10"
+                        "absolute bottom-0 h-36 w-[4.4rem] touch-manipulation",
+                        isOn ? "z-30" : "z-10"
                       )}
                       style={{
                         transform: `translateX(${x}px) translateY(${isOn ? -14 : 0}px) rotate(${rot}deg)`,
+                        pointerEvents: busy ? "none" : "auto",
                       }}
                     />
                   );
@@ -377,14 +419,23 @@ export function TarotFlowClient({ freeResultId }: { freeResultId: string }) {
               </div>
             </div>
 
+            <p className="mt-2 text-center text-xs text-[var(--text-muted)]">
+              {selected.length}/3 선택됨
+            </p>
+
             <div className="mt-2 grid grid-cols-3 gap-2">
               {[0, 1, 2].map((slot) => (
                 <div
                   key={slot}
-                  className="border border-[var(--border-subtle)] py-3 text-center text-[11px] text-[var(--text-muted)]"
+                  className={cn(
+                    "border py-3 text-center text-[11px]",
+                    selected[slot] !== undefined
+                      ? "border-[var(--gold-primary)] text-[var(--gold-light)]"
+                      : "border-[var(--border-subtle)] text-[var(--text-muted)]"
+                  )}
                 >
                   {selected[slot] !== undefined
-                    ? `${slot + 1}번째 카드`
+                    ? `${slot + 1}번째 카드 ✓`
                     : `${slot + 1}번째`}
                 </div>
               ))}

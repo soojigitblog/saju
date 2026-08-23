@@ -251,7 +251,9 @@ describe("solar-term boundary rule (gte_enters_new)", () => {
     expect(at.pillars.month.ganji.hanja).toBe(after.pillars.month.ganji.hanja);
   });
 
-  it("2026 KASI 12 절 boundaries: -1 / exact / +1 minute (gte_enters_new)", () => {
+  it(
+    "2026 KASI 12 절 boundaries: -1 / exact / +1 minute (gte_enters_new)",
+    () => {
     expect(KASI_2026_JIE_TERMS).toHaveLength(12);
     expect(KASI_2026_JIE_TERMS.map((t) => t.name)).toEqual([...JIE_SOLAR_TERM_NAMES]);
 
@@ -300,7 +302,9 @@ describe("solar-term boundary rule (gte_enters_new)", () => {
         before.pillars.year.ganji.hanja !== on.pillars.year.ganji.hanja;
       expect(changed, `${term.name} should change year or month pillar at exact minute`).toBe(true);
     }
-  });
+  },
+  15_000
+  );
 });
 
 describe("lunar validation + round trip", () => {

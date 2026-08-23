@@ -14,7 +14,10 @@ import { createOrderNo } from "@/lib/orders/order-no";
 import { assertPaymentMutationRateLimit } from "@/lib/payments/rate-limit";
 import { trackEvent } from "@/lib/repositories/analytics";
 import { normalizeDepositorName } from "@/lib/bank/hana/transaction-normalizer";
-import { getBankTransferPublicAccount } from "@/lib/bank/account-public";
+import {
+  getBankTransferPublicAccount,
+  isBankTransferAccountConfigured,
+} from "@/lib/bank/account-public";
 
 export type CreateOrderResult = {
   order: OrderPublicDTO;
@@ -64,6 +67,13 @@ export async function createOrderForGuest(input: {
   let depositor = "";
   let depositorNormalized: string | null = null;
   if (paymentMethod === "BANK_TRANSFER") {
+    if (!isBankTransferAccountConfigured()) {
+      throw new FreeFlowError(
+        "BANK_ACCOUNT_NOT_CONFIGURED",
+        "계좌이체 결제가 준비 중입니다. 잠시 후 다시 시도해 주세요.",
+        503
+      );
+    }
     depositor = normalizeDepositorName(input.depositorName ?? "");
     if (depositor.length < 2 || depositor.length > 40) {
       throw new FreeFlowError(

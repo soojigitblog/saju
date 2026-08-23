@@ -11,6 +11,7 @@ import {
   CrossInsightCard,
 } from "@/components/mystic/cross-insight";
 import { FeedbackPanel } from "@/components/feedback/feedback-panel";
+import { ShareButton } from "@/components/share/share-button";
 
 type ReadingPayload = {
   id: string;
@@ -166,12 +167,10 @@ export function TarotReadingView({ readingId }: { readingId: string }) {
             {r.closingMessage}
           </p>
           <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-center">
-            <Button size="sm" variant="outline" disabled title="곧 제공 예정">
-              결과 저장하기
-            </Button>
-            <Button size="sm" variant="ghost" disabled title="곧 제공 예정">
-              공유하기
-            </Button>
+            <ShareButton
+              resourceType="TAROT_READING"
+              resourceId={readingId}
+            />
           </div>
         </OrnamentCard>
 

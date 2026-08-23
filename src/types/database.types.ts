@@ -348,6 +348,7 @@ export type Database = {
             | "EXPIRED";
           access_token_hash: string | null;
           paid_at: string | null;
+          payment_check_requested_at?: string | null;
           cancelled_at: string | null;
           refunded_at: string | null;
           created_at: string;
@@ -379,6 +380,7 @@ export type Database = {
             | "EXPIRED";
           access_token_hash?: string | null;
           paid_at?: string | null;
+          payment_check_requested_at?: string | null;
           cancelled_at?: string | null;
           refunded_at?: string | null;
           created_at?: string;
@@ -410,6 +412,7 @@ export type Database = {
             | "EXPIRED";
           access_token_hash?: string | null;
           paid_at?: string | null;
+          payment_check_requested_at?: string | null;
           cancelled_at?: string | null;
           refunded_at?: string | null;
           created_at?: string;
@@ -533,7 +536,7 @@ export type Database = {
       bank_poller_health: {
         Row: {
           id: string;
-          status: "IDLE" | "RUNNING" | "ERROR";
+          status: "IDLE" | "RUNNING" | "ERROR" | "SESSION_EXPIRED";
           last_success_at: string | null;
           last_error_safe: string | null;
           last_fetched_count: number;
@@ -543,7 +546,7 @@ export type Database = {
         };
         Insert: {
           id?: string;
-          status?: "IDLE" | "RUNNING" | "ERROR";
+          status?: "IDLE" | "RUNNING" | "ERROR" | "SESSION_EXPIRED";
           last_success_at?: string | null;
           last_error_safe?: string | null;
           last_fetched_count?: number;
@@ -553,7 +556,7 @@ export type Database = {
         };
         Update: {
           id?: string;
-          status?: "IDLE" | "RUNNING" | "ERROR";
+          status?: "IDLE" | "RUNNING" | "ERROR" | "SESSION_EXPIRED";
           last_success_at?: string | null;
           last_error_safe?: string | null;
           last_fetched_count?: number;

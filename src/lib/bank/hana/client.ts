@@ -1,11 +1,10 @@
 import "server-only";
 
 /**
- * Hana personal-banking adapter.
+ * Hana personal-banking adapter — Playwright persistent session (PHASE 6.4).
  *
  * Does NOT implement CAPTCHA/MFA/security-media bypass.
- * When credentials are absent or automated access is blocked,
- * throws BankProviderError → poller keeps orders PENDING + admin fallback.
+ * Requires prior `npm run bank:hana:login` with user-completed normal auth.
  */
 
 import {
@@ -16,6 +15,7 @@ import {
 } from "@/lib/bank/provider";
 import { mapHanaRowsToTransactions } from "@/lib/bank/hana/mapper";
 import { toInboundOnly } from "@/lib/bank/hana/transaction-normalizer";
+import { isHanaAutomationEnabled } from "@/lib/bank/hana/playwright/config";
 
 export class HanaBankProvider implements BankTransactionProvider {
   readonly id = "HANA" as const;
@@ -23,24 +23,26 @@ export class HanaBankProvider implements BankTransactionProvider {
   async getIncomingTransactions(
     input: GetIncomingTransactionsInput
   ): Promise<BankTransaction[]> {
-    const configured =
-      process.env.HANA_BANK_AUTOMATION_ENABLED === "1" &&
-      Boolean(process.env.HANA_BANK_CREDENTIAL_REF?.trim());
-
-    if (!configured) {
+    if (!isHanaAutomationEnabled()) {
       throw new BankProviderError(
         "BANK_NOT_CONFIGURED",
-        "하나은행 자동 조회가 설정되지 않았습니다. 관리자 수동 확인을 사용하세요."
+        "하나은행 자동 조회가 활성화되지 않았습니다. HANA_BANK_AUTOMATION_ENABLED=1 및 BANK_PROVIDER=hana 를 설정하세요."
       );
     }
 
-    // Intentional: no scraper that circumvents bank access controls.
-    // Wire a compliant automation backend later via HANA_BANK_CREDENTIAL_REF.
-    void input;
-    throw new BankProviderError(
-      "BANK_UNSUPPORTED",
-      "하나은행 자동 조회는 현재 환경에서 사용할 수 없습니다. 수동 확인으로 처리하세요."
-    );
+    try {
+      const { fetchHanaIncomingRows } = await import(
+        "@/lib/bank/hana/playwright/fetch-incoming"
+      );
+      const rows = await fetchHanaIncomingRows(input);
+      return toInboundOnly(mapHanaRowsToTransactions(rows));
+    } catch (error) {
+      if (error instanceof BankProviderError) throw error;
+      throw new BankProviderError(
+        "BANK_CHECK_FAILED",
+        error instanceof Error ? error.message : "하나은행 조회 실패"
+      );
+    }
   }
 }
 

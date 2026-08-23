@@ -3,6 +3,12 @@ import { getGuestSessionId } from "@/lib/guest/cookie";
 import { getOrderById, toOrderPublicDTO } from "@/lib/repositories/orders";
 import { getReportByOrderId } from "@/lib/repositories/reports";
 import { getBankTransferPublicAccount } from "@/lib/bank/account-public";
+import { getBankPollerHealth } from "@/lib/repositories/bank-transactions";
+import { isHanaAutomationEnabled } from "@/lib/bank/hana/playwright/config";
+import {
+  bankConnectionUserMessage,
+  resolveBankConnectionLabel,
+} from "@/lib/bank/connection-status";
 
 export const dynamic = "force-dynamic";
 
@@ -37,16 +43,28 @@ export async function GET(
   const report = await getReportByOrderId(order.id);
   const publicOrder = toOrderPublicDTO(order);
 
+  const isPendingBank =
+    order.payment_method === "BANK_TRANSFER" && order.status === "PENDING";
+
+  let bankCheckDisconnected = false;
+  let bankCheckUserMessage: string | null = null;
+  if (isPendingBank && isHanaAutomationEnabled()) {
+    const health = await getBankPollerHealth();
+    const label = resolveBankConnectionLabel(health ?? null, true);
+    bankCheckUserMessage = bankConnectionUserMessage(label);
+    bankCheckDisconnected = Boolean(bankCheckUserMessage);
+  }
+
   return NextResponse.json({
     order: publicOrder,
     report: report
       ? { id: report.id, generationStatus: report.generation_status }
       : null,
-    bankAccount:
-      order.payment_method === "BANK_TRANSFER" && order.status === "PENDING"
-        ? getBankTransferPublicAccount()
-        : null,
-    depositorName:
-      order.status === "PENDING" ? order.depositor_name : null,
+    bankAccount: isPendingBank ? getBankTransferPublicAccount() : null,
+    depositorName: isPendingBank ? order.depositor_name : null,
+    manualReviewRequired: isPendingBank,
+    paymentCheckRequested: Boolean(order.payment_check_requested_at),
+    bankCheckDisconnected,
+    bankCheckUserMessage,
   });
 }

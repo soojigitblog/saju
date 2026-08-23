@@ -86,6 +86,9 @@ body {
   background: var(--bg-primary);
   color: var(--ink);
   font-family: var(--font-body), "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+  line-break: strict;
 }
 
 a {
@@ -237,6 +240,23 @@ a:not([class]) {
   font-family: var(--font-display), "Noto Serif KR", serif;
   letter-spacing: -0.02em;
   color: var(--ink-bright);
+  word-break: keep-all;
+  overflow-wrap: break-word;
+  text-wrap: balance;
+}
+
+/* Long-form interpretation copy (results, reports) */
+.reading-prose {
+  word-break: keep-all;
+  overflow-wrap: break-word;
+  text-wrap: pretty;
+  line-height: 1.75;
+}
+
+.hook-line-title {
+  word-break: keep-all;
+  overflow-wrap: break-word;
+  text-wrap: balance;
 }
 
 .hanja-accent {

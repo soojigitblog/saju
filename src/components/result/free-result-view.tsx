@@ -21,6 +21,8 @@ import {
 import { FortuneRatingStrip } from "@/components/mystic/fortune-rating";
 import { TarotFanPreview } from "@/components/mystic/tarot-card";
 import { FeedbackPanel } from "@/components/feedback/feedback-panel";
+import { ShareButton } from "@/components/share/share-button";
+import { HookLineTitle } from "@/components/result/hook-line-title";
 
 const scoreLabels: Record<string, string> = {
   overall: "전체운",
@@ -113,16 +115,17 @@ export function FreeResultView({
             <p className="mt-4 text-xs tracking-[0.28em] text-[var(--gold-primary)]">
               運의結 한 줄
             </p>
-            <h1 className="display-title mt-4 text-[1.55rem] leading-snug text-[var(--gold-light)] md:text-[1.85rem]">
-              {result.hookLine}
-            </h1>
+            <HookLineTitle
+              text={result.hookLine}
+              className="mt-4 text-[1.55rem] leading-snug text-[var(--gold-light)] md:text-[1.85rem]"
+            />
             <GoldDivider className="mx-auto my-6 max-w-[180px]" />
             <p className="text-sm text-[var(--text-secondary)]">
               {result.nickname}님의 사주
               {result.birthYearLabel ? ` · ${result.birthYearLabel}` : ""}
               {dayLabel ? ` · ${dayLabel}` : ""}
             </p>
-            <p className="mt-5 text-[15px] leading-relaxed text-[var(--text-secondary)]">
+            <p className="reading-prose mt-5 text-[15px] text-[var(--text-secondary)]">
               {result.summary}
             </p>
           </OrnamentCard>
@@ -167,13 +170,13 @@ export function FreeResultView({
             <div className="mt-5 grid gap-5">
               <div className="border-l border-[var(--border-subtle)] pl-4">
                 <p className="text-xs text-[var(--text-muted)]">겉으로 보이는 모습</p>
-                <p className="mt-1.5 text-sm leading-relaxed text-[var(--text-secondary)]">
+                <p className="reading-prose mt-1.5 text-sm text-[var(--text-secondary)]">
                   {result.outerVsInner.outer}
                 </p>
               </div>
               <div className="border-l border-[var(--gold-primary)] pl-4">
                 <p className="text-xs text-[var(--text-muted)]">실제 내면</p>
-                <p className="mt-1.5 text-sm leading-relaxed text-[var(--text-primary)]">
+                <p className="reading-prose mt-1.5 text-sm text-[var(--text-primary)]">
                   {result.outerVsInner.inner}
                 </p>
               </div>
@@ -188,7 +191,7 @@ export function FreeResultView({
             <OrnamentCard density="corners" className="p-6">
               <p className="text-xs tracking-[0.15em] text-[var(--gold-primary)]">INSIGHT</p>
               <h2 className="display-title mt-1 text-xl">{result.hiddenSelf.title}</h2>
-              <p className="mt-4 text-sm leading-relaxed text-[var(--text-secondary)]">
+              <p className="reading-prose mt-4 text-sm text-[var(--text-secondary)]">
                 {result.hiddenSelf.body}
               </p>
               <EvidenceBox items={result.hiddenSelf.insightBasis} />
@@ -199,7 +202,7 @@ export function FreeResultView({
         {/* Personality + patterns */}
         <section id="patterns" className="mt-12 scroll-mt-24">
           <h2 className="display-title text-xl">{result.personality.title}</h2>
-          <p className="mt-3 text-sm leading-relaxed text-[var(--text-secondary)]">
+          <p className="reading-prose mt-3 text-sm text-[var(--text-secondary)]">
             {result.personality.summary}
           </p>
 
@@ -295,8 +298,15 @@ export function FreeResultView({
             <p className="display-title mt-4 text-lg leading-relaxed text-[var(--gold-light)]">
               {result.signatureClosing}
             </p>
+            <div className="mt-6 flex justify-center">
+              <ShareButton resourceType="FREE_RESULT" resourceId={result.id} />
+            </div>
           </OrnamentCard>
-        ) : null}
+        ) : (
+          <div className="mt-12 flex justify-center">
+            <ShareButton resourceType="FREE_RESULT" resourceId={result.id} />
+          </div>
+        )}
 
         <FeedbackPanel targetType="FORTUNE" targetId={result.id} />
 

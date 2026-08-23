@@ -1,24 +1,28 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore, useState } from "react";
 import { Button } from "@/components/ui/button";
+
+function useMounted() {
+  return useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
+}
 
 /**
  * Friend-test bug reporter.
  * Mount-only to avoid hydration mismatches; no global error capture overlay.
  */
 export function ClientIssueReporter() {
-  const [ready, setReady] = useState(false);
+  const ready = useMounted();
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState("");
   const [details, setDetails] = useState("");
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState("");
-
-  useEffect(() => {
-    setReady(true);
-  }, []);
 
   if (!ready) return null;
 

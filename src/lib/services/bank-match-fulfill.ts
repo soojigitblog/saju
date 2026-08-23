@@ -18,6 +18,7 @@ import { maskDepositorName } from "@/lib/bank/hana/transaction-normalizer";
 import { trackEvent } from "@/lib/repositories/analytics";
 import type { Json } from "@/types/database.types";
 import { FreeFlowError } from "@/lib/services/free-flow-errors";
+import { assertBankPaidAllowed } from "@/lib/bank/payment-guard";
 
 export type ProcessBankTxResult = {
   fingerprint: string;
@@ -88,6 +89,8 @@ export async function fulfillBankMatch(input: {
   amount: number;
   manual?: { by: string; reason: string };
 }): Promise<ProcessBankTxResult> {
+  assertBankPaidAllowed();
+
   const order = await getOrderById(input.orderId);
   if (!order || order.status !== "PENDING") {
     await updateBankTransaction(input.bankTxId, {
@@ -186,4 +189,77 @@ export async function fulfillBankMatch(input: {
     matchStatus: "MATCHED",
     orderId: paid.id,
   };
+}
+
+/**
+ * Admin confirms a pending bank-transfer order after verifying real Hana deposit.
+ * Does not require a scraped bank_transactions row — creates an audit row on confirm.
+ */
+export async function confirmBankTransferOrder(input: {
+  orderId: string;
+  manual: { by: string; reason: string };
+}): Promise<ProcessBankTxResult> {
+  assertBankPaidAllowed();
+
+  const order = await getOrderById(input.orderId);
+  if (!order) {
+    throw new FreeFlowError("NOT_FOUND", "주문을 찾을 수 없습니다.", 404);
+  }
+  if (order.payment_method !== "BANK_TRANSFER") {
+    throw new FreeFlowError(
+      "INVALID_PAYMENT_METHOD",
+      "계좌이체 주문만 확인할 수 있습니다.",
+      400
+    );
+  }
+  if (order.status !== "PENDING") {
+    if (order.paid_at) {
+      return {
+        fingerprint: `admin-manual:order:${order.id}`,
+        matchStatus: "ALREADY",
+        orderId: order.id,
+      };
+    }
+    throw new FreeFlowError(
+      "ORDER_NOT_PAYABLE",
+      "결제 대기 주문이 아닙니다.",
+      400
+    );
+  }
+  if (!order.depositor_name_normalized?.trim()) {
+    throw new FreeFlowError(
+      "INVALID_DEPOSITOR",
+      "입금자명이 없는 주문입니다.",
+      400
+    );
+  }
+
+  const fingerprint = `admin-manual:order:${order.id}`;
+  const paidAt = new Date().toISOString();
+
+  const { row, created } = await insertBankTransactionIfAbsent({
+    provider: "HANA",
+    external_transaction_id: `admin-${order.order_no}`,
+    fingerprint,
+    occurred_at: paidAt,
+    amount: order.amount,
+    depositor_name_masked: maskDepositorName(order.depositor_name ?? ""),
+    match_status: "UNMATCHED",
+  });
+
+  if (
+    !created &&
+    row.match_status === "MATCHED" &&
+    row.matched_order_id === order.id
+  ) {
+    return { fingerprint, matchStatus: "ALREADY", orderId: order.id };
+  }
+
+  return fulfillBankMatch({
+    bankTxId: row.id,
+    fingerprint,
+    orderId: order.id,
+    amount: order.amount,
+    manual: input.manual,
+  });
 }

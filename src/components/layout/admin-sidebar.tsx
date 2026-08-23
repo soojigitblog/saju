@@ -26,7 +26,7 @@ export function AdminSidebar() {
         >
           운의결 Admin
         </Link>
-        <p className="mt-1 text-xs text-[var(--ink-faint)]">MVP Mock</p>
+        <p className="mt-1 text-xs text-[var(--ink-faint)]">운영 Admin</p>
       </div>
       <nav className="flex gap-1 overflow-x-auto px-3 pb-3 lg:flex-col lg:pb-6">
         {links.map((link) => {

@@ -96,7 +96,8 @@ export async function POST(request: Request) {
 
   // Client must never send guest_session_id — strip if present.
   if (json && typeof json === "object" && "guestSessionId" in json) {
-    const { guestSessionId: _ignored, ...rest } = json as Record<string, unknown>;
+    const rest = { ...(json as Record<string, unknown>) };
+    delete rest.guestSessionId;
     json = rest;
   }
 

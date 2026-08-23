@@ -31,7 +31,12 @@ export interface BankTransactionProvider {
 }
 
 export class BankProviderError extends Error {
-  readonly code: "BANK_CHECK_FAILED" | "BANK_NOT_CONFIGURED" | "BANK_UNSUPPORTED";
+  readonly code:
+    | "BANK_CHECK_FAILED"
+    | "BANK_NOT_CONFIGURED"
+    | "BANK_UNSUPPORTED"
+    | "HANA_SESSION_EXPIRED"
+    | "AUTH_REQUIRED";
   constructor(
     code: BankProviderError["code"],
     message: string

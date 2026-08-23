@@ -121,7 +121,7 @@ export function ProductDetail({
               maxLength={40}
             />
             <p className="text-xs text-[var(--text-muted)]">
-              입금 확인을 위해 실제 입금자명과 동일하게 입력해 주세요.
+              실제로 송금하실 때 표시되는 입금자명을 입력해 주세요.
             </p>
           </div>
         ) : (

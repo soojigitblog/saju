@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
+import { BirthInfoConfirmStep } from "@/components/fortune/birth-info-confirm";
+import { BirthTimePicker } from "@/components/fortune/birth-time-picker";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,7 +25,7 @@ const initial: FortuneFormValues = {
   calendarType: "solar",
   lunarLeapMonth: false,
   birthTimeKnown: true,
-  birthTime: "12:00",
+  birthTime: "00:00",
   birthPlace: "서울",
   maritalStatus: "",
   hasChildren: "",
@@ -36,9 +38,12 @@ function isValidGregorian(y: number, m: number, d: number) {
   return d <= lengths[m - 1];
 }
 
+type FormPhase = "input" | "confirm";
+
 export function FortuneForm() {
   const router = useRouter();
   const [form, setForm] = useState<FortuneFormValues>(initial);
+  const [phase, setPhase] = useState<FormPhase>("input");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const errorRef = useRef<HTMLParagraphElement>(null);
@@ -106,12 +111,24 @@ export function FortuneForm() {
     return "";
   }
 
-  async function onSubmit(e: React.FormEvent) {
+  function onReview(e: React.FormEvent) {
     e.preventDefault();
     if (submitting) return;
     const message = validate();
     if (message) {
       setError(message);
+      return;
+    }
+    setError("");
+    setPhase("confirm");
+  }
+
+  async function submitFortune() {
+    if (submitting) return;
+    const message = validate();
+    if (message) {
+      setError(message);
+      setPhase("input");
       return;
     }
     setError("");
@@ -162,8 +179,30 @@ export function FortuneForm() {
     }
   }
 
+  if (phase === "confirm") {
+    return (
+      <div className="space-y-7" aria-busy={submitting}>
+        <BirthInfoConfirmStep
+          form={form}
+          submitting={submitting}
+          onEdit={() => setPhase("input")}
+          onConfirm={() => void submitFortune()}
+        />
+        {error ? (
+          <p
+            ref={errorRef}
+            role="alert"
+            className="rounded-md border border-[var(--error-text)]/30 bg-[var(--error-bg)] px-4 py-3 text-sm text-[var(--error-text)]"
+          >
+            {error}
+          </p>
+        ) : null}
+      </div>
+    );
+  }
+
   return (
-    <form onSubmit={onSubmit} className="space-y-7" aria-busy={submitting}>
+    <form onSubmit={onReview} className="space-y-7" aria-busy={submitting}>
       <FormStep step="01" title="기본 정보">
         <div className="space-y-2">
           <Label htmlFor="nickname">닉네임</Label>
@@ -349,10 +388,9 @@ export function FortuneForm() {
               태어난 시간을 몰라도 기본 분석은 가능합니다. 시주는 계산하지 않습니다.
             </p>
           ) : (
-            <Input
-              type="time"
+            <BirthTimePicker
               value={form.birthTime}
-              onChange={(e) => update("birthTime", e.target.value)}
+              onChange={(v) => update("birthTime", v)}
               disabled={submitting}
             />
           )}
@@ -388,7 +426,7 @@ export function FortuneForm() {
 
       <div className="pt-2">
         <Button type="submit" size="full" variant="default" disabled={submitting}>
-          {submitting ? "명식을 구성하는 중..." : "내 사주 풀어보기"}
+          입력 확인하기
         </Button>
         <p className="mt-3 text-center text-[11px] leading-relaxed text-[var(--text-muted)]">
           생년월일·시간은 사주 계산에만 쓰이며, 외부에 공개되지 않습니다.

@@ -42,3 +42,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local dev mock persistence
+.dev/
+
+# Hana bank Playwright session (never commit)
+.bank-session/
+.playwright-hana/

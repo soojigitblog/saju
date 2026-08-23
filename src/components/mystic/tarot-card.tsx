@@ -17,10 +17,11 @@ export function TarotCardBack({
     <button
       type="button"
       className={cn(
-        "relative overflow-hidden border bg-[var(--bg-primary)] transition-[transform,box-shadow,border-color] duration-200",
+        "relative overflow-hidden border bg-[var(--bg-primary)] transition-[transform,box-shadow,border-color] duration-200 touch-manipulation select-none",
         selected
           ? "border-[var(--gold-primary)] shadow-[var(--glow-gold)]"
           : "border-[var(--border-gold)]/50",
+        props.disabled && "pointer-events-none opacity-60",
         className
       )}
       {...props}

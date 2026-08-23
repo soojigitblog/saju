@@ -3,20 +3,50 @@
  * Or: npm run bank:poll
  */
 import { runBankPollCycle } from "../src/lib/services/bank-poller";
+import { hanaPollIntervalMs } from "../src/lib/bank/hana/playwright/config";
 
 async function main() {
-  const interval = Math.max(
-    60_000,
-    Number(process.env.BANK_POLL_INTERVAL_MS ?? "120000") || 120_000
-  );
+  const interval = hanaPollIntervalMs();
 
   console.log(
     `[bank:poll] start interval=${interval}ms provider=${process.env.BANK_PROVIDER ?? "auto"}`
   );
 
+  let quietSessionExpired = false;
+
   async function tick() {
     try {
       const result = await runBankPollCycle();
+
+      if (result.quiet) {
+        // Already in SESSION_EXPIRED — keep state, skip spam logs
+        quietSessionExpired = true;
+        return;
+      }
+
+      if (result.recovered) {
+        quietSessionExpired = false;
+        console.log(
+          `[bank:poll] session recovered — CONNECTED fetched=${result.fetched} matched=${result.matched}`
+        );
+        return;
+      }
+
+      if (
+        !result.ok &&
+        (result.errorSafe === "HANA_SESSION_EXPIRED" ||
+          result.errorSafe === "AUTH_REQUIRED")
+      ) {
+        if (!quietSessionExpired) {
+          console.log(
+            `[bank:poll] SESSION_EXPIRED — re-login required (npm run bank:hana:login). Further cycles stay quiet until recovered.`
+          );
+          quietSessionExpired = true;
+        }
+        return;
+      }
+
+      quietSessionExpired = false;
       console.log(
         `[bank:poll] ok=${result.ok} fetched=${result.fetched} matched=${result.matched} ambiguous=${result.ambiguous} expired=${result.expired}${
           result.errorSafe ? ` err=${result.errorSafe}` : ""

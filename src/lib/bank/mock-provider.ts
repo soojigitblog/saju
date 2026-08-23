@@ -5,6 +5,7 @@ import type {
   BankTransactionProvider,
   GetIncomingTransactionsInput,
 } from "@/lib/bank/provider";
+import { BankProviderError } from "@/lib/bank/provider";
 import { mapHanaRowsToTransactions } from "@/lib/bank/hana/mapper";
 import { toInboundOnly } from "@/lib/bank/hana/transaction-normalizer";
 import type { HanaRawIncomingRow } from "@/lib/bank/hana/types";
@@ -15,13 +16,21 @@ import type { HanaRawIncomingRow } from "@/lib/bank/hana/types";
 export class MockHanaBankProvider implements BankTransactionProvider {
   readonly id = "HANA" as const;
   private fixtures: HanaRawIncomingRow[] = [];
+  private failCode: "HANA_SESSION_EXPIRED" | "AUTH_REQUIRED" | null = null;
 
   seed(rows: HanaRawIncomingRow[]) {
     this.fixtures = [...rows];
+    this.failCode = null;
   }
 
   clear() {
     this.fixtures = [];
+    this.failCode = null;
+  }
+
+  /** Test helper — next fetch throws BankProviderError */
+  failNextWith(code: "HANA_SESSION_EXPIRED" | "AUTH_REQUIRED") {
+    this.failCode = code;
   }
 
   async getIncomingTransactions(
@@ -32,6 +41,11 @@ export class MockHanaBankProvider implements BankTransactionProvider {
       process.env.ALLOW_MOCK_BANK !== "1"
     ) {
       throw new Error("Mock bank forbidden in production");
+    }
+    if (this.failCode) {
+      const code = this.failCode;
+      this.failCode = null;
+      throw new BankProviderError(code, code);
     }
     const mapped = toInboundOnly(mapHanaRowsToTransactions(this.fixtures));
     return mapped.filter(

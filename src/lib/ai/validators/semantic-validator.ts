@@ -34,6 +34,14 @@ export const FORBIDDEN_PREDICTION_PATTERNS: RegExp[] = [
   /교통사고/,
   /수술수/,
   /간이\s*안\s*좋/,
+  /한방\s*(은|이)\s*없/,
+  /돈복\s*(이\s*)?없/,
+  /사업운\s*(이\s*)?없/,
+  /재물운\s*(이\s*)?없/,
+  /결혼운\s*(이\s*)?(나쁘|없)/,
+  /자식운\s*(이\s*)?없/,
+  /성공하기\s*어렵/,
+  /~운\s*(이\s*)?없습니다/,
 ];
 
 const UNKNOWN_HOUR_FORBIDDEN = [

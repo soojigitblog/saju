@@ -112,41 +112,66 @@ export async function listBankTransactionsForAdmin(
   return data ?? [];
 }
 
+export type BankPollerHealthStatus =
+  | "IDLE"
+  | "RUNNING"
+  | "ERROR"
+  | "SESSION_EXPIRED";
+
 export async function upsertBankPollerHealth(input: {
-  status: "IDLE" | "RUNNING" | "ERROR";
+  status: BankPollerHealthStatus;
   lastSuccessAt?: string | null;
+  /** Pass `null` to clear; omit to preserve previous value */
   lastErrorSafe?: string | null;
   lastFetchedCount?: number;
   lastMatchedCount?: number;
   lastAmbiguousCount?: number;
 }): Promise<void> {
+  const prev = getDataMode() === "mock" ? mockStore.bankPollerHealth : null;
+
   if (getDataMode() === "mock") {
+    const clearError = Object.prototype.hasOwnProperty.call(input, "lastErrorSafe");
     mockStore.bankPollerHealth = {
       id: "hana",
       status: input.status,
-      last_success_at: input.lastSuccessAt ?? mockStore.bankPollerHealth?.last_success_at ?? null,
-      last_error_safe: input.lastErrorSafe ?? null,
+      last_success_at:
+        input.lastSuccessAt !== undefined
+          ? input.lastSuccessAt
+          : (prev?.last_success_at ?? null),
+      last_error_safe: clearError
+        ? (input.lastErrorSafe ?? null)
+        : (prev?.last_error_safe ?? null),
       last_fetched_count:
-        input.lastFetchedCount ?? mockStore.bankPollerHealth?.last_fetched_count ?? 0,
+        input.lastFetchedCount ?? prev?.last_fetched_count ?? 0,
       last_matched_count:
-        input.lastMatchedCount ?? mockStore.bankPollerHealth?.last_matched_count ?? 0,
+        input.lastMatchedCount ?? prev?.last_matched_count ?? 0,
       last_ambiguous_count:
-        input.lastAmbiguousCount ??
-        mockStore.bankPollerHealth?.last_ambiguous_count ??
-        0,
+        input.lastAmbiguousCount ?? prev?.last_ambiguous_count ?? 0,
       updated_at: new Date().toISOString(),
     };
     return;
   }
+
   const admin = createAdminClient();
+  const existing = await getBankPollerHealth();
+  const clearError = Object.prototype.hasOwnProperty.call(input, "lastErrorSafe");
+
   await admin.from("bank_poller_health").upsert({
     id: "hana",
     status: input.status,
-    last_success_at: input.lastSuccessAt,
-    last_error_safe: input.lastErrorSafe,
-    last_fetched_count: input.lastFetchedCount,
-    last_matched_count: input.lastMatchedCount,
-    last_ambiguous_count: input.lastAmbiguousCount,
+    last_success_at:
+      input.lastSuccessAt !== undefined
+        ? input.lastSuccessAt
+        : (existing?.last_success_at ?? null),
+    last_error_safe: clearError
+      ? (input.lastErrorSafe ?? null)
+      : (existing?.last_error_safe ?? null),
+    last_fetched_count:
+      input.lastFetchedCount ?? existing?.last_fetched_count ?? 0,
+    last_matched_count:
+      input.lastMatchedCount ?? existing?.last_matched_count ?? 0,
+    last_ambiguous_count:
+      input.lastAmbiguousCount ?? existing?.last_ambiguous_count ?? 0,
     updated_at: new Date().toISOString(),
   });
 }

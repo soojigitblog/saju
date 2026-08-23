@@ -3,7 +3,7 @@ import "server-only";
 import { getDataMode } from "@/lib/repositories/data-mode";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
-import { mockStore } from "@/lib/mock-store";
+import { mockStore, reloadMockStoreFromDisk } from "@/lib/mock-store";
 import type { Tables, TablesInsert } from "@/types/database.types";
 
 export type Profile = Tables<"profiles">;
@@ -59,7 +59,12 @@ export async function createProfile(
 
 export async function getProfileById(id: string): Promise<Profile | null> {
   if (getDataMode() === "mock") {
-    return mockStore.profiles.get(id) ?? null;
+    let row = mockStore.profiles.get(id) ?? null;
+    if (!row) {
+      reloadMockStoreFromDisk();
+      row = mockStore.profiles.get(id) ?? null;
+    }
+    return row;
   }
 
   const admin = createAdminClient();

@@ -293,6 +293,7 @@ function mockInsertOrder(input: TablesInsert<"orders">): Order {
     status: input.status ?? "PENDING",
     access_token_hash: input.access_token_hash ?? null,
     paid_at: input.paid_at ?? null,
+    payment_check_requested_at: input.payment_check_requested_at ?? null,
     cancelled_at: input.cancelled_at ?? null,
     refunded_at: input.refunded_at ?? null,
     created_at: now,
@@ -300,6 +301,68 @@ function mockInsertOrder(input: TablesInsert<"orders">): Order {
   };
   mockStore.orders.set(order.id, order);
   return order;
+}
+
+export async function markPaymentCheckRequested(orderId: string): Promise<Order> {
+  const at = new Date().toISOString();
+  return updateOrder(orderId, { payment_check_requested_at: at });
+}
+
+const GUEST_VISIBLE_STATUSES = [
+  "PENDING",
+  "PAID",
+  "GENERATING",
+  "COMPLETED",
+  "FAILED",
+] as const satisfies readonly Order["status"][];
+
+/** Guest session orders for /my-results — excludes other guests. */
+export async function listOrdersForGuestSession(
+  guestSessionId: string,
+  limit = 30
+): Promise<Order[]> {
+  if (getDataMode() === "mock") {
+    return [...mockStore.orders.values()]
+      .filter(
+        (o) =>
+          o.guest_session_id === guestSessionId &&
+          (GUEST_VISIBLE_STATUSES as readonly string[]).includes(o.status)
+      )
+      .sort((a, b) => b.created_at.localeCompare(a.created_at))
+      .slice(0, limit);
+  }
+
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("orders")
+    .select("*")
+    .eq("guest_session_id", guestSessionId)
+    .in("status", [...GUEST_VISIBLE_STATUSES])
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function countPendingBankTransferOrders(): Promise<number> {
+  if (getDataMode() === "mock") {
+    return [...mockStore.orders.values()].filter(
+      (o) =>
+        o.status === "PENDING" &&
+        (o.payment_method ?? "BANK_TRANSFER") === "BANK_TRANSFER"
+    ).length;
+  }
+
+  const admin = createAdminClient();
+  const { count, error } = await admin
+    .from("orders")
+    .select("*", { count: "exact", head: true })
+    .eq("status", "PENDING")
+    .eq("payment_method", "BANK_TRANSFER");
+
+  if (error) throw error;
+  return count ?? 0;
 }
 
 export async function listPendingBankTransferOrders(): Promise<Order[]> {

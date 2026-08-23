@@ -12,6 +12,8 @@ export function buildPaidUserPrompt(input: {
     `전체 분량 목표: 약 ${target}자 (대략 3,000~5,000자). 불필요한 장문은 피하십시오.`,
     "필수 section key: personality, overall, money, career, love, advice. relationships/timing은 선택.",
     "각 section에 evidence(참조 키)와 cautions를 포함하십시오.",
+    "각 section은 핵심 답변 → 명리 근거 → 강점 → 주의점 → 현실적 활용법 순으로 작성하십시오.",
+    "'한방은 없다', '돈복이 없다', '사업운이 없다' 등 부정적 단정 표현 금지.",
     "actionGuide는 실천 가능한 짧은 문장으로 작성하십시오.",
   ];
 

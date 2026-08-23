@@ -2,14 +2,19 @@ import "server-only";
 
 import { getDataMode } from "@/lib/repositories/data-mode";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { mockStore } from "@/lib/mock-store";
+import { mockStore, reloadMockStoreFromDisk } from "@/lib/mock-store";
 import type { Tables, TablesInsert, TablesUpdate } from "@/types/database.types";
 
 export type FreeResult = Tables<"free_results">;
 
 export async function getFreeResultById(id: string): Promise<FreeResult | null> {
   if (getDataMode() === "mock") {
-    return mockStore.freeResults.get(id) ?? null;
+    let row = mockStore.freeResults.get(id) ?? null;
+    if (!row) {
+      reloadMockStoreFromDisk();
+      row = mockStore.freeResults.get(id) ?? null;
+    }
+    return row;
   }
 
   const admin = createAdminClient();

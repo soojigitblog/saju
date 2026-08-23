@@ -1,11 +1,32 @@
+import Link from "next/link";
 import { formatKRW } from "@/lib/utils";
 import type { AdminDashboardStats } from "@/types";
 
-export function AdminDashboard({ stats }: { stats: AdminDashboardStats }) {
+export function AdminDashboard({
+  stats,
+  pendingBankDeposits = 0,
+}: {
+  stats: AdminDashboardStats;
+  pendingBankDeposits?: number;
+}) {
   const maxFunnel = Math.max(...stats.funnel.map((f) => f.value));
 
   return (
     <div className="space-y-8">
+      {pendingBankDeposits > 0 ? (
+        <Link
+          href="/admin/bank-deposits"
+          className="block rounded-2xl border-2 border-amber-400 bg-amber-50 p-5 transition-colors hover:bg-amber-100 dark:border-amber-600 dark:bg-amber-950/40 dark:hover:bg-amber-950/60"
+        >
+          <p className="text-lg font-semibold text-amber-900 dark:text-amber-100">
+            입금확인 대기 {pendingBankDeposits}건
+          </p>
+          <p className="mt-1 text-sm text-amber-800 dark:text-amber-200">
+            하나은행 입금을 확인하고 승인해 주세요 →
+          </p>
+        </Link>
+      ) : null}
+
       <div>
         <h1 className="font-[family-name:var(--font-display)] text-3xl text-[var(--ink)]">
           오늘

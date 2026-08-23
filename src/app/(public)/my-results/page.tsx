@@ -1,67 +1,149 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { formatKRW } from "@/lib/utils";
 import { MysticPage } from "@/components/mystic/celestial-background";
 import { OrnamentCard, MysticPanel } from "@/components/mystic/ornament-card";
 
-export default function MyResultsPage() {
-  const [orderNo, setOrderNo] = useState("");
-  const [contact, setContact] = useState("");
-  const [found, setFound] = useState(false);
+type OrderItem = {
+  order: {
+    id: string;
+    orderNo: string;
+    productName: string | null;
+    amount: number;
+    status: string;
+    paymentMethod: string;
+    createdAt: string;
+  };
+  report: { id: string; generationStatus: string } | null;
+  paymentUrl: string | null;
+  reportUrl: string | null;
+};
 
-  function onSearch(e: React.FormEvent) {
-    e.preventDefault();
-    setFound(Boolean(orderNo.trim() && contact.trim()));
+function statusLabel(
+  status: string,
+  reportStatus?: string,
+  paymentMethod?: string
+): string {
+  if (status === "PENDING") {
+    return paymentMethod === "BANK_TRANSFER"
+      ? "입금 확인 대기 (운영자 확인 필요)"
+      : "입금 대기";
   }
+  if (status === "PAID") return "입금 확인됨";
+  if (status === "GENERATING" || reportStatus === "GENERATING") {
+    return "리포트 생성 중";
+  }
+  if (status === "COMPLETED" || reportStatus === "COMPLETED") {
+    return "완료";
+  }
+  if (status === "FAILED") return "리포트 생성 실패 (결제 완료)";
+  if (status === "EXPIRED") return "입금 기한 만료";
+  return status;
+}
+
+export default function MyResultsPage() {
+  const [orders, setOrders] = useState<OrderItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const ac = new AbortController();
+    async function load() {
+      try {
+        const res = await fetch("/api/orders/mine", { signal: ac.signal });
+        const data = (await res.json()) as {
+          orders?: OrderItem[];
+          message?: string;
+        };
+        if (!res.ok) {
+          setError(data.message ?? "주문을 불러오지 못했습니다.");
+          setLoading(false);
+          return;
+        }
+        setOrders(data.orders ?? []);
+        setLoading(false);
+      } catch {
+        if (ac.signal.aborted) return;
+        setError("주문을 불러오지 못했습니다.");
+        setLoading(false);
+      }
+    }
+    void load();
+    return () => ac.abort();
+  }, []);
 
   return (
     <MysticPage>
       <div className="mx-auto w-full max-w-lg px-5 pb-16 pt-8">
         <p className="hanja-accent mb-2">ARCHIVE</p>
-        <h1 className="display-title text-3xl">결과 다시 찾기</h1>
+        <h1 className="display-title text-3xl">내 결과</h1>
         <p className="mt-2 text-sm text-[var(--text-secondary)]">
-          주문번호와 휴대폰/이메일로 조회합니다. (Mock)
+          이 기기에서 진행한 주문과 리포트입니다.
         </p>
 
-        <OrnamentCard density="corners" className="mt-8 p-5 md:p-6">
-          <form onSubmit={onSearch} className="space-y-5">
-            <div className="space-y-2">
-              <Label htmlFor="orderNo">주문번호</Label>
-              <Input
-                id="orderNo"
-                placeholder="20260820-00031"
-                value={orderNo}
-                onChange={(e) => setOrderNo(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="contact">휴대폰 또는 이메일</Label>
-              <Input
-                id="contact"
-                placeholder="결제 시 입력한 연락처"
-                value={contact}
-                onChange={(e) => setContact(e.target.value)}
-              />
-            </div>
-            <Button type="submit" size="full">
-              결과 찾기
-            </Button>
-          </form>
-        </OrnamentCard>
+        {loading ? (
+          <p className="mt-8 text-sm text-[var(--text-muted)]">불러오는 중…</p>
+        ) : null}
 
-        {found ? (
+        {error ? (
+          <p className="mt-8 text-sm text-[var(--error-text)]">{error}</p>
+        ) : null}
+
+        {!loading && !error && orders.length === 0 ? (
           <MysticPanel className="mt-8">
-            <p className="display-title text-lg">2026 종합운세</p>
-            <p className="mt-1 text-sm text-[var(--text-muted)]">주문번호 {orderNo}</p>
+            <p className="text-sm text-[var(--text-secondary)]">
+              아직 주문이 없습니다. 무료 사주 결과에서 유료 리포트를 선택해
+              주세요.
+            </p>
             <Button asChild className="mt-4" size="sm" variant="outline">
-              <Link href="/report/demo">리포트 열기</Link>
+              <Link href="/fortune">사주 보기</Link>
             </Button>
           </MysticPanel>
         ) : null}
+
+        <ul className="mt-8 space-y-4">
+          {orders.map((item) => (
+            <li key={item.order.id}>
+              <OrnamentCard density="corners" className="p-5">
+                <p className="display-title text-lg">
+                  {item.order.productName ?? "유료 리포트"}
+                </p>
+                <p className="mt-1 text-sm text-[var(--text-muted)]">
+                  {item.order.orderNo} · {formatKRW(item.order.amount)}
+                </p>
+                <p className="mt-2 text-xs text-[var(--gold-primary)]">
+                  {statusLabel(
+                    item.order.status,
+                    item.report?.generationStatus,
+                    item.order.paymentMethod
+                  )}
+                </p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {item.paymentUrl ? (
+                    <Button asChild size="sm" variant="outline">
+                      <Link href={item.paymentUrl}>입금 안내</Link>
+                    </Button>
+                  ) : null}
+                  {item.reportUrl ? (
+                    <Button asChild size="sm">
+                      <Link href={item.reportUrl}>전체 리포트 보기</Link>
+                    </Button>
+                  ) : null}
+                  {!item.paymentUrl && !item.reportUrl ? (
+                    <Button asChild size="sm" variant="outline">
+                      <Link href={`/payment/bank/${item.order.id}`}>
+                        주문 상태 보기
+                      </Link>
+                    </Button>
+                  ) : null}
+                </div>
+              </OrnamentCard>
+            </li>
+          ))}
+        </ul>
       </div>
     </MysticPage>
   );

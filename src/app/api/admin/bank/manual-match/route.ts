@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { assertSameOrigin } from "@/lib/security/same-origin";
-import { getDataMode } from "@/lib/repositories/data-mode";
+import { assertAdminManualToken } from "@/lib/admin/manual-auth";
 import { listBankTransactionsForAdmin } from "@/lib/repositories/bank-transactions";
 import { fulfillBankMatch } from "@/lib/services/bank-match-fulfill";
 import { FreeFlowError } from "@/lib/services/free-flow-errors";
@@ -29,13 +29,15 @@ export async function POST(request: Request) {
     );
   }
 
-  const token = request.headers.get("x-admin-manual-token");
-  const allowed =
-    (process.env.ADMIN_MANUAL_TOKEN &&
-      token === process.env.ADMIN_MANUAL_TOKEN) ||
-    (getDataMode() === "mock" && process.env.ADMIN_MANUAL_BYPASS === "1");
-
-  if (!allowed) {
+  try {
+    assertAdminManualToken(request);
+  } catch (error) {
+    if (error instanceof FreeFlowError) {
+      return NextResponse.json(
+        { code: error.code, message: error.message },
+        { status: error.status }
+      );
+    }
     return NextResponse.json(
       { code: "FORBIDDEN", message: "관리자만 가능합니다." },
       { status: 403 }

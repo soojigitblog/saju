@@ -197,6 +197,40 @@ export async function startPaidReportJob(input: {
 }
 
 /**
+ * Admin retry — no guest session required. Payment stays PAID.
+ */
+export async function adminRetryPaidReportGeneration(input: {
+  orderId: string;
+}): Promise<PaidReportJobResult> {
+  const order = await getOrderById(input.orderId);
+  if (!order) {
+    throw new FreeFlowError("NOT_FOUND", "주문을 찾을 수 없습니다.", 404);
+  }
+  if (!order.paid_at) {
+    throw new FreeFlowError(
+      "ORDER_NOT_PAID",
+      "결제가 완료된 주문만 재생성할 수 있습니다.",
+      400
+    );
+  }
+
+  const report = await getReportByOrderId(order.id);
+  if (report?.generation_status === "COMPLETED") {
+    return { reportId: report.id, status: "COMPLETED" };
+  }
+
+  if (order.status === "FAILED" || order.status === "PAID") {
+    await updateOrder(order.id, { status: "PAID" });
+  }
+
+  return startPaidReportJob({
+    orderId: order.id,
+    runGeneration: true,
+    forceRetry: true,
+  });
+}
+
+/**
  * Retry AI only — never creates a new order/payment.
  */
 export async function retryPaidReportGeneration(input: {
