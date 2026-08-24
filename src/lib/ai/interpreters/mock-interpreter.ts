@@ -75,6 +75,7 @@ export class MockFortuneInterpreter implements FortuneInterpreter {
     const model = args.model ?? getAiModelPaid("mock");
     const raw = buildMockPaidResult(ctx, args.product.name, {
       productSlug: args.product.slug,
+      chart: args.chart,
     });
     const parsed = paidFortuneReportStrictSchema.parse(raw);
     validatePaidSemantics(parsed, ctx, { productSlug: args.product.slug });

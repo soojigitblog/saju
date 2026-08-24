@@ -86,12 +86,13 @@ describe("AI schemas", () => {
       .then((paid) => {
         const broken = {
           ...paid,
-          sections: paid.sections.filter((s) => s.key !== "money"),
+          sections: paid.sections.filter((s) => s.key !== "total_v4_money_link"),
         };
-        // drop meta for schema
         const { meta: _m, ...body } = broken;
         void _m;
-        expect(() => validatePaidSemantics(body, ctx)).toThrow(/missing section: money/);
+        expect(() =>
+          validatePaidSemantics(body, ctx, { productSlug: "2026-total" })
+        ).toThrow(/missing section: total_v4_money_link/);
       });
   });
 });

@@ -8,6 +8,8 @@ import { listActiveProducts } from "@/lib/repositories/products";
 import { generatePaidInterpretation } from "@/lib/ai/interpreters/free-interpreter";
 import { MockFortuneInterpreter } from "@/lib/ai/interpreters/mock-interpreter";
 import { AiEngineError } from "@/lib/ai/errors";
+import { buildPaidProductInstruction } from "@/lib/ai/prompts/build-paid-prompt";
+import { targetLengthForPaidProduct } from "@/lib/ai/schemas/paid-report";
 import type { FortuneChart } from "@/lib/fortune-engine/types";
 import {
   toPaidReportPreviewDTO,
@@ -54,20 +56,23 @@ export async function generatePaidReportPreviewForOwner(input: {
   const products = await listActiveProducts();
   const product =
     products.find((p) => p.slug === input.productSlug) ?? products[0] ?? null;
-  const productName = product?.name ?? "종합운세 상세 리포트";
+  const productName = product?.name ?? "종합 사주 리포트";
   const productSlug = product?.slug ?? "2026-total";
 
   const paidPromptVersion = {
     promptDefinitionId: "11111111-1111-1111-1111-111111111101",
     promptVersionId: "22222222-2222-2222-2222-222222222201",
     promptVersionNumber: 1,
-    productInstruction: `${productName} 상세 리포트 품질 검수용으로 작성하십시오.`,
+    productInstruction: buildPaidProductInstruction({
+      slug: productSlug,
+      name: productName,
+    }),
   };
 
   const productArg = {
     slug: productSlug,
     name: productName,
-    targetLengthChars: 4000,
+    targetLengthChars: targetLengthForPaidProduct(productSlug),
   };
   const presentation = {
     presentation: {

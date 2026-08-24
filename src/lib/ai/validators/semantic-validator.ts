@@ -5,11 +5,12 @@ import {
 } from "@/lib/ai/context";
 import type { FreeFortuneResult } from "@/lib/ai/schemas/free-result";
 import {
-  REQUIRED_PAID_SECTION_KEYS,
+  requiredSectionKeysForProduct,
   isYearTotalProductSlug,
   type PaidFortuneReport,
 } from "@/lib/ai/schemas/paid-report";
 import { validateHookQuality } from "@/lib/ai/validators/hook-quality";
+import { scorePaidReportQuality } from "@/lib/ai/validators/paid-quality";
 import { AiEngineError } from "@/lib/ai/errors";
 
 export const FORBIDDEN_PREDICTION_PATTERNS: RegExp[] = [
@@ -292,51 +293,121 @@ export function validatePaidSemantics(
   options?: { productSlug?: string | null }
 ): void {
   const errors: string[] = [];
+  const required = requiredSectionKeysForProduct(options?.productSlug);
   const keys = new Set(result.sections.map((s) => s.key));
-  for (const required of REQUIRED_PAID_SECTION_KEYS) {
-    if (!keys.has(required)) errors.push(`missing section: ${required}`);
+  for (const req of required) {
+    if (!keys.has(req)) errors.push(`missing section: ${req}`);
+  }
+
+  if (!result.signatureStatement?.trim()) {
+    errors.push("missing signatureStatement");
+  }
+  if (!result.finalSummary?.closingLine?.trim()) {
+    errors.push("missing finalSummary.closingLine");
+  }
+  if (!result.profileDashboard || result.profileDashboard.length < 4) {
+    errors.push("profileDashboard must have ≥4 items");
+  }
+  if (!result.actionItems || result.actionItems.length < 5) {
+    errors.push("actionItems must have ≥5 items");
+  }
+  if (!result.fiveElementsSnapshot || result.fiveElementsSnapshot.length !== 5) {
+    errors.push("fiveElementsSnapshot must have 5 items");
   }
 
   for (const section of result.sections) {
-    if (!section.detail.trim()) errors.push(`empty detail: ${section.key}`);
-    errors.push(...validateEvidence(section.evidence, ctx, `section.${section.key}`));
+    if (!section.coreInsight?.trim()) {
+      errors.push(`empty coreInsight: ${section.key}`);
+    }
+    if (!section.behaviorScenes?.length) {
+      errors.push(`empty behaviorScenes: ${section.key}`);
+    }
+    if (!section.evidenceExplanation?.length) {
+      errors.push(`empty evidenceExplanation: ${section.key}`);
+    }
+    const bodyLen = [
+      section.coreInsight,
+      ...(section.behaviorScenes ?? []),
+      ...(section.evidenceExplanation ?? []),
+    ].join("").length;
+    if (bodyLen < 80) errors.push(`section too thin: ${section.key}`);
+    errors.push(
+      ...validateEvidence(section.evidence, ctx, `section.${section.key}`)
+    );
   }
   errors.push(...validateEvidence(result.evidence, ctx, "paid.root"));
 
-  const needsMonthly = isYearTotalProductSlug(options?.productSlug);
-  if (needsMonthly) {
-    if (!result.monthlyOutlook || result.monthlyOutlook.length !== 12) {
-      errors.push("year-total product requires monthlyOutlook[12]");
+  if (result.contradictions) {
+    for (const c of result.contradictions) {
+      errors.push(...validateEvidence(c.evidence, ctx, "contradiction"));
     }
   }
+  if (result.strengthShadows) {
+    for (const s of result.strengthShadows) {
+      errors.push(...validateEvidence(s.evidence, ctx, "strengthShadow"));
+    }
+  }
+
   if (result.monthlyOutlook) {
     const months = result.monthlyOutlook.map((m) => m.month);
     const uniq = new Set(months);
     if (uniq.size !== 12 || months.some((m) => m < 1 || m > 12)) {
       errors.push("monthlyOutlook must cover months 1..12 uniquely");
     }
-    for (const m of result.monthlyOutlook) {
-      if (!m.detail.trim()) errors.push(`empty monthly detail: ${m.month}`);
-    }
   }
 
   const blob = collectText([
     result.title,
+    result.signatureStatement,
+    result.freeBridge ?? "",
     result.executiveSummary,
+    ...result.profileDashboard.map((p) => `${p.label}${p.value}`),
     ...result.keywords,
-    ...result.actionGuide,
+    result.blueprint
+      ? [
+          result.blueprint.dayMasterTerm,
+          result.blueprint.dayMasterPlain,
+          result.blueprint.fiveElementsNote,
+          result.blueprint.tenGodsNote,
+          result.blueprint.structurePlain,
+          result.blueprint.lifePlain,
+        ].join(" ")
+      : "",
     ...result.sections.flatMap((s) => [
       s.title,
-      s.summary,
-      s.detail,
-      ...s.cautions,
+      s.question ?? "",
+      s.coreInsight,
+      ...(s.behaviorScenes ?? []),
+      s.strengthSide ?? "",
+      s.riskSide ?? "",
+      s.triggerSituation ?? "",
+      s.practicalMeaning ?? "",
+      ...(s.actionAdvice ?? []),
+      ...(s.evidenceExplanation ?? []),
+      s.takeaway ?? "",
+      ...(s.cautions ?? []),
+      s.pullQuote ?? "",
     ]),
-    ...(result.monthlyOutlook ?? []).flatMap((m) => [
-      m.title,
-      m.summary,
-      m.detail,
-      ...(m.focus ?? []),
+    ...(result.contradictions ?? []).flatMap((c) => [
+      c.poleA,
+      c.poleB,
+      c.howItShows,
+      c.upside,
+      c.downside,
+      c.whenStronger,
     ]),
+    ...(result.strengthShadows ?? []).flatMap((s) => [
+      s.strength,
+      s.overuse,
+      s.problem,
+    ]),
+    ...(result.lifeScenes ?? []),
+    ...result.actionItems.flatMap((a) => [a.what, a.why, a.how]),
+    ...result.finalSummary.strengths,
+    ...result.finalSummary.cautions,
+    ...(result.finalSummary.changeHabits ?? []),
+    ...(result.finalSummary.keepHabits ?? []),
+    result.finalSummary.closingLine,
   ]);
 
   const forbidden = findForbidden(blob);
@@ -345,23 +416,30 @@ export function validatePaidSemantics(
   if (ctx.birthTimeUnknown) {
     for (const re of UNKNOWN_HOUR_FORBIDDEN) {
       if (!re.test(blob)) continue;
-
       if (/시주/.test(re.source)) {
         if (/시주.*(없|추정|알\s*수\s*없|제외|미포함|생략)/.test(blob)) {
           continue;
         }
       }
-
       errors.push(`unknown-hour text violation: ${re.source}`);
       break;
     }
   }
 
   const totalLen = [...blob].length;
-  if (totalLen < 800) errors.push(`paid report too short (${totalLen})`);
-  // Year-total with 12 months can be longer
-  const maxLen = needsMonthly || result.monthlyOutlook ? 20_000 : 12_000;
+  const minLen = isYearTotalProductSlug(options?.productSlug) ? 2800 : 1800;
+  if (totalLen < minLen) errors.push(`paid report too short (${totalLen})`);
+  const maxLen = isYearTotalProductSlug(options?.productSlug) ? 28_000 : 18_000;
   if (totalLen > maxLen) errors.push(`paid report too long (${totalLen})`);
+
+  const quality = scorePaidReportQuality(result, options);
+  if (!quality.pass) {
+    errors.push(
+      `quality gate fail score=${quality.score}: ${quality.errors
+        .slice(0, 6)
+        .join("; ")}`
+    );
+  }
 
   if (errors.length > 0) {
     throw new AiEngineError("SEMANTIC_VALIDATION_FAILED", errors.join("; "), {

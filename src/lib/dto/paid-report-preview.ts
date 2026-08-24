@@ -1,7 +1,6 @@
 import type { PaidFortuneReport } from "@/lib/ai/schemas/paid-report";
 import { formatFortuneEvidenceForDisplay } from "@/lib/presentation/format-evidence-label";
 
-/** View model for paid report quality preview (no order required). */
 export type PaidReportPreviewDTO = {
   id: string;
   orderNo: string;
@@ -9,30 +8,30 @@ export type PaidReportPreviewDTO = {
   productName: string;
   headline: string;
   summary: string;
+  signatureStatement?: string;
+  freeBridge?: string;
+  profileDashboard?: PaidFortuneReport["profileDashboard"];
+  fiveElementsSnapshot?: PaidFortuneReport["fiveElementsSnapshot"];
   keywords: string[];
   chapters: Array<{
     number: string;
     title: string;
-    summary: string;
+    question?: string;
+    coreInsight: string;
     body: string;
+    evidenceExplanation?: string[];
     evidence: string[];
-    cautions: string[];
+    cautions?: string[];
+    pullQuote?: string;
   }>;
-  monthlyOutlook?: Array<{
-    month: number;
-    title: string;
-    summary: string;
-    detail: string;
-    focus?: string[];
-  }>;
-  actionGuide: string[];
+  contradictions?: PaidFortuneReport["contradictions"];
+  strengthShadows?: PaidFortuneReport["strengthShadows"];
+  lifeScenes?: string[];
+  actionItems: PaidFortuneReport["actionItems"];
+  finalSummary: PaidFortuneReport["finalSummary"];
   evidence: string[];
   disclaimer: string;
-  meta: {
-    provider: string;
-    model: string;
-    preview: true;
-  };
+  meta: { provider: string; model: string; preview: true };
 };
 
 export function toPaidReportPreviewDTO(input: {
@@ -51,23 +50,27 @@ export function toPaidReportPreviewDTO(input: {
     productName: input.productName,
     headline: report.title,
     summary: report.executiveSummary,
+    signatureStatement: report.signatureStatement,
+    freeBridge: report.freeBridge,
+    profileDashboard: report.profileDashboard,
+    fiveElementsSnapshot: report.fiveElementsSnapshot,
     keywords: report.keywords,
     chapters: report.sections.map((s, i) => ({
       number: String(i + 1).padStart(2, "0"),
       title: s.title,
-      summary: s.summary,
-      body: s.detail,
+      question: s.question,
+      coreInsight: s.coreInsight,
+      body: [s.coreInsight, ...(s.behaviorScenes ?? [])].join("\n"),
+      evidenceExplanation: s.evidenceExplanation,
       evidence: formatFortuneEvidenceForDisplay(s.evidence),
       cautions: s.cautions,
+      pullQuote: s.pullQuote,
     })),
-    monthlyOutlook: report.monthlyOutlook?.map((m) => ({
-      month: m.month,
-      title: m.title,
-      summary: m.summary,
-      detail: m.detail,
-      focus: m.focus,
-    })),
-    actionGuide: report.actionGuide,
+    contradictions: report.contradictions,
+    strengthShadows: report.strengthShadows,
+    lifeScenes: report.lifeScenes,
+    actionItems: report.actionItems,
+    finalSummary: report.finalSummary,
     evidence: formatFortuneEvidenceForDisplay(report.evidence),
     disclaimer: report.disclaimer,
     meta: {

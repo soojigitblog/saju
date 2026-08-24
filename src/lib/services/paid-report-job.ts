@@ -26,6 +26,8 @@ import {
   updateReport,
 } from "@/lib/repositories/reports";
 import { generatePaidInterpretation } from "@/lib/ai/interpreters/free-interpreter";
+import { buildPaidProductInstruction } from "@/lib/ai/prompts/build-paid-prompt";
+import { targetLengthForPaidProduct } from "@/lib/ai/schemas/paid-report";
 import { notifyPaidReportFailed } from "@/lib/notifications";
 import type { FortuneChart } from "@/lib/fortune-engine/types";
 import { trackEvent } from "@/lib/repositories/analytics";
@@ -259,13 +261,16 @@ export async function startPaidReportJob(input: {
       {
         slug: product.slug,
         name: order.product_name_snapshot ?? product.name,
-        targetLengthChars: 4000,
+        targetLengthChars: targetLengthForPaidProduct(product.slug),
       },
       {
         promptDefinitionId: "11111111-1111-1111-1111-111111111101",
         promptVersionId,
         promptVersionNumber: 1,
-        productInstruction: `${order.product_name_snapshot ?? product.name} 상세 리포트.`,
+        productInstruction: buildPaidProductInstruction({
+          slug: product.slug,
+          name: order.product_name_snapshot ?? product.name,
+        }),
       },
       {
         presentation: {

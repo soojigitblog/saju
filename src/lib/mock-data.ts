@@ -17,11 +17,11 @@ export const MOCK_PRODUCT_IDS = {
 export const mockProducts: Product[] = [
   {
     id: MOCK_PRODUCT_IDS.total,
-    name: "2026년 종합운세",
+    name: "종합 사주 리포트",
     slug: "2026-total",
-    shortDescription: "올해의 흐름과 월별 운세까지 한눈에",
+    shortDescription: "성향·일·돈·관계를 하나의 리포트로",
     description:
-      "타고난 성향, 재물·직업·연애운, 1~12월 월별 흐름까지 2026년 전체를 상세히 풀어드립니다. 지금 내게 중요한 시기와 행동을 확인하세요.",
+      "타고난 성향과 결정 방식, 일·돈·관계에서 반복되는 패턴을 행동 중심으로 풀어 드립니다. 대운·세운 기반의 연도/월별 길흉 예언은 포함하지 않습니다.",
     regularPrice: 19900,
     salePrice: 12900,
     thumbnailUrl: "/images/product-total.svg",
@@ -33,27 +33,27 @@ export const mockProducts: Product[] = [
   },
   {
     id: MOCK_PRODUCT_IDS.total2027,
-    name: "2027년 종합운세",
+    name: "2027년 종합운세 (준비중)",
     slug: "2027-total",
-    shortDescription: "내년의 흐름과 월별 운세까지 미리 보기",
+    shortDescription: "대운·세운 엔진 준비 후 오픈 예정",
     description:
-      "2027년 전체 흐름과 재물·직업·연애, 1~12월 월별 리듬을 상세히 풀어드립니다. 한 해 앞을 준비할 때 참고하세요.",
+      "연도/월별 운세는 대운·세운 데이터가 필요합니다. 현재 엔진에서는 제공하지 않아 판매를 일시 중지했습니다.",
     regularPrice: 19900,
     salePrice: 12900,
     thumbnailUrl: "/images/product-total.svg",
     freeRatio: 30,
     promptName: "2027-total@v1",
     templateId: "standard-report",
-    status: "ACTIVE",
+    status: "INACTIVE",
     sortOrder: 2,
   },
   {
     id: MOCK_PRODUCT_IDS.money,
     name: "재물운 집중분석",
     slug: "2026-money",
-    shortDescription: "돈의 흐름과 새는 패턴을 집중 분석",
+    shortDescription: "돈의 성향·새는 패턴·활용법을 깊게",
     description:
-      "돈이 들어오는 방식, 새기 쉬운 습관, 상·하반기 차이, 기회를 활용하기 좋은 시기를 현실적으로 안내합니다.",
+      "돈을 대하는 기본 성향, 벌고 새는 패턴, 판단이 흔들릴 때, 안정적으로 만드는 방식과 현실적인 행동 가이드를 집중 분석합니다. 특정 월·상하반기 길흉 타이밍 예언은 포함하지 않습니다.",
     regularPrice: 9900,
     salePrice: 6900,
     thumbnailUrl: "/images/product-money.svg",
@@ -67,9 +67,9 @@ export const mockProducts: Product[] = [
     id: MOCK_PRODUCT_IDS.career,
     name: "직장·이직운",
     slug: "2026-career",
-    shortDescription: "이직·승진·직업 선택의 타이밍",
+    shortDescription: "잘 맞는 업무·조직 환경 집중 분석",
     description:
-      "직장운의 흐름과 이직하기 좋은 시기, 피해야 할 시기를 중심으로 분석합니다.",
+      "일할 때의 캐릭터, 능력이 살아나는 업무, 답답해지는 조직, 갈등·과부하·인정 방식과 변화 신호를 행동 중심으로 분석합니다. 이직 월·승진 시기 예언은 포함하지 않습니다.",
     regularPrice: 9900,
     salePrice: 6900,
     thumbnailUrl: "/images/product-career.svg",
@@ -83,9 +83,9 @@ export const mockProducts: Product[] = [
     id: MOCK_PRODUCT_IDS.love,
     name: "연애운",
     slug: "2026-love",
-    shortDescription: "만남과 관계의 흐름",
+    shortDescription: "끌림·갈등·거리의 행동 패턴 분석",
     description:
-      "연애 성향과 올해의 인연 흐름, 관계에서 주의할 포인트를 풀어드립니다.",
+      "마음이 가는 방식, 관계가 깊어진 뒤의 패턴, 싸움과 거리, 잘 맞는 관계 방식을 실제 행동 중심으로 풀어 드립니다. 올해 인연·만남 시기 예언은 포함하지 않습니다.",
     regularPrice: 9900,
     salePrice: 6900,
     thumbnailUrl: "/images/product-love.svg",
@@ -171,67 +171,80 @@ export const mockPaidReport: PaidReport = {
   id: "demo",
   orderNo: "20260820-00031",
   nickname: "수지",
-  productName: "2026년 종합운세",
-  headline: "변화를 준비해야 하는 해",
+  productName: "종합 사주 리포트",
+  headline: "확인 후에야 속도가 나는 손",
+  signatureStatement:
+    "확인 후에야 속도가 나는 기질 — 그 손이 일과 관계와 돈을 관통합니다.",
+  freeBridge: "무료 한 줄은 입구일 뿐입니다. 아래는 영역이 맞물리는 사용법입니다.",
   summary:
-    "올해는 기존 리듬을 유지하기보다, 방향을 재설정하는 선택이 더 유리하게 작용할 수 있습니다. 성급함보다 기준을 세운 뒤 움직이는 흐름이 맞습니다.",
-  keywords: ["변화", "선택", "확장"],
+    "결정·관계·일·돈이 같은 확인 습관으로 연결됩니다. 대운·세운은 포함하지 않습니다.",
+  profileDashboard: [
+    { label: "가장 강한 기질", value: "기준 확인 후 추진" },
+    { label: "판단 방식", value: "수집 → 확정 2단" },
+    { label: "관계 방식", value: "범위 선언 후 챙김" },
+    { label: "일 방식", value: "선명 목표 + 자율" },
+    { label: "돈 방식", value: "통제·검수 가능한 흐름" },
+  ],
+  fiveElementsSnapshot: [
+    { key: "wood", label: "木", count: 0 },
+    { key: "fire", label: "火", count: 3 },
+    { key: "earth", label: "土", count: 1 },
+    { key: "metal", label: "金", count: 4 },
+    { key: "water", label: "水", count: 0 },
+  ],
+  keywords: ["확인", "경계", "위임", "통제감"],
   chapters: [
     {
       number: "01",
-      title: "나의 기본 성향",
-      body: "당신은 겉으로 드러나는 인상보다 내면의 기준이 분명한 편입니다. 타인의 속도에 맞추기보다, 스스로 납득한 뒤에야 행동이 빨라집니다. 이 성향은 올해처럼 선택의 기로가 많은 해에 오히려 강점이 될 수 있습니다.",
-    },
-    {
-      number: "02",
-      title: "2026년 전체운",
-      body: "전체적으로는 ‘정비 후 확장’의 흐름으로 해석할 수 있습니다. 상반기에는 정리와 기준 잡기, 하반기에는 그 기준을 바탕으로 한 실행이 더 잘 맞을 가능성이 있습니다.",
-    },
-    {
-      number: "03",
-      title: "재물운",
-      body: "수입의 통로 자체는 막혀 있지 않습니다. 다만 지출이 감정적으로 커지는 패턴이 반복될 수 있어, 고정비와 변동비를 구분해 관리하는 편이 좋습니다. 투자나 큰 지출은 한 번에 결정하기보다 단계를 나누는 방식이 더 안정적입니다.",
-    },
-    {
-      number: "04",
-      title: "직업운",
-      body: "올해 직업운은 비교적 활발합니다. 지금의 자리에서 역할을 넓히는 방향과, 환경 자체를 바꾸는 방향 모두 열려 있습니다. 중요한 것은 타이밍보다 ‘내가 무엇을 기준으로 옮기는가’입니다.",
-    },
-    {
-      number: "05",
-      title: "연애운",
-      body: "관계에서는 속도보다 신뢰가 더 크게 작용할 수 있습니다. 새로운 만남이 있다면 초반의 호감만으로 판단하기보다, 생활 리듬이 맞는지 살펴보는 편이 좋습니다.",
-    },
-    {
-      number: "06",
-      title: "주의할 시기",
-      body: "결정을 서두르거나, 주변의 기대에 맞춰 방향을 바꾸는 구간에서는 피로가 커질 수 있습니다. 특히 감정적으로 흔들릴 때는 큰 금전·계약 결정을 하루 미뤄보는 것이 도움이 됩니다.",
-    },
-    {
-      number: "07",
-      title: "기회를 잡을 시기",
-      body: "준비가 끝난 뒤의 실행 구간에서 기회가 더 잘 열릴 수 있습니다. 혼자 판단하기 어렵다면, 신뢰하는 사람의 조언을 ‘결정’이 아니라 ‘관점’으로 활용하는 방식이 맞습니다.",
-    },
-    {
-      number: "08",
-      title: "나를 위한 행동 가이드",
-      body: "1) 이번 달의 우선순위 3가지만 적어두기 2) 지출 패턴을 한 줄로 기록하기 3) 이직·관계·투자 중 한 번에 하나만 크게 움직이기. 운세는 참고이며, 선택은 언제나 본인의 기준에서 시작됩니다.",
+      title: "Decision Profile",
+      question: "나는 어떻게 결정하는가?",
+      coreInsight: "정보가 부족할수록 속도를 늦추고, 책임질 결정일수록 번복을 싫어합니다.",
+      body: "타인이 재촉하면 보류를 확보한 뒤 자료를 더 모읍니다.",
+      behaviorScenes: [
+        "타인이 재촉하면 일단 보류를 확보한 뒤 자료를 더 모읍니다.",
+      ],
+      evidenceExplanation: [
+        "일간의 경계와 검증 성향이 결정을 2단 절차로 만듭니다.",
+      ],
+      evidence: ["dayMaster"],
     },
   ],
-  monthlyOutlook: [
-    { month: 1, title: "2026년 1월 · 정비", summary: "기준 잡기", detail: "무리한 확장보다 정리와 방향 설정에 무게를 두는 달이 될 수 있습니다.", focus: ["정비", "기준"] },
-    { month: 2, title: "2026년 2월 · 관계 점검", summary: "소통", detail: "약속과 일정을 다시 맞추며 관계 온도를 점검하기 좋은 흐름입니다.", focus: ["관계", "소통"] },
-    { month: 3, title: "2026년 3월 · 실행 준비", summary: "작은 시도", detail: "큰 결정보다 작은 루틴을 만들어 실행력을 키우는 달이 될 수 있습니다.", focus: ["준비", "루틴"] },
-    { month: 4, title: "2026년 4월 · 재정 점검", summary: "고정비", detail: "지출 패턴을 돌아보고 고정비·변동비를 나누어 보면 안정감이 커질 수 있습니다.", focus: ["재정", "점검"] },
-    { month: 5, title: "2026년 5월 · 외부 활동", summary: "네트워크", detail: "정보 수집과 외부 만남이 도움이 될 수 있으나, 과한 약속은 줄이는 편이 좋습니다.", focus: ["활동", "정보"] },
-    { month: 6, title: "2026년 6월 · 중간 점검", summary: "페이스 조절", detail: "상반기 성과를 정리하고 과로를 경계하며 페이스를 맞추는 달이 될 수 있습니다.", focus: ["점검", "휴식"] },
-    { month: 7, title: "2026년 7월 · 재정비", summary: "우선순위", detail: "불필요한 약속을 줄이고 우선순위를 다시 세우는 흐름이 잘 맞을 수 있습니다.", focus: ["정리", "우선순위"] },
-    { month: 8, title: "2026년 8월 · 실행 가속", summary: "선택 좁히기", detail: "결정을 미루기보다 근거를 적고 선택지를 좁혀 가는 달이 될 수 있습니다.", focus: ["실행", "선택"] },
-    { month: 9, title: "2026년 9월 · 성과 확인", summary: "피드백", detail: "결과와 관계 온도를 함께 확인하며 피드백을 반영하기 좋은 시기입니다.", focus: ["성과", "피드백"] },
-    { month: 10, title: "2026년 10월 · 수확 준비", summary: "문서화", detail: "다음 분기를 위해 기록을 남기고 계획을 스케치하는 달이 될 수 있습니다.", focus: ["수확", "계획"] },
-    { month: 11, title: "2026년 11월 · 정리·마감", summary: "정산", detail: "신규 착수보다 마감과 감사·정산에 무게를 두는 편이 안정적일 수 있습니다.", focus: ["마감", "정리"] },
-    { month: 12, title: "2026년 12월 · 내년 준비", summary: "방향 스케치", detail: "휴식과 함께 내년 방향을 가볍게 스케치하는 달이 될 수 있습니다.", focus: ["휴식", "준비"] },
+  contradictions: [
+    {
+      poleA: "남의 이야기를 들음",
+      poleB: "최종은 자기 기준",
+      howItShows: "자리에서는 경청하지만 결론 문장은 혼자 다시 씁니다.",
+      upside: "충동 합의를 줄입니다.",
+      downside: "이미 정한 것처럼 보일 수 있습니다.",
+      whenStronger: "책임이 큰 결정",
+    },
   ],
+  strengthShadows: [
+    {
+      strength: "끝까지 확인",
+      overuse: "모든 단계를 직접 검수",
+      problem: "위임 지연",
+    },
+  ],
+  lifeScenes: [
+    "회의 경청 후 집에서 결론 재작성",
+    "구매 전 기준 3줄 메모",
+  ],
+  actionItems: [
+    {
+      domain: "work",
+      what: "위임 1건/주",
+      why: "과부하 예방",
+      how: "검수 포인트만 남기고 넘김",
+    },
+  ],
+  finalSummary: {
+    strengths: ["확인 후 추진", "선명한 목표에서의 실행"],
+    cautions: ["위임 지연", "공유 지연"],
+    changeHabits: ["결론을 하루 안에 공유"],
+    keepHabits: ["결정 전 짧은 기준 메모"],
+    closingLine: "운의결: 확인 포인트를 설계하는 것이 강점을 쓰는 법입니다.",
+  },
 };
 
 export const mockAdminStats: AdminDashboardStats = {
@@ -248,7 +261,7 @@ export const mockAdminStats: AdminDashboardStats = {
     { label: "구매", value: 37 },
   ],
   productPerformance: [
-    { name: "2026년 종합운세", purchases: 21, revenue: 270900 },
+    { name: "종합 사주 리포트", purchases: 21, revenue: 270900 },
     { name: "재물운 집중분석", purchases: 8, revenue: 55200 },
     { name: "직장·이직운", purchases: 5, revenue: 34500 },
     { name: "연애운", purchases: 3, revenue: 20700 },

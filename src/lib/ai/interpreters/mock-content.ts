@@ -2,6 +2,8 @@ import { USER_FACING_DISCLAIMER } from "@/lib/ai/disclaimer";
 import type { FortuneAiContext } from "@/lib/ai/types";
 import type { FreeFortuneResult } from "@/lib/ai/schemas/free-result";
 import type { PaidFortuneReport } from "@/lib/ai/schemas/paid-report";
+import type { FortuneChart } from "@/lib/fortune-engine/types";
+import { buildMockPaidResultDeep } from "@/lib/ai/interpreters/mock-paid-deep";
 
 function baseEvidence(ctx: FortuneAiContext): string[] {
   const keys = [
@@ -261,96 +263,97 @@ export function buildMockFreeResult(ctx: FortuneAiContext): FreeFortuneResult {
 export function buildMockPaidResult(
   ctx: FortuneAiContext,
   productName: string,
-  options?: { productSlug?: string; targetYear?: number }
+  options?: { productSlug?: string; targetYear?: number; chart?: FortuneChart }
 ): PaidFortuneReport {
   const hourNote = ctx.birthTimeUnknown
     ? "출생시간이 확인되지 않아 시주 해석은 포함하지 않았습니다. "
     : "";
+  const dm = ctx.dayMaster.hangul;
+  const stem = ctx.dayMaster.stem;
+  const fe = ctx.fiveElements;
+  const tg = ctx.tenGods.month.stem || "비겁";
+  const rootEv = baseEvidence(ctx);
+  const snap = [
+    { key: "wood" as const, label: "木", count: fe.wood },
+    { key: "fire" as const, label: "火", count: fe.fire },
+    { key: "earth" as const, label: "土", count: fe.earth },
+    { key: "metal" as const, label: "金", count: fe.metal },
+    { key: "water" as const, label: "水", count: fe.water },
+  ];
+  const slug = options?.productSlug ?? "";
+  const kind = /money/i.test(slug)
+    ? "money"
+    : /total/i.test(slug)
+      ? "total"
+      : /career|job/i.test(slug)
+        ? "career"
+        : /love/i.test(slug)
+          ? "love"
+          : "generic";
 
-  const detailPad =
-    "제공된 사주 데이터를 바탕으로 성향과 흐름을 풀면, 성급히 결과를 단정하기보다 선택 기준을 분명히 하는 편이 도움이 될 수 있습니다. " +
-    "오행의 상대적인 분포와 십성의 배치를 참고하되, 이는 확정적 예언이 아닌 자기 이해용 해석 프레임입니다. " +
-    "생활 리듬과 스트레스 관리, 대화의 질, 재정 계획의 측면에서 작은 점검을 반복하는 태도가 안정감을 키울 수 있습니다. ";
+  const ev = (...needles: string[]) => {
+    const picked = rootEv.filter((e) =>
+      needles.some((n) => e === n || e.startsWith(n + "=") || e.startsWith(n) || e.includes(n))
+    );
+    return (picked.length > 0 ? picked : rootEv.slice(0, 3)).slice(0, 5);
+  };
 
-  const mk = (key: PaidFortuneReport["sections"][number]["key"], title: string) => ({
-    key,
-    title,
-    summary: `${title} 측면에서 균형과 자기 기준이 중요해 보일 수 있습니다.`,
-    detail: hourNote + detailPad + detailPad,
-    evidence: baseEvidence(ctx).slice(0, 5),
-    cautions: ["확정적 미래 예측으로 해석하지 마십시오."],
-  });
+  if (kind === "money" || kind === "total" || kind === "career" || kind === "love") {
+    return buildMockPaidResultDeep(ctx, productName, options);
+  }
 
-  const year =
-    options?.targetYear ??
-    (options?.productSlug?.match(/^(\d{4})-/)?.[1]
-      ? Number(options.productSlug.match(/^(\d{4})-/)![1])
-      : 2026);
-
-  const monthlyThemes = [
-    ["정비", "기준 잡기", "무리한 확장보다 정리"],
-    ["관계 점검", "소통", "약속과 일정 재확인"],
-    ["실행 준비", "작은 시도", "루틴 만들기"],
-    ["재정 점검", "고정비", "지출 패턴 돌아보기"],
-    ["외부 활동", "네트워크", "정보 수집"],
-    ["중간 점검", "페이스 조절", "과로 주의"],
-    ["재정비", "우선순위", "불필요한 약속 줄이기"],
-    ["실행 가속", "선택 좁히기", "결정 근거 정리"],
-    ["성과 확인", "피드백", "관계 온도 맞추기"],
-    ["수확 준비", "문서화", "다음 분기 계획"],
-    ["정리·마감", "감사·정산", "과한 신규 착수 자제"],
-    ["내년 준비", "휴식", "방향 스케치"],
+  // generic fallback only
+  const focusKeys = [
+    "personality",
+    "overall",
+    "money",
+    "career",
+    "love",
+    "advice",
   ] as const;
 
-  const seed = chartSeed(ctx);
-  const monthlyOutlook =
-    options?.productSlug && /-(total)$/i.test(options.productSlug)
-      ? monthlyThemes.map((theme, i) => {
-          const month = i + 1;
-          const tone = (seed + month) % 3;
-          const pace =
-            tone === 0 ? "차분히" : tone === 1 ? "조금씩" : "선별적으로";
-          return {
-            month,
-            title: `${year}년 ${month}월 · ${theme[0]}`,
-            summary: `${theme[1]}에 무게를 두고 ${pace} 움직이는 달이 될 수 있습니다.`,
-            detail:
-              `${year}년 ${month}월은 ${theme[0]}의 흐름으로 읽힐 수 있습니다. ` +
-              `${theme[2]} 쪽이 비교적 잘 맞을 수 있으며, 일간 ${ctx.dayMaster.hangul} 성향상 ` +
-              `남의 속도보다 스스로 납득한 뒤 움직이는 편이 안정적입니다. ` +
-              `확정적 길흉이 아니라, 한 달의 리듬과 주의점을 점검하는 참고 프레임으로 봐 주세요.`,
-            focus: [theme[0], theme[1]],
-          };
-        })
-      : undefined;
+  const sections = focusKeys.map((key, i) => ({
+    key,
+    title: `${productName} · ${key}`,
+    question: `${key}에서 드러나는 행동 패턴은?`,
+    coreInsight: `${dm} 기준으로 ${key} 장면 ${i + 1}은 확인 후 움직이는 쪽에 가깝습니다.`,
+    behaviorScenes: [
+      `${key} 상황에서 범위를 정한 뒤 손을 움직이는 편이 관찰됩니다.`,
+    ],
+    evidenceExplanation: [
+      `${stem} 일간과 월주 ${tg}를 ${key} 맥락에만 적용해 읽었습니다. (#${i + 1})`,
+    ],
+    evidence: ev("dayMaster", "tenGods.month"),
+    takeaway: `${key}의 핵심은 기준 확인입니다.`,
+  }));
 
   return {
-    title: `${productName} 상세 해석`,
-    executiveSummary:
-      hourNote +
-      `일간 ${ctx.dayMaster.hangul}과 오행 분포를 중심으로 보면, ${year}년은 확장보다 정리를 통해 방향을 선명히 하는 태도가 도움이 될 수 있습니다. ` +
-      `재물·직업·관계 모두에서 충동적인 결정보다 근거를 모아 선택하는 방식이 안정적으로 읽힐 수 있습니다.` +
-      (monthlyOutlook
-        ? ` 아래 월별 운세에서 ${year}년 1~12월 리듬을 함께 확인해 보세요.`
-        : ""),
-    keywords: ["자기기준", "균형", "계획", "소통", "리듬", "점검"],
-    sections: [
-      mk("personality", "성향"),
-      mk("overall", `${year} 전체 흐름`),
-      mk("money", "재물"),
-      mk("career", "직업"),
-      mk("love", "연애"),
-      mk("relationships", "인간관계"),
-      mk("timing", "타이밍"),
-      mk("advice", "조언"),
+    title: `${productName} · 운의결`,
+    reportKind: kind === "generic" ? "generic" : kind,
+    signatureStatement: `${dm} 일간의 확인 습관이 이 영역에서도 먼저 보입니다.`,
+    executiveSummary: hourNote + `${productName} 심층 메모. 대운·세운은 포함하지 않았습니다.`,
+    profileDashboard: [
+      { label: "기질", value: "확인 후 추진" },
+      { label: "강점", value: "완성도" },
+      { label: "주의", value: "과검토" },
+      { label: "활용", value: "범위 문장화" },
     ],
-    monthlyOutlook,
-    actionGuide: [
-      "중요한 결정은 하루 이상 간격을 두고 근거를 적어 보세요.",
-      "재정·일정 기록을 주 1회 점검하는 루틴을 만들어 보세요.",
-      "관계에서는 추측보다 짧은 확인 대화를 우선해 보세요.",
+    fiveElementsSnapshot: snap,
+    keywords: ["확인", "범위", "완성", "거리"],
+    sections,
+    actionItems: [
+      { domain: "general", what: "범위 한 줄", why: "오해 감소", how: "시작 전 메모" },
+      { domain: "general", what: "보류 만료", why: "과검토 방지", how: "D-day 설정" },
+      { domain: "self", what: "중간 점검", why: "완성도 유지", how: "중간 1회 확인" },
+      { domain: "work", what: "완료 조건", why: "재작업 감소", how: "상대에게 확인" },
+      { domain: "relationship", what: "짧은 공유", why: "거리감 완화", how: "하루 안 결론" },
     ],
-    evidence: baseEvidence(ctx),
+    finalSummary: {
+      strengths: ["확인 습관", "책임 완수"],
+      cautions: ["과검토", "공유 지연"],
+      closingLine: `운의결: ${dm}의 이 영역도 ‘기준 확인’이 열쇠입니다.`,
+    },
+    evidence: rootEv,
     disclaimer: USER_FACING_DISCLAIMER,
   };
 }

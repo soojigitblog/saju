@@ -12,7 +12,7 @@ export async function listPromptDefinitions(): Promise<PromptDefinition[]> {
     return [
       {
         id: "11111111-1111-1111-1111-111111111101",
-        name: "2026 종합운세",
+        name: "종합 사주 리포트",
         slug: "2026-total",
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),

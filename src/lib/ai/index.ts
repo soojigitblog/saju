@@ -19,6 +19,10 @@ export {
 export { USER_FACING_DISCLAIMER } from "@/lib/ai/disclaimer";
 export { AiEngineError, isRetryableAiError } from "@/lib/ai/errors";
 export { buildFortuneAiContext, buildEvidenceWhitelist } from "@/lib/ai/context";
+export {
+  buildInterpretationContextV2,
+  getEngineCapabilityAudit,
+} from "@/lib/ai/interpretation-context-v2";
 export { buildGenerationKey } from "@/lib/ai/generation-key";
 export {
   peekGenerationCache,
@@ -40,6 +44,15 @@ export {
   validatePaidSemantics,
   FORBIDDEN_PREDICTION_PATTERNS,
 } from "@/lib/ai/validators/semantic-validator";
+export {
+  scorePaidReportQuality,
+  assertPaidQualityGate,
+} from "@/lib/ai/validators/paid-quality";
+export {
+  evaluatePaidQualityV2,
+  comparePaidReportOverlap,
+  compareFreeVsPaidNovelty,
+} from "@/lib/ai/validators/paid-quality-v2";
 export { MockFortuneInterpreter } from "@/lib/ai/interpreters/mock-interpreter";
 export { OpenAIFortuneInterpreter } from "@/lib/ai/interpreters/openai-interpreter";
 export { ProviderFortuneInterpreter } from "@/lib/ai/interpreters/provider-interpreter";

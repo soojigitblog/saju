@@ -456,3 +456,36 @@ a:not([class]) {
   background: var(--admin-navy);
   color: var(--admin-ink);
 }
+
+/* Premium paid report — print / PDF */
+@media print {
+  .paid-report-root {
+    background: #f7f1e6 !important;
+    color: #0b1c2c !important;
+  }
+  .paid-report-cover {
+    background: #06101c !important;
+    color: #f3ebdd !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    page-break-after: always;
+  }
+  .paid-report-cover p,
+  .paid-report-cover h1 {
+    color: #f3ebdd !important;
+  }
+  .paid-report-body {
+    background: #f7f1e6 !important;
+    color: #0b1c2c !important;
+  }
+  .paid-report-body h2,
+  .paid-report-body .display-title {
+    color: #06101c !important;
+  }
+  .paid-chapter {
+    page-break-inside: avoid;
+  }
+  .paid-chapter blockquote {
+    border-left-color: #c9a227 !important;
+  }
+}

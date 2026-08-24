@@ -60,12 +60,84 @@ export type PaidReport = {
   productName: string;
   headline: string;
   summary: string;
+  signatureStatement?: string;
+  freeBridge?: string;
+  profileDashboard?: { label: string; value: string }[];
+  profileScales?: {
+    label: string;
+    level: "low" | "mid" | "high";
+    leftLabel: string;
+    rightLabel: string;
+    note: string;
+  }[];
+  fiveElementsSnapshot?: {
+    key: "wood" | "fire" | "earth" | "metal" | "water";
+    label: string;
+    count: number;
+  }[];
   keywords: string[];
+  blueprint?: {
+    dayMasterTerm: string;
+    dayMasterPlain: string;
+    fiveElementsNote: string;
+    tenGodsNote: string;
+    structurePlain: string;
+    lifePlain: string;
+  };
   chapters: {
     number: string;
     title: string;
+    question?: string;
+    coreInsight?: string;
     body: string;
+    behaviorScenes?: string[];
+    strengthSide?: string;
+    riskSide?: string;
+    triggerSituation?: string;
+    practicalMeaning?: string;
+    actionAdvice?: string[];
+    evidenceExplanation?: string[];
+    takeaway?: string;
+    whyReading?: string;
+    evidence?: string[];
+    cautions?: string[];
+    pullQuote?: string;
+    narrativeBridge?: string;
+    paradoxNote?: string;
+    includeWhyBox?: boolean;
   }[];
+  contradictions?: {
+    poleA: string;
+    poleB: string;
+    howItShows: string;
+    upside: string;
+    downside: string;
+    whenStronger: string;
+    result?: string;
+  }[];
+  strengthShadows?: {
+    strength: string;
+    overuse: string;
+    problem: string;
+    balancePoint?: string;
+  }[];
+  lifeScenes?: string[];
+  scopeNotes?: string;
+  actionItems?: {
+    domain: string;
+    when?: string;
+    what: string;
+    why: string;
+    how: string;
+  }[];
+  actionGuide?: string[];
+  finalSummary?: {
+    strengths: string[];
+    cautions: string[];
+    changeHabits?: string[];
+    keepHabits?: string[];
+    closingLine: string;
+  };
   monthlyOutlook?: {
     month: number;
     title: string;

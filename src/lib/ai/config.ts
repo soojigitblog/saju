@@ -257,8 +257,8 @@ export function getAiMaxRetries(): number {
 /** Cap paid report output tokens — prevents runaway generation cost. */
 export function getPaidReportMaxOutputTokens(): number {
   const raw = process.env.PAID_REPORT_MAX_OUTPUT_TOKENS?.trim();
-  const n = raw ? Number(raw) : 8192;
-  return Number.isFinite(n) && n > 0 ? Math.min(Math.floor(n), 65536) : 8192;
+  const n = raw ? Number(raw) : 12_288;
+  return Number.isFinite(n) && n > 0 ? Math.min(Math.floor(n), 65536) : 12_288;
 }
 
 /** USD per 1M tokens — override via env for billing updates. */
