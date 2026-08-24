@@ -15,7 +15,7 @@ type OrderItem = {
     amount: number;
     status: string;
     paymentMethod: string;
-    createdAt: string;
+    paidAt: string | null;
   };
   report: { id: string; generationStatus: string } | null;
   paymentUrl: string | null;
@@ -25,21 +25,28 @@ type OrderItem = {
 function statusLabel(
   status: string,
   reportStatus?: string,
-  paymentMethod?: string
+  paymentMethod?: string,
+  paidAt?: string | null
 ): string {
+  const paid = Boolean(paidAt);
   if (status === "PENDING") {
     return paymentMethod === "BANK_TRANSFER"
       ? "입금 확인 대기 (운영자 확인 필요)"
       : "입금 대기";
   }
-  if (status === "PAID") return "입금 확인됨";
+  if (reportStatus === "FAILED" && paid) return "결제 완료 · 리포트 재생성 중";
+  if (status === "PAID" && reportStatus === "GENERATING") {
+    return "결제 완료 · 리포트 준비 중";
+  }
+  if (status === "PAID" && !reportStatus) return "결제 완료 · 리포트 준비 중";
+  if (status === "PAID") return "결제 완료";
   if (status === "GENERATING" || reportStatus === "GENERATING") {
     return "리포트 생성 중";
   }
   if (status === "COMPLETED" || reportStatus === "COMPLETED") {
     return "완료";
   }
-  if (status === "FAILED") return "리포트 생성 실패 (결제 완료)";
+  if (status === "FAILED" && paid) return "결제 완료 · 리포트 재생성 중";
   if (status === "EXPIRED") return "입금 기한 만료";
   return status;
 }
@@ -118,7 +125,8 @@ export default function MyResultsPage() {
                   {statusLabel(
                     item.order.status,
                     item.report?.generationStatus,
-                    item.order.paymentMethod
+                    item.order.paymentMethod,
+                    item.order.paidAt
                   )}
                 </p>
                 <div className="mt-4 flex flex-wrap gap-2">

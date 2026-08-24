@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { assertSameOrigin } from "@/lib/security/same-origin";
-import { assertAdminManualToken } from "@/lib/admin/manual-auth";
+import { assertAdminRequest } from "@/lib/admin/manual-auth";
+import { writeAdminAudit } from "@/lib/repositories/admin-audit";
 import { adminRetryPaidReportGeneration } from "@/lib/services/paid-report-job";
 import { FreeFlowError } from "@/lib/services/free-flow-errors";
 
@@ -24,8 +25,9 @@ export async function POST(request: Request) {
     );
   }
 
+  let adminAuth: Awaited<ReturnType<typeof assertAdminRequest>>;
   try {
-    assertAdminManualToken(request);
+    adminAuth = await assertAdminRequest(request);
   } catch (error) {
     if (error instanceof FreeFlowError) {
       return NextResponse.json(
@@ -61,6 +63,15 @@ export async function POST(request: Request) {
     const result = await adminRetryPaidReportGeneration({
       orderId: parsed.data.orderId,
     });
+
+    await writeAdminAudit({
+      adminUserId: adminAuth.user?.id ?? null,
+      action: "REPORT_RETRY",
+      targetType: "order",
+      targetId: parsed.data.orderId,
+      meta: { via: adminAuth.via },
+    });
+
     return NextResponse.json({ ok: true, result });
   } catch (error) {
     if (error instanceof FreeFlowError) {

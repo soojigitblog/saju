@@ -4,7 +4,8 @@ import "server-only";
  * Hana personal-banking adapter — Playwright persistent session (PHASE 6.4).
  *
  * Does NOT implement CAPTCHA/MFA/security-media bypass.
- * Requires prior `npm run bank:hana:login` with user-completed normal auth.
+ * Prefers saved Playwright session; on expiry may attempt ID/password UI login
+ * via Windows Credential Manager (`ensureHanaAutoLogin`).
  */
 
 import {

@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ["playwright"],
+  serverExternalPackages: ["playwright", "@napi-rs/keyring"],
   // Friend-test: hide the on-screen Next indicator (dev overlay still surfaces real errors).
   devIndicators: false,
   async headers() {

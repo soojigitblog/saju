@@ -28,7 +28,7 @@ import { AiEngineError } from "@/lib/ai/errors";
 import type { FortuneChart } from "@/lib/fortune-engine/types";
 import type { Json } from "@/types/database.types";
 import { createAiGeneration, updateAiGeneration } from "@/lib/repositories/ai-generations";
-import { resolveAiProviderName, getAiModelFree } from "@/lib/ai/config";
+import { resolveAiProviderForFree, getAiModelFree } from "@/lib/ai/config";
 import { FORTUNE_RELEASE_MANIFEST } from "@/lib/fortune-engine/release-manifest";
 import { submitTarotFeedbackViaGate } from "@/lib/services/submit-feedback";
 
@@ -222,7 +222,7 @@ export async function generateTarotCrossReading(input: {
       prompt_version_id: null,
       engine_version: FORTUNE_RELEASE_MANIFEST.engineVersion,
       provider_version: FORTUNE_RELEASE_MANIFEST.provider.version,
-      provider: resolveAiProviderName(),
+      provider: resolveAiProviderForFree(),
       model,
       status: "GENERATING",
       attempt_count: attempt,

@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { assertSameOrigin } from "@/lib/security/same-origin";
-import { assertAdminManualToken } from "@/lib/admin/manual-auth";
+import { assertAdminRequest } from "@/lib/admin/manual-auth";
+import { writeAdminAudit } from "@/lib/repositories/admin-audit";
 import { listBankTransactionsForAdmin } from "@/lib/repositories/bank-transactions";
 import { fulfillBankMatch } from "@/lib/services/bank-match-fulfill";
 import { FreeFlowError } from "@/lib/services/free-flow-errors";
@@ -16,7 +17,7 @@ const bodySchema = z.object({
 });
 
 /**
- * Admin manual match. Requires x-admin-manual-token = ADMIN_MANUAL_TOKEN.
+ * Admin manual match. Requires Supabase Auth ADMIN (legacy token in test only).
  * Re-validates amount + PENDING; never PAID without a bank transaction row.
  */
 export async function POST(request: Request) {
@@ -29,8 +30,9 @@ export async function POST(request: Request) {
     );
   }
 
+  let adminAuth: Awaited<ReturnType<typeof assertAdminRequest>>;
   try {
-    assertAdminManualToken(request);
+    adminAuth = await assertAdminRequest(request);
   } catch (error) {
     if (error instanceof FreeFlowError) {
       return NextResponse.json(
@@ -102,6 +104,14 @@ export async function POST(request: Request) {
       orderId: order.id,
       amount: tx.amount,
       manual: { by: "admin", reason: parsed.data.reason },
+    });
+
+    await writeAdminAudit({
+      adminUserId: adminAuth.user?.id ?? null,
+      action: "BANK_CONFIRM",
+      targetType: "order",
+      targetId: order.id,
+      meta: { bankTransactionId: tx.id, via: adminAuth.via, manualMatch: true },
     });
 
     return NextResponse.json({ ok: true, result });

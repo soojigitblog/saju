@@ -2,8 +2,9 @@ import "server-only";
 
 import { GoogleGenAI } from "@google/genai";
 import { z } from "zod";
-import { getAiMaxRetries, getAiTimeoutMs, getGeminiApiKey } from "@/lib/ai/config";
+import { getAiMaxRetries, getAiTimeoutMs, getGeminiApiKeyForTier, type AiBillingTier } from "@/lib/ai/config";
 import { AiEngineError } from "@/lib/ai/errors";
+import { zodToGeminiJsonSchema } from "@/lib/ai/schemas/gemini-schema-adapter";
 import type {
   AIProvider,
   AIProviderGenerateOptions,
@@ -70,33 +71,36 @@ function mapGeminiError(error: unknown): AiEngineError {
 }
 
 function toGeminiJsonSchema(schema: z.ZodType): Record<string, unknown> {
-  const json = z.toJSONSchema(schema) as Record<string, unknown>;
-  // Gemini rejects some JSON Schema meta keys
-  const { $schema, $id, ...rest } = json;
-  void $schema;
-  void $id;
-  return rest;
+  return zodToGeminiJsonSchema(schema);
 }
 
-let cached: GoogleGenAI | null = null;
+let cached = new Map<AiBillingTier, GoogleGenAI>();
 
-function getGeminiClient(): GoogleGenAI {
-  const apiKey = getGeminiApiKey();
+function getGeminiClient(tier: AiBillingTier): GoogleGenAI {
+  const apiKey = getGeminiApiKeyForTier(tier);
   if (!apiKey) {
+    if (tier === "paid") {
+      throw new AiEngineError(
+        "PAID_AI_NOT_CONFIGURED",
+        "GEMINI_API_KEY_PAID is required for paid reports. Free/legacy keys are not used.",
+        { retryable: false }
+      );
+    }
     throw new AiEngineError(
       "OPENAI_API_KEY_MISSING",
-      "GEMINI_API_KEY is not configured.",
+      "GEMINI_API_KEY_FREE (or GEMINI_API_KEY) is not configured.",
       { retryable: false }
     );
   }
-  if (!cached) {
-    cached = new GoogleGenAI({ apiKey });
-  }
-  return cached;
+  const existing = cached.get(tier);
+  if (existing) return existing;
+  const client = new GoogleGenAI({ apiKey });
+  cached.set(tier, client);
+  return client;
 }
 
 export function resetGeminiClientForTests(): void {
-  cached = null;
+  cached = new Map();
 }
 
 /**
@@ -106,10 +110,12 @@ export function resetGeminiClientForTests(): void {
 export class GeminiProvider implements AIProvider {
   readonly name = "gemini" as const;
 
+  constructor(private readonly tier: AiBillingTier = "free") {}
+
   async generateStructured<T extends z.ZodType>(
     options: AIProviderGenerateOptions<T>
   ): Promise<AIProviderResult<z.infer<T>>> {
-    const client = getGeminiClient();
+    const client = getGeminiClient(this.tier);
     const maxRetries = getAiMaxRetries();
     const timeoutMs = getAiTimeoutMs();
     let attempt = 0;
@@ -134,6 +140,9 @@ export class GeminiProvider implements AIProvider {
             config: {
               responseMimeType: "application/json",
               responseJsonSchema: toGeminiJsonSchema(options.schema),
+              ...(options.maxOutputTokens
+                ? { maxOutputTokens: options.maxOutputTokens }
+                : {}),
             },
           }),
           new Promise<never>((_, reject) => {

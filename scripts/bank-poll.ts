@@ -39,7 +39,7 @@ async function main() {
       ) {
         if (!quietSessionExpired) {
           console.log(
-            `[bank:poll] SESSION_EXPIRED — re-login required (npm run bank:hana:login). Further cycles stay quiet until recovered.`
+            `[bank:poll] SESSION_EXPIRED/auth — auto-login will retry when enabled (or npm run bank:hana:start). Further cycles stay quiet until recovered.`
           );
           quietSessionExpired = true;
         }

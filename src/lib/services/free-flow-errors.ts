@@ -55,6 +55,13 @@ export function assertFreeFortuneRateLimit(input: {
   g.__freeRate.set(key, timestamps);
 }
 
+/** Clear in-process rate limit state between Vitest cases. */
+export function resetFreeFortuneRateLimitForTests(): void {
+  mockStore.rateBuckets.clear();
+  const g = globalThis as unknown as { __freeRate?: Map<string, number[]> };
+  g.__freeRate = new Map();
+}
+
 export function hashIp(ip: string | null | undefined): string | undefined {
   if (!ip) return undefined;
   return createHash("sha256").update(ip).digest("hex").slice(0, 16);

@@ -81,6 +81,7 @@ export type InterpretationMeta = {
     totalTokens: number | null;
   };
   providerRequestId?: string;
+  latencyMs?: number;
 };
 
 export type FreeInterpretationOutput = FreeFortuneResult & {

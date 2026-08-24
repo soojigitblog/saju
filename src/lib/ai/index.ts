@@ -7,6 +7,12 @@ export {
   getAiModelPaid,
   getAiFallbackProvider,
   resolveAiProviderName,
+  resolveAiProviderForFree,
+  resolveAiProviderForPaid,
+  assertPaidGeminiConfigured,
+  estimateAiCostUsd,
+  getPaidReportMaxOutputTokens,
+  type AiBillingTier,
   resolveAiRuntimeMode,
   type AiProviderName,
 } from "@/lib/ai/config";

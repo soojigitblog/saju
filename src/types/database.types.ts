@@ -349,6 +349,7 @@ export type Database = {
           access_token_hash: string | null;
           paid_at: string | null;
           payment_check_requested_at?: string | null;
+          payment_check_notified_at?: string | null;
           cancelled_at: string | null;
           refunded_at: string | null;
           created_at: string;
@@ -381,6 +382,7 @@ export type Database = {
           access_token_hash?: string | null;
           paid_at?: string | null;
           payment_check_requested_at?: string | null;
+          payment_check_notified_at?: string | null;
           cancelled_at?: string | null;
           refunded_at?: string | null;
           created_at?: string;
@@ -413,6 +415,7 @@ export type Database = {
           access_token_hash?: string | null;
           paid_at?: string | null;
           payment_check_requested_at?: string | null;
+          payment_check_notified_at?: string | null;
           cancelled_at?: string | null;
           refunded_at?: string | null;
           created_at?: string;
@@ -588,6 +591,7 @@ export type Database = {
           provider_request_id: string | null;
           generation_key: string | null;
           generated_at: string | null;
+          estimated_ai_cost_usd: number | null;
           created_at: string;
           updated_at: string;
         };
@@ -612,6 +616,7 @@ export type Database = {
           provider_request_id?: string | null;
           generation_key?: string | null;
           generated_at?: string | null;
+          estimated_ai_cost_usd?: number | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -636,6 +641,7 @@ export type Database = {
           provider_request_id?: string | null;
           generation_key?: string | null;
           generated_at?: string | null;
+          estimated_ai_cost_usd?: number | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -664,6 +670,8 @@ export type Database = {
           attempt_count: number;
           started_at: string | null;
           completed_at: string | null;
+          latency_ms: number | null;
+          estimated_ai_cost_usd: number | null;
           created_at: string;
           updated_at: string;
         };
@@ -689,6 +697,8 @@ export type Database = {
           attempt_count?: number;
           started_at?: string | null;
           completed_at?: string | null;
+          latency_ms?: number | null;
+          estimated_ai_cost_usd?: number | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -714,6 +724,8 @@ export type Database = {
           attempt_count?: number;
           started_at?: string | null;
           completed_at?: string | null;
+          latency_ms?: number | null;
+          estimated_ai_cost_usd?: number | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -871,6 +883,36 @@ export type Database = {
           message?: string;
           details?: string | null;
           metadata?: Json;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      admin_audit_logs: {
+        Row: {
+          id: string;
+          admin_user_id: string | null;
+          action: string;
+          target_type: string;
+          target_id: string | null;
+          meta: Json;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          admin_user_id?: string | null;
+          action: string;
+          target_type: string;
+          target_id?: string | null;
+          meta?: Json;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          admin_user_id?: string | null;
+          action?: string;
+          target_type?: string;
+          target_id?: string | null;
+          meta?: Json;
           created_at?: string;
         };
         Relationships: [];

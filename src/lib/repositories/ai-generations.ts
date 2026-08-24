@@ -50,6 +50,8 @@ export async function createAiGeneration(
       attempt_count: input.attempt_count ?? 0,
       started_at: input.started_at ?? null,
       completed_at: input.completed_at ?? null,
+      latency_ms: input.latency_ms ?? null,
+      estimated_ai_cost_usd: input.estimated_ai_cost_usd ?? null,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
@@ -94,4 +96,91 @@ export async function updateAiGeneration(
     .single();
   if (error) throw error;
   return data;
+}
+
+export async function listAiGenerationsForAdmin(opts?: {
+  status?: "FAILED" | "COMPLETED" | "PENDING" | "GENERATING";
+  limit?: number;
+}): Promise<
+  {
+    id: string;
+    result_type: string;
+    provider: string | null;
+    model: string;
+    status: string;
+    error_code: string | null;
+    attempt_count: number;
+    input_tokens: number | null;
+    output_tokens: number | null;
+    total_tokens: number | null;
+    estimated_ai_cost_usd: number | null;
+    latency_ms: number | null;
+    created_at: string;
+    completed_at: string | null;
+  }[]
+> {
+  const limit = opts?.limit ?? 80;
+  if (getDataMode() === "mock") {
+    const seen = new Set<string>();
+    const rows: AiGeneration[] = [];
+    for (const g of mockStore.aiGenerations.values()) {
+      if (seen.has(g.id)) continue;
+      seen.add(g.id);
+      if (opts?.status && g.status !== opts.status) continue;
+      rows.push(g);
+    }
+    return rows
+      .sort((a, b) => {
+        const af = a.status === "FAILED" ? 0 : 1;
+        const bf = b.status === "FAILED" ? 0 : 1;
+        if (af !== bf) return af - bf;
+        return b.created_at.localeCompare(a.created_at);
+      })
+      .slice(0, limit)
+      .map((g) => ({
+        id: g.id,
+        result_type: g.result_type,
+        provider: g.provider,
+        model: g.model,
+        status: g.status,
+        error_code: g.error_code,
+        attempt_count: g.attempt_count,
+        input_tokens: g.input_tokens,
+        output_tokens: g.output_tokens,
+        total_tokens: g.total_tokens,
+        estimated_ai_cost_usd: g.estimated_ai_cost_usd,
+        latency_ms: g.latency_ms,
+        created_at: g.created_at,
+        completed_at: g.completed_at,
+      }));
+  }
+
+  const admin = createAdminClient();
+  let q = admin
+    .from("ai_generations")
+    .select(
+      "id, result_type, provider, model, status, error_code, attempt_count, input_tokens, output_tokens, total_tokens, estimated_ai_cost_usd, latency_ms, created_at, completed_at"
+    )
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (opts?.status) q = q.eq("status", opts.status);
+  const { data, error } = await q;
+  if (error) throw error;
+
+  return ((data ?? []) as AiGeneration[]).map((g) => ({
+    id: g.id,
+    result_type: g.result_type,
+    provider: g.provider,
+    model: g.model,
+    status: g.status,
+    error_code: g.error_code,
+    attempt_count: g.attempt_count,
+    input_tokens: g.input_tokens,
+    output_tokens: g.output_tokens,
+    total_tokens: g.total_tokens,
+    estimated_ai_cost_usd: g.estimated_ai_cost_usd,
+    latency_ms: g.latency_ms,
+    created_at: g.created_at,
+    completed_at: g.completed_at,
+  }));
 }

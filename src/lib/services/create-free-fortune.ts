@@ -10,7 +10,7 @@ import {
 import { buildGenerationKey } from "@/lib/ai/generation-key";
 import {
   getAiModelFree,
-  resolveAiProviderName,
+  resolveAiProviderForFree,
 } from "@/lib/ai/config";
 import { AiEngineError } from "@/lib/ai/errors";
 import type { Json } from "@/types/database.types";
@@ -122,7 +122,7 @@ export async function createFreeFortune(input: {
     });
   }
 
-  const provider = resolveAiProviderName();
+  const provider = resolveAiProviderForFree();
   const model = getAiModelFree(provider);
   const lifeContextKey = buildLifeContextKey({
     maritalStatus: body.maritalStatus,
@@ -246,7 +246,7 @@ export async function retryFailedFreeFortune(input: {
     );
   }
 
-  const provider = resolveAiProviderName();
+  const provider = resolveAiProviderForFree();
   const model = existing.model ?? getAiModelFree(provider);
   const generationKey =
     existing.generation_key ??
@@ -333,7 +333,7 @@ async function runAiGeneration(input: {
       prompt_version_id: FREE_PROMPT_VERSION.id,
       engine_version: FORTUNE_RELEASE_MANIFEST.engineVersion,
       provider_version: FORTUNE_RELEASE_MANIFEST.provider.version,
-      provider: resolveAiProviderName(),
+      provider: resolveAiProviderForFree(),
       model: input.model,
       status: "GENERATING",
       attempt_count: input.attemptCount,

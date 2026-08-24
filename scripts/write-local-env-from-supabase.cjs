@@ -57,8 +57,8 @@ SUPABASE_SECRET_KEY=${secret}
 # AI — paste GEMINI_API_KEY to unlock Live Gate (PHASE 5.1)
 AI_PROVIDER=gemini
 GEMINI_API_KEY=
-GEMINI_MODEL_FREE=gemini-2.5-flash
-GEMINI_MODEL_PAID=gemini-2.5-flash
+GEMINI_MODEL_FREE=gemini-3.6-flash
+GEMINI_MODEL_PAID=gemini-3.6-flash
 
 OPENAI_API_KEY=
 AI_MODEL_FREE=gpt-5.6-luna

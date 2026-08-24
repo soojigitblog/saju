@@ -36,7 +36,12 @@ export class BankProviderError extends Error {
     | "BANK_NOT_CONFIGURED"
     | "BANK_UNSUPPORTED"
     | "HANA_SESSION_EXPIRED"
-    | "AUTH_REQUIRED";
+    | "AUTH_REQUIRED"
+    | "CAPTCHA_REQUIRED"
+    | "LOGIN_FAILED"
+    | "LOGIN_REQUIRED"
+    | "AUTO_LOGIN_UNSUPPORTED"
+    | "AUTO_LOGIN_DISABLED_TEMPORARILY";
   constructor(
     code: BankProviderError["code"],
     message: string

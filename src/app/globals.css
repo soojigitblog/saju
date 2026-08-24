@@ -442,3 +442,17 @@ a:not([class]) {
   white-space: nowrap;
   border-width: 0;
 }
+
+/* Admin shell — operational navy + gold */
+.admin-shell {
+  --admin-navy: #06101c;
+  --admin-panel: #0c1a2b;
+  --admin-line: rgba(212, 168, 79, 0.22);
+  --admin-gold: #d4a84f;
+  --admin-ink: #f3ebdd;
+  --admin-muted: #8b93a0;
+  --admin-accent-soft: rgba(212, 168, 79, 0.12);
+  min-height: 100%;
+  background: var(--admin-navy);
+  color: var(--admin-ink);
+}

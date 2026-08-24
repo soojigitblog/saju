@@ -5,7 +5,7 @@ import {
   AI_SCHEMA_VERSION,
   GENERATION_KEY_VERSION,
   getAiModelFree,
-  resolveAiProviderName,
+  resolveAiProviderForFree,
 } from "@/lib/ai/config";
 import { buildFortuneAiContext } from "@/lib/ai/context";
 import { USER_FACING_DISCLAIMER } from "@/lib/ai/disclaimer";
@@ -85,7 +85,7 @@ export async function generateCrossReading(input: {
   readingId: string;
 }): Promise<CrossReadingOutput> {
   const fortuneCtx = buildFortuneAiContext(input.chart);
-  const providerName = resolveAiProviderName();
+  const providerName = resolveAiProviderForFree();
   const model = getAiModelFree(providerName);
   const qfp = fingerprintQuestion(
     input.tarotContext.questionCategory,

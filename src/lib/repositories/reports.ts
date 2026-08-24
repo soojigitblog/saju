@@ -77,6 +77,7 @@ export async function createReportIfAbsent(
       provider_request_id: input.provider_request_id ?? null,
       generation_key: input.generation_key ?? null,
       generated_at: input.generated_at ?? null,
+      estimated_ai_cost_usd: input.estimated_ai_cost_usd ?? null,
       created_at: now,
       updated_at: now,
     };
@@ -141,4 +142,111 @@ export async function getReportByIdForUser(
     .maybeSingle();
   if (error) throw error;
   return data;
+}
+
+export type AdminReportListRow = Report & {
+  order_no?: string | null;
+  product_name?: string | null;
+};
+
+/** Admin list — no result_json / PII bodies. */
+export async function listReportsForAdmin(limit = 80): Promise<
+  {
+    id: string;
+    order_id: string;
+    order_no: string | null;
+    product_name: string | null;
+    generation_status: Report["generation_status"];
+    model: string | null;
+    error_code: string | null;
+    attempt_count: number;
+    created_at: string;
+    generated_at: string | null;
+    paid_at: string | null;
+  }[]
+> {
+  if (getDataMode() === "mock") {
+    const reports = [...mockStore.reports.values()];
+    return reports
+      .map((r) => {
+        const order = mockStore.orders.get(r.order_id);
+        return {
+          id: r.id,
+          order_id: r.order_id,
+          order_no: order?.order_no ?? null,
+          product_name: order?.product_name_snapshot ?? null,
+          generation_status: r.generation_status,
+          model: r.model,
+          error_code: r.error_code,
+          attempt_count: r.attempt_count,
+          created_at: r.created_at,
+          generated_at: r.generated_at,
+          paid_at: order?.paid_at ?? null,
+        };
+      })
+      .sort((a, b) => {
+        const af = a.generation_status === "FAILED" ? 0 : 1;
+        const bf = b.generation_status === "FAILED" ? 0 : 1;
+        if (af !== bf) return af - bf;
+        return b.created_at.localeCompare(a.created_at);
+      })
+      .slice(0, limit);
+  }
+
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("reports")
+    .select(
+      "id, order_id, generation_status, model, error_code, attempt_count, created_at, generated_at, orders(order_no, product_name_snapshot, paid_at)"
+    )
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+
+  type Joined = {
+    id: string;
+    order_id: string;
+    generation_status: Report["generation_status"];
+    model: string | null;
+    error_code: string | null;
+    attempt_count: number;
+    created_at: string;
+    generated_at: string | null;
+    orders:
+      | {
+          order_no: string;
+          product_name_snapshot: string | null;
+          paid_at: string | null;
+        }
+      | {
+          order_no: string;
+          product_name_snapshot: string | null;
+          paid_at: string | null;
+        }[]
+      | null;
+  };
+
+  const rows = ((data ?? []) as unknown as Joined[]).map((r) => {
+    const ord = Array.isArray(r.orders) ? r.orders[0] : r.orders;
+    return {
+      id: r.id,
+      order_id: r.order_id,
+      order_no: ord?.order_no ?? null,
+      product_name: ord?.product_name_snapshot ?? null,
+      generation_status: r.generation_status,
+      model: r.model,
+      error_code: r.error_code,
+      attempt_count: r.attempt_count,
+      created_at: r.created_at,
+      generated_at: r.generated_at,
+      paid_at: ord?.paid_at ?? null,
+    };
+  });
+
+  return rows.sort((a, b) => {
+    const af = a.generation_status === "FAILED" ? 0 : 1;
+    const bf = b.generation_status === "FAILED" ? 0 : 1;
+    if (af !== bf) return af - bf;
+    return b.created_at.localeCompare(a.created_at);
+  });
 }

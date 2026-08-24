@@ -235,20 +235,32 @@ export async function markOrderPaidIfPending(input: {
   return data;
 }
 
-export async function listOrdersForAdmin(limit = 50): Promise<Order[]> {
+export async function listOrdersForAdmin(
+  limit = 50,
+  opts?: { status?: Order["status"]; orderNo?: string }
+): Promise<Order[]> {
   if (getDataMode() === "mock") {
-    return [...mockStore.orders.values()].sort((a, b) =>
-      b.created_at.localeCompare(a.created_at)
-    );
+    let rows = [...mockStore.orders.values()];
+    if (opts?.status) rows = rows.filter((o) => o.status === opts.status);
+    if (opts?.orderNo?.trim()) {
+      const q = opts.orderNo.trim().toLowerCase();
+      rows = rows.filter((o) => o.order_no.toLowerCase().includes(q));
+    }
+    return rows
+      .sort((a, b) => b.created_at.localeCompare(a.created_at))
+      .slice(0, limit);
   }
 
-  const supabase = await createClient();
-  const { data, error } = await supabase
+  const admin = createAdminClient();
+  let q = admin
     .from("orders")
     .select("*")
     .order("created_at", { ascending: false })
     .limit(limit);
+  if (opts?.status) q = q.eq("status", opts.status);
+  if (opts?.orderNo?.trim()) q = q.ilike("order_no", `%${opts.orderNo.trim()}%`);
 
+  const { data, error } = await q;
   if (error) throw error;
   return data ?? [];
 }
@@ -294,6 +306,7 @@ function mockInsertOrder(input: TablesInsert<"orders">): Order {
     access_token_hash: input.access_token_hash ?? null,
     paid_at: input.paid_at ?? null,
     payment_check_requested_at: input.payment_check_requested_at ?? null,
+    payment_check_notified_at: input.payment_check_notified_at ?? null,
     cancelled_at: input.cancelled_at ?? null,
     refunded_at: input.refunded_at ?? null,
     created_at: now,
@@ -306,6 +319,11 @@ function mockInsertOrder(input: TablesInsert<"orders">): Order {
 export async function markPaymentCheckRequested(orderId: string): Promise<Order> {
   const at = new Date().toISOString();
   return updateOrder(orderId, { payment_check_requested_at: at });
+}
+
+export async function markPaymentCheckNotified(orderId: string): Promise<Order> {
+  const at = new Date().toISOString();
+  return updateOrder(orderId, { payment_check_notified_at: at });
 }
 
 const GUEST_VISIBLE_STATUSES = [
@@ -367,18 +385,32 @@ export async function countPendingBankTransferOrders(): Promise<number> {
 
 export async function listPendingBankTransferOrders(): Promise<Order[]> {
   if (getDataMode() === "mock") {
-    return [...mockStore.orders.values()].filter(
-      (o) =>
-        o.status === "PENDING" &&
-        (o.payment_method ?? "BANK_TRANSFER") === "BANK_TRANSFER"
-    );
+    return [...mockStore.orders.values()]
+      .filter(
+        (o) =>
+          o.status === "PENDING" &&
+          (o.payment_method ?? "BANK_TRANSFER") === "BANK_TRANSFER"
+      )
+      .sort((a, b) => {
+        const ar = a.payment_check_requested_at ?? "";
+        const br = b.payment_check_requested_at ?? "";
+        if (ar && !br) return -1;
+        if (!ar && br) return 1;
+        if (ar !== br) return br.localeCompare(ar);
+        return b.created_at.localeCompare(a.created_at);
+      });
   }
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("orders")
     .select("*")
     .eq("status", "PENDING")
-    .eq("payment_method", "BANK_TRANSFER");
+    .eq("payment_method", "BANK_TRANSFER")
+    .order("payment_check_requested_at", {
+      ascending: false,
+      nullsFirst: false,
+    })
+    .order("created_at", { ascending: false });
   if (error) throw error;
   return data ?? [];
 }

@@ -2,7 +2,9 @@ import "server-only";
 
 import {
   type AiProviderName,
-  resolveAiProviderName,
+  type AiBillingTier,
+  resolveAiProviderForFree,
+  resolveAiProviderForPaid,
 } from "@/lib/ai/config";
 import { MockFortuneInterpreter } from "@/lib/ai/interpreters/mock-interpreter";
 import { OpenAIFortuneInterpreter } from "@/lib/ai/interpreters/openai-interpreter";
@@ -17,14 +19,34 @@ import type {
   PaidInterpretationOutput,
 } from "@/lib/ai/types";
 
-export function createFortuneInterpreter(
-  mode: AiProviderName | "auto" = "auto"
+function createFortuneInterpreterForProvider(
+  provider: AiProviderName,
+  tier: AiBillingTier
 ): FortuneInterpreter {
-  const resolved = mode === "auto" ? resolveAiProviderName() : mode;
-  if (resolved === "mock") return new MockFortuneInterpreter();
-  if (resolved === "openai") return new OpenAIFortuneInterpreter();
-  if (resolved === "gemini") return new ProviderFortuneInterpreter("gemini");
-  throw new Error(`CONFIGURATION_ERROR: unknown interpreter mode ${String(resolved)}`);
+  if (provider === "mock") return new MockFortuneInterpreter();
+  if (provider === "openai") return new OpenAIFortuneInterpreter();
+  if (provider === "gemini") {
+    return new ProviderFortuneInterpreter("gemini", undefined, tier);
+  }
+  throw new Error(`CONFIGURATION_ERROR: unknown interpreter provider ${String(provider)}`);
+}
+
+export function createFortuneInterpreterForTier(
+  tier: AiBillingTier
+): FortuneInterpreter {
+  const provider =
+    tier === "paid" ? resolveAiProviderForPaid() : resolveAiProviderForFree();
+  return createFortuneInterpreterForProvider(provider, tier);
+}
+
+export function createFortuneInterpreter(
+  mode: AiProviderName | "auto" = "auto",
+  tier: AiBillingTier = "free"
+): FortuneInterpreter {
+  if (mode !== "auto") {
+    return createFortuneInterpreterForProvider(mode, tier);
+  }
+  return createFortuneInterpreterForTier(tier);
 }
 
 export async function generateFreeInterpretation(
@@ -34,7 +56,8 @@ export async function generateFreeInterpretation(
     interpreter?: FortuneInterpreter;
   }
 ): Promise<FreeInterpretationOutput> {
-  const interpreter = options?.interpreter ?? createFortuneInterpreter();
+  const interpreter =
+    options?.interpreter ?? createFortuneInterpreterForTier("free");
   return interpreter.generateFree({
     chart,
     promptVersion,
@@ -52,7 +75,8 @@ export async function generatePaidInterpretation(
     interpreter?: FortuneInterpreter;
   }
 ): Promise<PaidInterpretationOutput> {
-  const interpreter = options?.interpreter ?? createFortuneInterpreter();
+  const interpreter =
+    options?.interpreter ?? createFortuneInterpreterForTier("paid");
   return interpreter.generatePaid({
     chart,
     product,

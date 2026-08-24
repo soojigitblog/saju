@@ -6,8 +6,10 @@ import {
   AI_SCORE_SOURCE,
   GENERATION_KEY_VERSION,
   type AiProviderName,
+  type AiBillingTier,
   getAiModelFree,
   getAiModelPaid,
+  getPaidReportMaxOutputTokens,
 } from "@/lib/ai/config";
 import { buildFortuneAiContext } from "@/lib/ai/context";
 import { buildGenerationKey } from "@/lib/ai/generation-key";
@@ -42,11 +44,12 @@ import { USER_FACING_DISCLAIMER } from "@/lib/ai/disclaimer";
 export class ProviderFortuneInterpreter implements FortuneInterpreter {
   constructor(
     private readonly providerName: AiProviderName,
-    private readonly providerOverride?: AIProvider
+    private readonly providerOverride?: AIProvider,
+    private readonly tier: AiBillingTier = "free"
   ) {}
 
   private provider(): AIProvider {
-    return this.providerOverride ?? getAIProvider(this.providerName);
+    return this.providerOverride ?? getAIProvider(this.providerName, this.tier);
   }
 
   async generateFree(args: FreeGenerateArgs): Promise<FreeInterpretationOutput> {
@@ -118,6 +121,7 @@ export class ProviderFortuneInterpreter implements FortuneInterpreter {
           generatedAt: new Date().toISOString(),
           usage: generated.usage,
           providerRequestId: generated.providerRequestId,
+          latencyMs: generated.latencyMs,
         },
       };
     });
@@ -144,6 +148,7 @@ export class ProviderFortuneInterpreter implements FortuneInterpreter {
         userPrompt,
         schema: paidFortuneReportStrictSchema,
         schemaName: "paid_fortune_report",
+        maxOutputTokens: getPaidReportMaxOutputTokens(),
       });
 
       let data = generated.data;
@@ -192,6 +197,7 @@ export class ProviderFortuneInterpreter implements FortuneInterpreter {
           generatedAt: new Date().toISOString(),
           usage: generated.usage,
           providerRequestId: generated.providerRequestId,
+          latencyMs: generated.latencyMs,
         },
       };
     });

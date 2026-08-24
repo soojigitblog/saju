@@ -1,54 +1,58 @@
-# Hana Bank Poller (PHASE 6.4)
+# Hana Bank Poller (PHASE 6.4 / 6.4.1)
 
 ## Role
 
-Authenticated Playwright session → fetch recent IN transactions → normalize → match → PAID → existing Paid Report pipeline.
+Windows Credential Manager → Playwright ID/password UI login (when needed) → fetch IN txs → match → PAID → Paid Report.
 
-Does **not** bypass CAPTCHA/MFA/OTP/security media.
+Does **not** bypass CAPTCHA/MFA/OTP/security media / certificate modules.
 
-## One-time login
+## One-time credential registration
+
+```bash
+npm run bank:hana:credentials
+```
+
+Stores username/password in **Windows Credential Manager** (`wiro-hana-bank`).
+Never put bank passwords in `.env`, DB, or source.
+
+Delete:
+
+```bash
+npm run bank:hana:credentials:delete
+```
+
+## Recommended worker
+
+```bash
+# .env.local: BANK_PROVIDER=hana, HANA_BANK_AUTOMATION_ENABLED=1
+npm run bank:hana:start
+```
+
+Flow: credential check → session check → auto ID login if expired → poll loop → re-login on expiry (bounded backoff).
+
+First-time tip: after a successful login, open **거래내역조회** once so the inquiry URL is saved (auto-login also tries to navigate there).
+
+## Manual login (fallback)
 
 ```bash
 npm run bank:hana:login
 ```
 
-1. Browser opens https://banking.kebhana.com/
-2. You log in normally (including OTP if the bank requires it)
-3. Navigate to **조회 → 계좌조회 → 거래내역조회** for the 운의결 deposit account
-4. Press Enter in the terminal — saves session profile + inquiry URL under `.playwright-hana/`
-
-Never commit `.playwright-hana/` or `.bank-session/`.
-
-## Poll
-
-```bash
-# Continuous (60–180s interval)
-npm run bank:poll
-
-# Single cycle smoke test
-npm run bank:hana:poll
-```
-
-Env:
-
-- `BANK_PROVIDER=hana`
-- `HANA_BANK_AUTOMATION_ENABLED=1`
-- `BANK_TRANSFER_ACCOUNT_NUMBER` / `HOLDER` — must match the account you open in the bank UI
-- `BANK_POLL_INTERVAL_SECONDS` (default 120)
-
-## User 「입금했어요」
-
-Records `payment_check_requested_at` and triggers one poll when automation is enabled. Does **not** mark PAID.
+Use when auto-login returns `AUTO_LOGIN_UNSUPPORTED` / `AUTH_REQUIRED` / `CAPTCHA_REQUIRED`.
 
 ## Failure modes
 
 | Code | Meaning |
 |------|---------|
-| `HANA_SESSION_EXPIRED` | Re-run `bank:hana:login` |
-| `AUTH_REQUIRED` | Bank asks for extra auth — manual step required |
-| `BANK_CHECK_FAILED` | Transient error — orders stay PENDING, admin fallback |
+| `HANA_SESSION_EXPIRED` | Session gone — auto-login will retry if enabled |
+| `LOGIN_REQUIRED` | No credentials or auto-login disabled |
+| `LOGIN_FAILED` | ID/password login failed |
+| `CAPTCHA_REQUIRED` | CAPTCHA shown — no auto-solve |
+| `AUTH_REQUIRED` | OTP/MFA/security media — no bypass |
+| `AUTO_LOGIN_UNSUPPORTED` | Cert-only / TouchEn blocks unattended ID login |
+| `AUTO_LOGIN_DISABLED_TEMPORARILY` | Too many failures — account protection |
 
-Admin: `/admin/bank-deposits` + manual confirm still available.
+Admin: `/admin/bank-deposits` → **HANA AUTO CHECK** (never shows credentials).
 
 ## Security
 

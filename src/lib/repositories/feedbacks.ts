@@ -181,3 +181,80 @@ function mapRow(data: Record<string, unknown>): FeedbackRow {
     updated_at: data.updated_at as string,
   };
 }
+
+export type FeedbackAdminSummary = {
+  byType: Record<
+    string,
+    { count: number; avgRating: number | null; tooGenericRate: number; spotOnRate: number }
+  >;
+  moreFunYesRate: number | null;
+  recent: {
+    id: string;
+    target_type: string;
+    rating: number | null;
+    tags: string[];
+    more_fun_than_saju_alone: string | null;
+    created_at: string;
+  }[];
+};
+
+/** Aggregates only — never expose guest_session_id in admin UI payload. */
+export async function getFeedbackAdminSummary(
+  limit = 40
+): Promise<FeedbackAdminSummary> {
+  let rows: FeedbackRow[] = [];
+  if (getDataMode() === "mock") {
+    rows = [...mockStore.feedbacks.values()];
+  } else {
+    const { data, error } = await adminDb()
+      .from("feedbacks")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(500);
+    if (error) throw error;
+    rows = (data ?? []).map((d: Record<string, unknown>) => mapRow(d));
+  }
+
+  const byType: FeedbackAdminSummary["byType"] = {};
+  for (const type of ["FORTUNE", "TAROT", "CROSS_READING"] as const) {
+    const subset = rows.filter((r) => r.target_type === type);
+    const ratings = subset
+      .map((r) => r.rating)
+      .filter((r): r is number => typeof r === "number");
+    const tagHits = subset.filter((r) =>
+      r.tags.some((t) => /일반|too.?generic/i.test(t) || t === "TOO_GENERIC")
+    ).length;
+    const spotOn = subset.filter((r) =>
+      r.tags.some(
+        (t) => /소름|맞음|SPOT.?ON|ACCURATE/i.test(t) || t === "SPOT_ON"
+      )
+    ).length;
+    byType[type] = {
+      count: subset.length,
+      avgRating:
+        ratings.length > 0
+          ? Math.round((ratings.reduce((a, b) => a + b, 0) / ratings.length) * 10) /
+            10
+          : null,
+      tooGenericRate: subset.length ? tagHits / subset.length : 0,
+      spotOnRate: subset.length ? spotOn / subset.length : 0,
+    };
+  }
+
+  const crossOrAll = rows.filter((r) => r.more_fun_than_saju_alone != null);
+  const yes = crossOrAll.filter((r) => r.more_fun_than_saju_alone === "YES")
+    .length;
+
+  return {
+    byType,
+    moreFunYesRate: crossOrAll.length ? yes / crossOrAll.length : null,
+    recent: rows.slice(0, limit).map((r) => ({
+      id: r.id,
+      target_type: r.target_type,
+      rating: r.rating,
+      tags: r.tags,
+      more_fun_than_saju_alone: r.more_fun_than_saju_alone,
+      created_at: r.created_at,
+    })),
+  };
+}

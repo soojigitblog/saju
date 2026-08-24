@@ -8,6 +8,8 @@ export type AIProviderGenerateOptions<T extends z.ZodType> = {
   schema: T;
   schemaName: string;
   model: string;
+  /** Optional output token cap (paid reports). */
+  maxOutputTokens?: number;
 };
 
 export type AIProviderResult<T> = {

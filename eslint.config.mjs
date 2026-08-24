@@ -14,6 +14,7 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     "scripts/**",
     "tests/**",
+    "tmp/**",
     // Local Supabase CLI temp bundles (minified) — not app source
     "supabase/.temp/**",
   ]),

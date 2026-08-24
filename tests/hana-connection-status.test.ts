@@ -22,7 +22,7 @@ describe("bank connection status", () => {
         true
       )
     ).toBe("SESSION_EXPIRED");
-    expect(bankConnectionMessage("SESSION_EXPIRED")).toBe(
+    expect(bankConnectionMessage("SESSION_EXPIRED")).toContain(
       "하나은행 세션 재로그인 필요"
     );
   });

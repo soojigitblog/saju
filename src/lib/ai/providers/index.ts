@@ -2,8 +2,10 @@ import "server-only";
 
 import {
   type AiProviderName,
+  type AiBillingTier,
   getAiFallbackProvider,
-  resolveAiProviderName,
+  resolveAiProviderForFree,
+  resolveAiProviderForPaid,
 } from "@/lib/ai/config";
 import { AiEngineError } from "@/lib/ai/errors";
 import { GeminiProvider } from "@/lib/ai/providers/gemini";
@@ -17,9 +19,15 @@ import type { z } from "zod";
  * AI_FALLBACK_PROVIDER must remain empty in normal operation.
  */
 export function getAIProvider(
-  name: AiProviderName | "auto" = "auto"
+  name: AiProviderName | "auto" = "auto",
+  tier: AiBillingTier = "free"
 ): AIProvider {
-  const resolved = name === "auto" ? resolveAiProviderName() : name;
+  const resolved =
+    name === "auto"
+      ? tier === "paid"
+        ? resolveAiProviderForPaid()
+        : resolveAiProviderForFree()
+      : name;
 
   // Explicitly read fallback — must not be used for silent paid routing.
   if (getAiFallbackProvider()) {
@@ -28,7 +36,7 @@ export function getAIProvider(
 
   switch (resolved) {
     case "gemini":
-      return new GeminiProvider();
+      return new GeminiProvider(tier);
     case "openai":
       return new OpenAIProvider();
     case "mock":

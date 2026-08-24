@@ -52,10 +52,10 @@ function isSessionExpiredHealth(
   );
 }
 
-async function markSessionExpired(code: "HANA_SESSION_EXPIRED" | "AUTH_REQUIRED") {
+async function markSessionExpired(lastErrorSafe: string) {
   await upsertBankPollerHealth({
     status: "SESSION_EXPIRED",
-    lastErrorSafe: code,
+    lastErrorSafe,
   });
 }
 
@@ -110,7 +110,15 @@ export async function runBankPollCycle(): Promise<BankPollCycleResult> {
     const safe =
       error instanceof BankProviderError ? error.code : "BANK_CHECK_FAILED";
 
-    if (safe === "HANA_SESSION_EXPIRED" || safe === "AUTH_REQUIRED") {
+    if (
+      safe === "HANA_SESSION_EXPIRED" ||
+      safe === "AUTH_REQUIRED" ||
+      safe === "CAPTCHA_REQUIRED" ||
+      safe === "LOGIN_FAILED" ||
+      safe === "LOGIN_REQUIRED" ||
+      safe === "AUTO_LOGIN_UNSUPPORTED" ||
+      safe === "AUTO_LOGIN_DISABLED_TEMPORARILY"
+    ) {
       await markSessionExpired(safe);
       return {
         ok: false,

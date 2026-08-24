@@ -56,6 +56,8 @@ describe("AI provider selection", () => {
   it("blocks mock in production runtime", () => {
     process.env.AI_PROVIDER = "mock";
     process.env.NODE_ENV = "production";
+    process.env.APP_ENV = "production";
+    delete process.env.ALLOW_MOCK_AI;
     delete process.env.npm_lifecycle_event;
     delete process.env.NEXT_PHASE;
     expect(() => assertMockAllowed()).toThrow(/forbidden in production/);

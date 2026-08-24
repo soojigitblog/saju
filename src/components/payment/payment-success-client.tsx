@@ -80,12 +80,12 @@ export function PaymentSuccessClient() {
             return;
           }
           if (
-            data.order?.status === "FAILED" ||
-            data.report?.generationStatus === "FAILED"
+            data.report?.generationStatus === "FAILED" ||
+            (data.order?.status === "FAILED" && data.report?.generationStatus !== "COMPLETED")
           ) {
             setPhase("generation_failed");
             setMessage(
-              "결제는 정상적으로 완료되었습니다. 리포트 생성 중 문제가 발생했습니다."
+              "입금은 정상적으로 확인되었습니다. 리포트를 준비하는 중 문제가 발생했습니다."
             );
             return;
           }

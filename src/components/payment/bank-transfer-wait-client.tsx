@@ -14,6 +14,7 @@ type StatusPayload = {
     productName: string | null;
     amount: number;
     status: string;
+    paidAt?: string | null;
   };
   report: { id: string; generationStatus: string } | null;
   bankAccount: {
@@ -36,7 +37,8 @@ function hintForStatus(
   status: string,
   reportStatus?: string,
   depositAcked?: boolean,
-  bankDisconnected?: boolean
+  bankDisconnected?: boolean,
+  paid?: boolean
 ): string {
   if (status === "PENDING") {
     if (bankDisconnected) {
@@ -47,15 +49,20 @@ function hintForStatus(
     }
     return "입금을 기다리고 있어요.";
   }
-  if (status === "PAID") return "입금이 확인되었습니다.";
+  if (status === "PAID" || (paid && reportStatus !== "COMPLETED")) {
+    return "입금이 확인되었습니다.";
+  }
   if (status === "GENERATING" || reportStatus === "GENERATING") {
     return "당신의 사주를 바탕으로 전체 리포트를 만들고 있어요.";
   }
   if (status === "COMPLETED" || reportStatus === "COMPLETED") {
     return "리포트가 준비되었습니다.";
   }
-  if (status === "FAILED") {
-    return "결제는 확인되었지만 리포트 생성 중 문제가 발생했습니다.";
+  if (reportStatus === "FAILED" && paid) {
+    return "입금은 정상적으로 확인되었습니다. 리포트를 준비하는 중 문제가 발생했습니다.";
+  }
+  if (status === "FAILED" && paid) {
+    return "입금은 정상적으로 확인되었습니다. 리포트를 준비하는 중 문제가 발생했습니다.";
   }
   if (status === "EXPIRED") {
     return "입금 기한이 지났습니다. 새로 주문해 주세요.";
@@ -96,7 +103,8 @@ export function BankTransferWaitClient({ orderId }: { orderId: string }) {
           json.order.status,
           json.report?.generationStatus,
           ack,
-          json.bankCheckDisconnected
+          json.bankCheckDisconnected,
+          Boolean(json.order.paidAt)
         )
       );
       if (json.order.status !== "PENDING") {

@@ -4,6 +4,7 @@ import {
   resetMockFreeFlowState,
   retryFailedFreeFortune,
 } from "@/lib/services/create-free-fortune";
+import { resetFreeFortuneRateLimitForTests } from "@/lib/services/free-flow-errors";
 import { getFreeResultPageForOwner } from "@/lib/services/get-free-result";
 import {
   getFreeResultById,
@@ -29,7 +30,10 @@ const sampleInput = {
 
 describe("PHASE 5 free fortune E2E (mock)", () => {
   beforeEach(() => {
+    process.env.AI_PROVIDER = "mock";
+    delete process.env.GEMINI_API_KEY;
     resetMockFreeFlowState();
+    resetFreeFortuneRateLimitForTests();
   });
 
   it("creates guest-owned completed free result with public DTO", async () => {

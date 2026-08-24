@@ -2,18 +2,20 @@ import { NextResponse } from "next/server";
 import { getGuestSessionId } from "@/lib/guest/cookie";
 import {
   getOrderById,
+  markPaymentCheckNotified,
   markPaymentCheckRequested,
 } from "@/lib/repositories/orders";
 import { assertSameOrigin } from "@/lib/security/same-origin";
 import { trackEvent } from "@/lib/repositories/analytics";
 import { runBankPollCycle } from "@/lib/services/bank-poller";
 import { isHanaAutomationEnabled } from "@/lib/bank/hana/playwright/config";
+import { notifyDepositCheckRequested } from "@/lib/notifications";
 
 export const dynamic = "force-dynamic";
 
 /**
  * User tapped "입금했어요" — does NOT mark PAID.
- * Records request + triggers one bank poll when automation is enabled.
+ * Records request + Telegram admin alert (deduped) + optional bank poll.
  */
 export async function POST(
   _request: Request,
@@ -64,7 +66,19 @@ export async function POST(
     });
   }
 
-  await markPaymentCheckRequested(order.id);
+  if (order.payment_check_requested_at) {
+    return NextResponse.json({
+      ok: true,
+      alreadyRequested: true,
+      status: order.status,
+      paymentCheckRequested: true,
+      message: "이미 입금 확인 요청을 보냈어요.",
+    });
+  }
+
+  const updated = await markPaymentCheckRequested(order.id);
+  const requestedAt =
+    updated.payment_check_requested_at ?? new Date().toISOString();
 
   try {
     await trackEvent({
@@ -81,10 +95,34 @@ export async function POST(
     /* best-effort */
   }
 
+  // Telegram must not fail the user request
+  let notificationSent = false;
+  try {
+    const result = await notifyDepositCheckRequested({
+      orderNo: order.order_no,
+      productName: order.product_name_snapshot,
+      amount: order.amount,
+      depositorName: order.depositor_name,
+      requestedAt,
+    });
+    if (result.sent > 0) {
+      notificationSent = true;
+      try {
+        await markPaymentCheckNotified(order.id);
+      } catch {
+        /* notify succeeded; stamp is best-effort */
+      }
+    }
+  } catch {
+    console.error("[deposit-ack] admin notification failed", {
+      orderId: order.id,
+    });
+  }
+
   let pollTriggered = false;
   let bankCheckDisconnected = false;
   let message =
-    "입금 확인 요청을 받았습니다. 하나은행 자동 조회가 연결되면 곧 확인됩니다.";
+    "입금 확인 요청을 보냈어요. 확인되면 알려드릴게요.";
 
   if (isHanaAutomationEnabled()) {
     pollTriggered = true;
@@ -92,28 +130,29 @@ export async function POST(
       const cycle = await runBankPollCycle();
       if (
         cycle.errorSafe === "HANA_SESSION_EXPIRED" ||
-        cycle.errorSafe === "AUTH_REQUIRED"
+        cycle.errorSafe === "AUTH_REQUIRED" ||
+        cycle.errorSafe === "LOGIN_REQUIRED" ||
+        cycle.errorSafe === "CAPTCHA_REQUIRED"
       ) {
         bankCheckDisconnected = true;
         message =
-          "입금 확인 시스템 연결이 잠시 끊겼습니다.\n입금하셨다면 주문은 그대로 유지됩니다.";
+          "입금 확인 요청을 보냈어요. 운영자가 확인하면 자동으로 진행됩니다.";
       } else if (cycle.ok) {
         message =
           "입금 내역을 확인하고 있어요. 확인되면 자동으로 갱신됩니다.";
-      } else {
-        message =
-          "입금 확인 요청을 받았습니다. 확인되면 자동으로 갱신됩니다.";
       }
     } catch {
       message =
-        "입금 확인 요청을 받았습니다. 확인되면 자동으로 갱신됩니다.";
+        "입금 확인 요청을 보냈어요. 운영자가 확인하면 자동으로 진행됩니다.";
     }
   }
 
   return NextResponse.json({
     ok: true,
-    alreadyResolved: false,
+    alreadyRequested: false,
     status: order.status,
+    paymentCheckRequested: true,
+    notificationSent,
     pollTriggered,
     bankCheckDisconnected,
     message,

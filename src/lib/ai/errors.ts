@@ -10,6 +10,7 @@ export type AiErrorCode =
   | "SEMANTIC_VALIDATION_FAILED"
   | "RETRY_EXHAUSTED"
   | "CONFIGURATION_ERROR"
+  | "PAID_AI_NOT_CONFIGURED"
   | "UNKNOWN";
 
 export class AiEngineError extends Error {

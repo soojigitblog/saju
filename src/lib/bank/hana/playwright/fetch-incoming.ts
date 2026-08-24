@@ -15,6 +15,8 @@ import {
   readSavedTxInquiryUrl,
   sessionProfileExists,
 } from "@/lib/bank/hana/playwright/session-paths";
+import { ensureHanaAutoLogin } from "@/lib/bank/hana/auth";
+import { isHanaAutoLoginFeatureEnabled } from "@/lib/bank/hana/auto-login-state";
 
 function loadFixtureRows(): HanaRawIncomingRow[] | null {
   const fixturePath = process.env.HANA_BANK_FIXTURE_JSON?.trim();
@@ -44,46 +46,72 @@ function throwForAuthState(
   auth: Awaited<ReturnType<typeof detectHanaAuthState>>
 ): void {
   if (auth === "LOGGED_IN") return;
+  if (auth === "CAPTCHA_REQUIRED") {
+    throw new BankProviderError(
+      "CAPTCHA_REQUIRED",
+      "CAPTCHA가 필요합니다. 자동 해결하지 않습니다."
+    );
+  }
   if (auth === "AUTH_REQUIRED") {
     throw new BankProviderError(
       "AUTH_REQUIRED",
       "추가 본인인증(OTP/보안매체)이 필요합니다. 자동 우회하지 않습니다."
     );
   }
-  // SESSION_EXPIRED or UNKNOWN after navigation — never treat as empty txs
   throw new BankProviderError(
     "HANA_SESSION_EXPIRED",
-    "하나은행 인증 세션이 만료되었습니다. npm run bank:hana:login 으로 다시 인증해 주세요."
+    "하나은행 인증 세션이 만료되었습니다."
   );
 }
 
-/**
- * Fetch recent IN transactions via authenticated Playwright persistent session.
- * No credential storage — session profile must exist from `npm run bank:hana:login`.
- *
- * Empty array means "logged in, no matching IN rows in window".
- * Session expiry / login redirect always throws HANA_SESSION_EXPIRED (never []).
- */
-export async function fetchHanaIncomingRows(
-  input: GetIncomingTransactionsInput
-): Promise<HanaRawIncomingRow[]> {
-  const fixture = loadFixtureRows();
-  if (fixture) {
-    return filterByWindow(fixture, input);
+function mapAutoLoginFailure(
+  code: string,
+  message: string
+): BankProviderError {
+  switch (code) {
+    case "CAPTCHA_REQUIRED":
+      return new BankProviderError("CAPTCHA_REQUIRED", message);
+    case "AUTH_REQUIRED":
+      return new BankProviderError("AUTH_REQUIRED", message);
+    case "LOGIN_FAILED":
+      return new BankProviderError("LOGIN_FAILED", message);
+    case "LOGIN_REQUIRED":
+      return new BankProviderError("LOGIN_REQUIRED", message);
+    case "AUTO_LOGIN_UNSUPPORTED":
+      return new BankProviderError("AUTO_LOGIN_UNSUPPORTED", message);
+    case "AUTO_LOGIN_DISABLED_TEMPORARILY":
+      return new BankProviderError("AUTO_LOGIN_DISABLED_TEMPORARILY", message);
+    default:
+      return new BankProviderError("HANA_SESSION_EXPIRED", message);
   }
+}
 
-  if (!sessionProfileExists()) {
+async function maybeAutoLogin(): Promise<void> {
+  if (!isHanaAutoLoginFeatureEnabled()) {
     throw new BankProviderError(
       "HANA_SESSION_EXPIRED",
-      "하나은행 인증 세션이 없습니다. npm run bank:hana:login 으로 다시 인증해 주세요."
+      "하나은행 세션이 만료되었습니다. npm run bank:hana:login 또는 자동 로그인을 사용하세요."
     );
   }
 
+  const result = await ensureHanaAutoLogin();
+  if (
+    result.code === "CONNECTED" ||
+    result.code === "SKIPPED_ALREADY_LOGGED_IN"
+  ) {
+    return;
+  }
+  throw mapAutoLoginFailure(result.code, result.message);
+}
+
+async function fetchOnce(
+  input: GetIncomingTransactionsInput
+): Promise<HanaRawIncomingRow[]> {
   const txUrl = readSavedTxInquiryUrl();
   if (!txUrl) {
     throw new BankProviderError(
       "BANK_NOT_CONFIGURED",
-      "거래내역 조회 URL이 저장되지 않았습니다. bank:hana:login 실행 후 거래내역 화면까지 이동해 주세요."
+      "거래내역 조회 URL이 저장되지 않았습니다. 로그인 후 거래내역 화면까지 이동해 주세요."
     );
   }
 
@@ -137,7 +165,6 @@ export async function fetchHanaIncomingRows(
     });
     await page.waitForTimeout(1500);
 
-    // Redirect to login after deep-link is the common expiry path
     throwForAuthState(await detectHanaAuthState(page));
 
     const optionalSearchSelector =
@@ -174,11 +201,46 @@ export async function fetchHanaIncomingRows(
       }
     }
 
-    // Final gate: never return [] from a login / unknown page
     throwForAuthState(await detectHanaAuthState(page));
 
     return filterByWindow(rows, input);
   } finally {
     await context.close();
+  }
+}
+
+/**
+ * Fetch recent IN transactions via Playwright persistent session.
+ * On session expiry, attempts ID/password auto-login (no CAPTCHA/MFA bypass).
+ */
+export async function fetchHanaIncomingRows(
+  input: GetIncomingTransactionsInput
+): Promise<HanaRawIncomingRow[]> {
+  const fixture = loadFixtureRows();
+  if (fixture) {
+    return filterByWindow(fixture, input);
+  }
+
+  if (!sessionProfileExists()) {
+    await maybeAutoLogin();
+  }
+
+  try {
+    return await fetchOnce(input);
+  } catch (error) {
+    if (!(error instanceof BankProviderError)) {
+      throw error;
+    }
+
+    if (error.code === "AUTH_REQUIRED" || error.code === "CAPTCHA_REQUIRED") {
+      throw error;
+    }
+
+    if (error.code !== "HANA_SESSION_EXPIRED") {
+      throw error;
+    }
+
+    await maybeAutoLogin();
+    return fetchOnce(input);
   }
 }

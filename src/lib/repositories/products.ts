@@ -7,6 +7,7 @@ import {
   getMockProductBySlug,
   mockProducts,
 } from "@/lib/mock-data";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import type { Product } from "@/types";
 import type { TablesInsert, TablesUpdate } from "@/types/database.types";
@@ -70,8 +71,9 @@ export async function getProductById(id: string): Promise<Product | null> {
     return getMockProductById(id) ?? null;
   }
 
-  const supabase = await createClient();
-  const { data, error } = await supabase
+  // Admin client: paid-report job / poller run outside Next request cookies.
+  const admin = createAdminClient();
+  const { data, error } = await admin
     .from("products")
     .select("*")
     .eq("id", id)

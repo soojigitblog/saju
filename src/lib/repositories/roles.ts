@@ -3,10 +3,15 @@ import "server-only";
 import { getDataMode } from "@/lib/repositories/data-mode";
 import { createClient } from "@/lib/supabase/server";
 
-export async function isCurrentUserAdmin(): Promise<boolean> {
+export type AdminUser = {
+  id: string;
+  email: string | null;
+};
+
+export async function getCurrentAdminUser(): Promise<AdminUser | null> {
   if (getDataMode() === "mock") {
-    // UI shell only — never treat localStorage / client flags as admin.
-    return false;
+    // UI shell / unit tests without Supabase session — never elevate from client flags.
+    return null;
   }
 
   const supabase = await createClient();
@@ -14,7 +19,7 @@ export async function isCurrentUserAdmin(): Promise<boolean> {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) return false;
+  if (!user) return null;
 
   const { data, error } = await supabase
     .from("user_roles")
@@ -23,5 +28,12 @@ export async function isCurrentUserAdmin(): Promise<boolean> {
     .maybeSingle();
 
   if (error) throw error;
-  return data?.role === "ADMIN";
+  if (data?.role !== "ADMIN") return null;
+
+  return { id: user.id, email: user.email ?? null };
+}
+
+export async function isCurrentUserAdmin(): Promise<boolean> {
+  const admin = await getCurrentAdminUser();
+  return admin !== null;
 }
