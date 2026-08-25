@@ -216,11 +216,11 @@ export function TarotFlowClient({ freeResultId }: { freeResultId: string }) {
           <section>
             <p className="hanja-accent mb-3">TAROT × 四柱</p>
             <h1 className="display-title text-[1.7rem] leading-snug md:text-3xl">
-              지금,
-              <br />
-              가장 마음에 걸리는 건 무엇인가요?
+              사주×타로 체험
             </h1>
             <p className="mt-4 text-sm leading-relaxed text-[var(--text-secondary)]">
+              지금, 가장 마음에 걸리는 건 무엇인가요?
+              <br />
               카드가 당신의 고민을 함께 들여다봅니다.
             </p>
 
@@ -287,9 +287,23 @@ export function TarotFlowClient({ freeResultId }: { freeResultId: string }) {
                 </p>
                 <p className="mt-2 text-sm leading-relaxed text-[var(--text-secondary)]">
                   내일 무료로 다시 뽑을 수도 있지만, 지금 당장 더 깊게 보고
-                  싶다면 유료 사주 리포트로 이어가 보세요.
+                  싶다면 사주×타로 심층 교차리딩으로 이어가 보세요.
                 </p>
                 <Button asChild size="full" variant="default" className="mt-5">
+                  <Link
+                    href={`/product/saju-tarot-deep?result=${freeResultId}`}
+                    onClick={() =>
+                      trackClientEvent({
+                        eventName: "paid_tarot_click",
+                        path: `/tarot/from/${freeResultId}`,
+                        metadata: { target: "paid_tarot" },
+                      })
+                    }
+                  >
+                    이 고민을 더 깊게 보기 · 4,900원
+                  </Link>
+                </Button>
+                <Button asChild size="full" variant="outline" className="mt-2">
                   <Link
                     href={`/result/${freeResultId}`}
                     onClick={() =>
@@ -300,21 +314,7 @@ export function TarotFlowClient({ freeResultId }: { freeResultId: string }) {
                       })
                     }
                   >
-                    유료 사주 리포트 보기
-                  </Link>
-                </Button>
-                <Button asChild size="full" variant="outline" className="mt-2">
-                  <Link
-                    href="/products"
-                    onClick={() =>
-                      trackClientEvent({
-                        eventName: "tarot_rate_limited_upsell_click",
-                        path: `/tarot/from/${freeResultId}`,
-                        metadata: { target: "products" },
-                      })
-                    }
-                  >
-                    리포트 상품 둘러보기
+                    사용설명서 상품 보기
                   </Link>
                 </Button>
                 <p className="mt-3 text-center text-[11px] text-[var(--text-muted)]">

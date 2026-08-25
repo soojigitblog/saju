@@ -295,6 +295,7 @@ function mockInsertOrder(input: TablesInsert<"orders">): Order {
     profile_id: input.profile_id,
     product_id: input.product_id,
     source_result_id: input.source_result_id ?? null,
+    source_tarot_reading_id: input.source_tarot_reading_id ?? null,
     amount: input.amount,
     currency: input.currency ?? "KRW",
     product_name_snapshot: input.product_name_snapshot ?? null,

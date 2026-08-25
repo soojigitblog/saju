@@ -14,25 +14,37 @@ import { OrnamentCard, MysticPanel } from "@/components/mystic/ornament-card";
 export function ProductDetail({
   product,
   linkedFreeResultId,
+  linkedTarotReadingId,
 }: {
   product: Product;
   linkedFreeResultId?: string | null;
+  linkedTarotReadingId?: string | null;
 }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [depositorName, setDepositorName] = useState("");
+  const isPaidTarot = product.productType === "tarot_paid";
 
   useEffect(() => {
     trackClientEvent({
-      eventName: "product_view",
+      eventName: isPaidTarot ? "paid_tarot_view" : "product_view",
       path: `/product/${product.slug}`,
       productId: product.id,
-      metadata: linkedFreeResultId
-        ? { resultId: linkedFreeResultId }
-        : undefined,
+      metadata: {
+        ...(linkedFreeResultId ? { resultId: linkedFreeResultId } : {}),
+        ...(linkedTarotReadingId
+          ? { tarotReadingId: linkedTarotReadingId }
+          : {}),
+      },
     });
-  }, [product.id, product.slug, linkedFreeResultId]);
+  }, [
+    product.id,
+    product.slug,
+    linkedFreeResultId,
+    linkedTarotReadingId,
+    isPaidTarot,
+  ]);
 
   async function onPurchase() {
     setError("");
@@ -48,6 +60,14 @@ export function ProductDetail({
     }
     setLoading(true);
     try {
+      trackClientEvent({
+        eventName: isPaidTarot
+          ? "paid_tarot_checkout_start"
+          : "checkout_start",
+        path: `/product/${product.slug}`,
+        productId: product.id,
+        metadata: { resultId: linkedFreeResultId },
+      });
       const res = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -56,6 +76,9 @@ export function ProductDetail({
           sourceResultId: linkedFreeResultId,
           depositorName: depositorName.trim(),
           paymentMethod: "BANK_TRANSFER",
+          ...(linkedTarotReadingId
+            ? { sourceTarotReadingId: linkedTarotReadingId }
+            : {}),
         }),
       });
       const data = (await res.json()) as {

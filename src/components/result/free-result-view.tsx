@@ -320,9 +320,7 @@ export function FreeResultView({
           <OrnamentCard className="relative px-6 py-10 text-center md:px-10">
             <p className="hanja-accent mb-3">四柱 → TAROT</p>
             <h2 className="display-title text-xl leading-snug md:text-2xl">
-              四柱가 당신의
-              <br />
-              타고난 모습을 보여줬다면
+              사주×타로 체험
             </h2>
             <p className="mt-5 text-sm leading-relaxed text-[var(--text-secondary)]">
               지금 마음속에 있는 질문은
@@ -330,8 +328,7 @@ export function FreeResultView({
               카드에게 물어보세요.
             </p>
             <p className="mx-auto mt-4 max-w-sm text-xs leading-relaxed text-[var(--text-muted)]">
-              사주는 당신의 타고난 흐름을 보여줬다면,
-              카드는 지금의 고민을 조금 더 가까이 들여다봅니다.
+              사주 + 현재 고민 + 3장 타로를 짧게 교차로 읽어 보는 무료 체험입니다.
             </p>
 
             {/* fan of card backs */}
@@ -348,16 +345,18 @@ export function FreeResultView({
                   })
                 }
               >
-                지금 내 고민 카드 뽑기
+                사주×타로 체험 시작
               </Link>
             </Button>
-            <p className="mt-3 text-xs text-[var(--text-muted)]">첫 타로 리딩 · 무료</p>
+            <p className="mt-3 text-xs text-[var(--text-muted)]">일일 무료 체험</p>
           </OrnamentCard>
         </section>
 
         {products.length > 0 ? (
           <div className="mt-12 space-y-4">
-            <p className="text-sm text-[var(--text-secondary)]">내 사주 전체 풀이 보기</p>
+            <p className="text-sm text-[var(--text-secondary)]">
+              나의 사용설명서로 더 깊게 보기
+            </p>
             {products.map((product) => (
               <div
                 key={product.id}
@@ -372,7 +371,7 @@ export function FreeResultView({
                 </p>
                 <Button asChild size="full" className="mt-4" variant="lock">
                   <Link href={`/product/${product.slug}?result=${result.id}`}>
-                    내 사주 전체 풀이 보기
+                    {product.name} 보기
                   </Link>
                 </Button>
               </div>

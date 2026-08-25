@@ -56,7 +56,7 @@ export async function generatePaidReportPreviewForOwner(input: {
   const products = await listActiveProducts();
   const product =
     products.find((p) => p.slug === input.productSlug) ?? products[0] ?? null;
-  const productName = product?.name ?? "종합 사주 리포트";
+  const productName = product?.name ?? "나의 사주 사용설명서";
   const productSlug = product?.slug ?? "2026-total";
 
   const paidPromptVersion = {

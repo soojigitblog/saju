@@ -41,6 +41,7 @@ export async function createOrderForGuest(input: {
   guestSessionId: string;
   productId: string;
   sourceResultId: string;
+  sourceTarotReadingId?: string;
   depositorName?: string;
   paymentMethod?: "BANK_TRANSFER" | "TOSS";
   analyticsSessionId?: string;
@@ -112,6 +113,7 @@ export async function createOrderForGuest(input: {
       400
     );
   }
+  // product_type tarot_paid is purchasable (Paid Saju×Tarot)
 
   const free = await getFreeResultById(input.sourceResultId);
   if (!free || free.generation_status !== "COMPLETED") {
@@ -164,6 +166,7 @@ export async function createOrderForGuest(input: {
     profile_id: profile.id,
     product_id: product.id,
     source_result_id: free.id,
+    source_tarot_reading_id: input.sourceTarotReadingId ?? null,
     amount,
     currency: "KRW",
     product_name_snapshot: product.name,
@@ -177,7 +180,10 @@ export async function createOrderForGuest(input: {
   try {
     await trackEvent({
       sessionId: input.analyticsSessionId ?? input.guestSessionId,
-      eventName: "checkout_start",
+      eventName:
+        product.productType === "tarot_paid"
+          ? "paid_tarot_checkout_start"
+          : "checkout_start",
       productId: product.id,
       metadata: {
         orderId: order.id,

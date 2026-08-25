@@ -67,6 +67,9 @@ export async function getFreeResultPageForOwner(input: {
   const birthYear = Number(String(profile.birth_date).slice(0, 4));
 
   const products = await listActiveProducts();
+  const fortuneProducts = products.filter(
+    (p) => (p.productType ?? "fortune") === "fortune"
+  );
 
   let dayMaster: FreeResultPageModel["result"]["dayMaster"] = null;
   let fiveElements: FreeResultPageModel["result"]["fiveElements"] = null;
@@ -103,6 +106,6 @@ export async function getFreeResultPageForOwner(input: {
       dayMaster,
       fiveElements,
     }),
-    products,
+    products: fortuneProducts,
   };
 }

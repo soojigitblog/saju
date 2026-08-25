@@ -10,7 +10,21 @@ import { formatFortuneEvidenceForDisplay } from "@/lib/presentation/format-evide
  * PHASE P1.3 — Premium paid report editorial layout.
  */
 export function PaidReportView({ report }: { report: PaidReport }) {
-  const isTotal = /종합|사용설명서|total/i.test(report.productName + report.headline);
+  const isTotal = /사주 사용설명서|종합|total/i.test(
+    report.productName + (report.headline ?? "")
+  );
+  const isMoney = /돈 사용설명서|money|재물/i.test(report.productName);
+  const isCareer = /일 사용설명서|career|직장/i.test(report.productName);
+  const isLove = /연애 사용설명서|love|연애/i.test(report.productName);
+  const coverTitle = isTotal
+    ? "사주 사용설명서"
+    : isCareer
+      ? "일 사용설명서"
+      : isLove
+        ? "연애 사용설명서"
+        : isMoney
+          ? "돈 사용설명서"
+          : report.productName;
 
   const levelKo = (level: "low" | "mid" | "high") =>
     level === "low" ? "낮음" : level === "high" ? "높음" : "중간";
@@ -25,13 +39,13 @@ export function PaidReportView({ report }: { report: PaidReport }) {
         <h1 className="display-title relative mt-6 text-3xl leading-snug sm:text-4xl">
           {report.nickname}님의
           <br />
-          {isTotal ? "사주 사용설명서" : "재물 사용설명서"}
+          {coverTitle}
         </h1>
         <p className="relative mt-4 text-sm text-[var(--text-secondary)]">
           {report.productName}
         </p>
         <p className="relative mt-8 text-[10px] text-[var(--text-muted)]">
-          {isTotal ? "PERSONAL FOUR PILLARS REPORT" : "MONEY READING"}
+          PERSONAL FOUR PILLARS REPORT
         </p>
         <p className="relative mt-6 text-[10px] text-[var(--text-muted)]">
           주문번호 {report.orderNo}

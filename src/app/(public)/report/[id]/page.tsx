@@ -4,11 +4,13 @@ import { getPaidReportForOwner } from "@/lib/services/get-paid-report";
 import { FreeFlowError } from "@/lib/services/free-flow-errors";
 import { getProfileById } from "@/lib/repositories/profiles";
 import { PaidReportView } from "@/components/report/paid-report-view";
+import { PaidTarotReportView } from "@/components/report/paid-tarot-report-view";
 import { MysticPage } from "@/components/mystic/celestial-background";
 import { Button } from "@/components/ui/button";
 import { mockPaidReport } from "@/lib/mock-data";
 import type { PaidReport } from "@/types";
 import type { PaidFortuneReport } from "@/lib/ai/schemas/paid-report";
+import type { PaidCrossReading } from "@/lib/ai/schemas/paid-cross-reading";
 
 export const dynamic = "force-dynamic";
 
@@ -125,6 +127,13 @@ type PageModel =
   | { kind: "demo"; report: PaidReport }
   | { kind: "view"; report: PaidReport }
   | {
+      kind: "paid_tarot";
+      reading: PaidCrossReading;
+      nickname: string;
+      orderNo: string;
+      productName: string;
+    }
+  | {
       kind: "message";
       title: string;
       body: string;
@@ -166,6 +175,17 @@ async function loadPage(input: {
     }
 
     const profile = await getProfileById(order.profile_id);
+    const raw = report.result_json as { reportKind?: string };
+    if (raw?.reportKind === "paid_tarot") {
+      return {
+        kind: "paid_tarot",
+        reading: report.result_json as unknown as PaidCrossReading,
+        nickname: profile?.nickname ?? "고객",
+        productName:
+          order.product_name_snapshot ?? "사주×타로 심층 교차리딩",
+        orderNo: order.order_no,
+      };
+    }
     return {
       kind: "view",
       report: mapToPaidReportView({
@@ -218,6 +238,17 @@ export default async function ReportPage({
 
   if (model.kind === "demo" || model.kind === "view") {
     return <PaidReportView report={model.report} />;
+  }
+
+  if (model.kind === "paid_tarot") {
+    return (
+      <PaidTarotReportView
+        reading={model.reading}
+        nickname={model.nickname}
+        orderNo={model.orderNo}
+        productName={model.productName}
+      />
+    );
   }
 
   return (

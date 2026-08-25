@@ -12,16 +12,17 @@ export const MOCK_PRODUCT_IDS = {
   career: "33333333-3333-3333-3333-333333333303",
   love: "33333333-3333-3333-3333-333333333304",
   total2027: "33333333-3333-3333-3333-333333333305",
+  paidTarot: "33333333-3333-3333-3333-333333333306",
 } as const;
 
 export const mockProducts: Product[] = [
   {
     id: MOCK_PRODUCT_IDS.total,
-    name: "종합 사주 리포트",
+    name: "나의 사주 사용설명서",
     slug: "2026-total",
-    shortDescription: "성향·일·돈·관계를 하나의 리포트로",
+    shortDescription: "판단·관계·일·돈·사랑이 한 사람 안에서 어떻게 연결되는지",
     description:
-      "타고난 성향과 결정 방식, 일·돈·관계에서 반복되는 패턴을 행동 중심으로 풀어 드립니다. 대운·세운 기반의 연도/월별 길흉 예언은 포함하지 않습니다.",
+      "타고난 성향과 결정 방식, 일·돈·관계에서 반복되는 패턴을 영역 간 연결과 모순·강점→그림자까지 묶어 풀어 드립니다. 각 Focus 리포트를 단순 합친 것이 아닙니다. 대운·세운 기반의 연도/월별 길흉 예언은 포함하지 않습니다.",
     regularPrice: 19900,
     salePrice: 12900,
     thumbnailUrl: "/images/product-total.svg",
@@ -30,6 +31,7 @@ export const mockProducts: Product[] = [
     templateId: "standard-report",
     status: "ACTIVE",
     sortOrder: 1,
+    productType: "fortune",
   },
   {
     id: MOCK_PRODUCT_IDS.total2027,
@@ -46,14 +48,15 @@ export const mockProducts: Product[] = [
     templateId: "standard-report",
     status: "INACTIVE",
     sortOrder: 2,
+    productType: "fortune",
   },
   {
     id: MOCK_PRODUCT_IDS.money,
-    name: "재물운 집중분석",
+    name: "나의 돈 사용설명서",
     slug: "2026-money",
-    shortDescription: "돈의 성향·새는 패턴·활용법을 깊게",
+    shortDescription: "벌고 쓰고 판단하고 관리할 때 반복되는 돈의 패턴",
     description:
-      "돈을 대하는 기본 성향, 벌고 새는 패턴, 판단이 흔들릴 때, 안정적으로 만드는 방식과 현실적인 행동 가이드를 집중 분석합니다. 특정 월·상하반기 길흉 타이밍 예언은 포함하지 않습니다.",
+      "돈이 들어오는 시기를 맞히는 운세가 아닙니다. 돈을 벌고 쓰고 판단하고 관리할 때 반복되는 나의 패턴을 행동 중심으로 깊게 읽습니다. 특정 월·상하반기 길흉 타이밍 예언은 포함하지 않습니다.",
     regularPrice: 9900,
     salePrice: 6900,
     thumbnailUrl: "/images/product-money.svg",
@@ -62,14 +65,15 @@ export const mockProducts: Product[] = [
     templateId: "standard-report",
     status: "ACTIVE",
     sortOrder: 3,
+    productType: "fortune",
   },
   {
     id: MOCK_PRODUCT_IDS.career,
-    name: "직장·이직운",
+    name: "나의 일 사용설명서",
     slug: "2026-career",
-    shortDescription: "잘 맞는 업무·조직 환경 집중 분석",
+    shortDescription: "직업명이 아니라, 능력이 살아나는 일의 조건과 패턴",
     description:
-      "일할 때의 캐릭터, 능력이 살아나는 업무, 답답해지는 조직, 갈등·과부하·인정 방식과 변화 신호를 행동 중심으로 분석합니다. 이직 월·승진 시기 예언은 포함하지 않습니다.",
+      "이직 시기를 예언하지 않습니다. 일할 때 능력이 살아나는 조건, 조직·책임·인정·과부하·변화 욕구를 행동 중심으로 분석합니다. 이직 월·승진 시기 예언은 포함하지 않습니다.",
     regularPrice: 9900,
     salePrice: 6900,
     thumbnailUrl: "/images/product-career.svg",
@@ -78,14 +82,15 @@ export const mockProducts: Product[] = [
     templateId: "standard-report",
     status: "ACTIVE",
     sortOrder: 4,
+    productType: "fortune",
   },
   {
     id: MOCK_PRODUCT_IDS.love,
-    name: "연애운",
+    name: "나의 연애 사용설명서",
     slug: "2026-love",
-    shortDescription: "끌림·갈등·거리의 행동 패턴 분석",
+    shortDescription: "관계가 깊어질수록 달라지는 나의 패턴",
     description:
-      "마음이 가는 방식, 관계가 깊어진 뒤의 패턴, 싸움과 거리, 잘 맞는 관계 방식을 실제 행동 중심으로 풀어 드립니다. 올해 인연·만남 시기 예언은 포함하지 않습니다.",
+      "새 인연 시기를 예언하지 않습니다. 호감·확신 전후·표현·서운함·갈등·거리·회복까지 관계가 깊어질수록 달라지는 나를 행동 중심으로 분석합니다. 올해 인연·만남 시기 예언은 포함하지 않습니다.",
     regularPrice: 9900,
     salePrice: 6900,
     thumbnailUrl: "/images/product-love.svg",
@@ -94,6 +99,24 @@ export const mockProducts: Product[] = [
     templateId: "standard-report",
     status: "ACTIVE",
     sortOrder: 5,
+    productType: "fortune",
+  },
+  {
+    id: MOCK_PRODUCT_IDS.paidTarot,
+    name: "사주×타로 심층 교차리딩",
+    slug: "saju-tarot-deep",
+    shortDescription: "타고난 패턴과 지금 이 고민을 깊게 교차로 읽기",
+    description:
+      "무료 체험의 긴 버전이 아닙니다. 내 타고난 패턴과 지금 이 고민을 함께 놓고, 카드별 의미·교차 연결·숨은 긴장·선택 관점·현실 행동까지 깊게 분석합니다. 미래 확정 예언은 포함하지 않습니다.",
+    regularPrice: 6900,
+    salePrice: 4900,
+    thumbnailUrl: "/images/product-total.svg",
+    freeRatio: 20,
+    promptName: "saju-tarot-deep@v1",
+    templateId: "paid-tarot-cross",
+    status: "ACTIVE",
+    sortOrder: 6,
+    productType: "tarot_paid",
   },
 ];
 
@@ -171,7 +194,7 @@ export const mockPaidReport: PaidReport = {
   id: "demo",
   orderNo: "20260820-00031",
   nickname: "수지",
-  productName: "종합 사주 리포트",
+  productName: "나의 사주 사용설명서",
   headline: "확인 후에야 속도가 나는 손",
   signatureStatement:
     "확인 후에야 속도가 나는 기질 — 그 손이 일과 관계와 돈을 관통합니다.",
@@ -261,10 +284,11 @@ export const mockAdminStats: AdminDashboardStats = {
     { label: "구매", value: 37 },
   ],
   productPerformance: [
-    { name: "종합 사주 리포트", purchases: 21, revenue: 270900 },
-    { name: "재물운 집중분석", purchases: 8, revenue: 55200 },
-    { name: "직장·이직운", purchases: 5, revenue: 34500 },
-    { name: "연애운", purchases: 3, revenue: 20700 },
+    { name: "나의 사주 사용설명서", purchases: 21, revenue: 270900 },
+    { name: "나의 돈 사용설명서", purchases: 8, revenue: 55200 },
+    { name: "나의 일 사용설명서", purchases: 5, revenue: 34500 },
+    { name: "나의 연애 사용설명서", purchases: 3, revenue: 20700 },
+    { name: "사주×타로 심층 교차리딩", purchases: 4, revenue: 19600 },
   ],
 };
 

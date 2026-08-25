@@ -702,7 +702,9 @@ export function buildMockPaidResultDeep(
       title: "돈과 통제",
       coreInsight: "돈은 금액 자체보다, 내가 설명하고 검수할 수 있는 흐름인가에 따라 안정감이 크게 달라질 수 있습니다.",
       behaviorScenes: moneyCard.behaviorPossibilities,
-      evidenceExplanation: ["재물 focused report보다 깊이는 덜하지만, 돈이 판단·일·관계와 연결되는 구조는 충분히 볼 수 있습니다."],
+      evidenceExplanation: [
+        "돈이 판단·일·관계와 어떻게 연결되는지 보는 축입니다. 금액 길흉이 아니라 설명·검수 가능한 흐름인가를 봅니다.",
+      ],
       evidence: ["dayMaster", "fiveElements.earth", "tenGods.day.stem"],
       evidenceAxisIds: ["day_master", "five_elements", "ten_gods_day"],
       counterPattern: moneyCard.counterPattern,
@@ -806,7 +808,27 @@ export function buildMockPaidResultDeep(
     keywords: ["속도 차이", "영역별 다른 축", "모순", "그림자", "개인 플레이북"],
     blueprint: {
       dayMasterTerm: `${ctx.dayMaster.stem}(${ctx.dayMaster.hangul})`,
-      dayMasterPlain: `${ctx.dayMaster.yinYang === "yang" ? "양" : "음"} ${ctx.dayMaster.element} 일간`,
+      dayMasterPlain: (() => {
+        const elHanja: Record<string, string> = {
+          wood: "木",
+          fire: "火",
+          earth: "土",
+          metal: "金",
+          water: "水",
+        };
+        const elHangul: Record<string, string> = {
+          wood: "목",
+          fire: "화",
+          earth: "토",
+          metal: "금",
+          water: "수",
+        };
+        const yy = ctx.dayMaster.yinYang === "yang" ? "양" : "음";
+        const yyH = ctx.dayMaster.yinYang === "yang" ? "陽" : "陰";
+        const h = elHanja[ctx.dayMaster.element] ?? "";
+        const k = elHangul[ctx.dayMaster.element] ?? "";
+        return `${yy}${k}(${yyH}${h}) 일간`;
+      })(),
       fiveElementsNote: fiveSnapshot(ctx).map((x) => `${x.label}${x.count}`).join(" "),
       tenGodsNote: `월 ${ctx.tenGods.month.stem} · 년 ${ctx.tenGods.year.stem} · 일지 ${ctx.tenGods.day.branch}`,
       structurePlain: "단일 성격 문장이 아니라, 서로 다른 축이 영역마다 다른 속도로 드러나는 구조",

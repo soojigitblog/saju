@@ -26,6 +26,8 @@ import {
   updateReport,
 } from "@/lib/repositories/reports";
 import { generatePaidInterpretation } from "@/lib/ai/interpreters/free-interpreter";
+import { generatePaidCrossReading } from "@/lib/ai/paid-cross-reading";
+import { resolvePaidTarotContext } from "@/lib/services/resolve-paid-tarot-context";
 import { buildPaidProductInstruction } from "@/lib/ai/prompts/build-paid-prompt";
 import { targetLengthForPaidProduct } from "@/lib/ai/schemas/paid-report";
 import { notifyPaidReportFailed } from "@/lib/notifications";
@@ -179,6 +181,7 @@ export async function startPaidReportJob(input: {
     );
   }
 
+  const isPaidTarot = product.productType === "tarot_paid";
   const baseGenerationKey = buildGenerationKey({
     calculationHash: chart.engine.calculationHash,
     promptVersionId,
@@ -222,7 +225,7 @@ export async function startPaidReportJob(input: {
     } else {
       const gen = await createAiGeneration({
         generation_key: ledgerKey,
-        result_type: "paid",
+        result_type: isPaidTarot ? "paid_tarot_cross" : "paid",
         profile_id: order.profile_id,
         chart_id: chartId,
         order_id: order.id,
@@ -244,9 +247,13 @@ export async function startPaidReportJob(input: {
   try {
     await trackEvent({
       sessionId: order.guest_session_id ?? order.id,
-      eventName: "paid_report_start",
+      eventName: isPaidTarot ? "paid_report_start" : "paid_report_start",
       productId: order.product_id,
-      metadata: { orderId: order.id, reportId: report.id },
+      metadata: {
+        orderId: order.id,
+        reportId: report.id,
+        kind: isPaidTarot ? "paid_tarot" : "paid_report",
+      },
     });
   } catch {
     /* best-effort */
@@ -256,35 +263,77 @@ export async function startPaidReportJob(input: {
     const profile = await getProfileById(order.profile_id);
     if (!profile) throw new Error("PROFILE_MISSING");
 
-    const generated = await generatePaidInterpretation(
-      chart,
-      {
-        slug: product.slug,
-        name: order.product_name_snapshot ?? product.name,
-        targetLengthChars: targetLengthForPaidProduct(product.slug),
-      },
-      {
-        promptDefinitionId: "11111111-1111-1111-1111-111111111101",
-        promptVersionId,
-        promptVersionNumber: 1,
-        productInstruction: buildPaidProductInstruction({
+    let resultBody: Record<string, unknown>;
+    let meta: {
+      provider: string;
+      model: string;
+      promptVersionId?: string;
+      usage?: {
+        inputTokens: number | null;
+        outputTokens: number | null;
+        totalTokens: number | null;
+      };
+      providerRequestId?: string;
+    };
+
+    if (isPaidTarot) {
+      const { tarotContext } = await resolvePaidTarotContext({
+        sourceTarotReadingId:
+          (order as { source_tarot_reading_id?: string | null })
+            .source_tarot_reading_id ?? null,
+        freeResultId: order.source_result_id,
+        questionCategoryFallback: "advice",
+      });
+      const generated = await generatePaidCrossReading({
+        chart,
+        tarotContext,
+        orderId: order.id,
+      });
+      const { meta: m, ...body } = generated;
+      resultBody = body as unknown as Record<string, unknown>;
+      meta = m;
+      try {
+        await trackEvent({
+          sessionId: order.guest_session_id ?? order.id,
+          eventName: "paid_tarot_generation_complete",
+          productId: order.product_id,
+          metadata: { orderId: order.id, reportId: report.id },
+        });
+      } catch {
+        /* best-effort */
+      }
+    } else {
+      const generated = await generatePaidInterpretation(
+        chart,
+        {
           slug: product.slug,
           name: order.product_name_snapshot ?? product.name,
-        }),
-      },
-      {
-        presentation: {
-          nickname: profile.nickname,
-          maritalStatus: profile.marital_status ?? undefined,
-          hasChildren: profile.has_children ?? null,
+          targetLengthChars: targetLengthForPaidProduct(product.slug),
         },
-      }
-    );
-
-    const { meta, ...resultBody } = generated;
+        {
+          promptDefinitionId: "11111111-1111-1111-1111-111111111101",
+          promptVersionId,
+          promptVersionNumber: 1,
+          productInstruction: buildPaidProductInstruction({
+            slug: product.slug,
+            name: order.product_name_snapshot ?? product.name,
+          }),
+        },
+        {
+          presentation: {
+            nickname: profile.nickname,
+            maritalStatus: profile.marital_status ?? undefined,
+            hasChildren: profile.has_children ?? null,
+          },
+        }
+      );
+      const { meta: m, ...body } = generated;
+      resultBody = body as unknown as Record<string, unknown>;
+      meta = m;
+    }
 
     const estimatedCost = estimateAiCostUsd({
-      provider: meta.provider,
+      provider: meta.provider as "gemini" | "openai" | "mock",
       inputTokens: meta.usage?.inputTokens,
       outputTokens: meta.usage?.outputTokens,
     });
@@ -314,7 +363,10 @@ export async function startPaidReportJob(input: {
           output_tokens: meta.usage?.outputTokens ?? null,
           total_tokens: meta.usage?.totalTokens ?? null,
           provider_request_id: meta.providerRequestId ?? null,
-          latency_ms: meta.latencyMs ?? null,
+          latency_ms:
+            "latencyMs" in meta
+              ? ((meta as { latencyMs?: number | null }).latencyMs ?? null)
+              : null,
           estimated_ai_cost_usd: estimatedCost,
           completed_at: new Date().toISOString(),
         });

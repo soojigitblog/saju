@@ -37,6 +37,11 @@ const ALLOWED_EVENTS = new Set<AnalyticsEventName>([
   "payment_fail",
   "paid_report_start",
   "paid_report_completed",
+  "paid_tarot_view",
+  "paid_tarot_click",
+  "paid_tarot_checkout_start",
+  "paid_tarot_payment_complete",
+  "paid_tarot_generation_complete",
 ]);
 
 const bodySchema = z.object({

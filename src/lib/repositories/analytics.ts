@@ -35,6 +35,11 @@ export type AnalyticsEventName =
   | "payment_request"
   | "paid_report_start"
   | "paid_report_completed"
+  | "paid_tarot_view"
+  | "paid_tarot_click"
+  | "paid_tarot_checkout_start"
+  | "paid_tarot_payment_complete"
+  | "paid_tarot_generation_complete"
   | (string & {});
 
 export async function upsertAnalyticsSession(input: {

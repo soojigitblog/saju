@@ -19,6 +19,7 @@ const bodySchema = z.object({
   sourceResultId: uuidLike,
   depositorName: z.string().min(2).max(40),
   paymentMethod: z.enum(["BANK_TRANSFER", "TOSS"]).optional(),
+  sourceTarotReadingId: uuidLike.optional(),
   // Ignored — never trust client prices
   amount: z.number().optional(),
   price: z.number().optional(),
@@ -91,6 +92,7 @@ export async function POST(request: Request) {
       depositorName: parsed.data.depositorName,
       paymentMethod: parsed.data.paymentMethod ?? "BANK_TRANSFER",
       analyticsSessionId: analyticsId,
+      sourceTarotReadingId: parsed.data.sourceTarotReadingId,
     });
 
     return NextResponse.json({

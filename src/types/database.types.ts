@@ -330,6 +330,7 @@ export type Database = {
           profile_id: string;
           product_id: string;
           source_result_id: string | null;
+          source_tarot_reading_id: string | null;
           amount: number;
           currency: string;
           product_name_snapshot: string | null;
@@ -363,6 +364,7 @@ export type Database = {
           profile_id: string;
           product_id: string;
           source_result_id?: string | null;
+          source_tarot_reading_id?: string | null;
           amount: number;
           currency?: string;
           product_name_snapshot?: string | null;
@@ -396,6 +398,7 @@ export type Database = {
           profile_id?: string;
           product_id?: string;
           source_result_id?: string | null;
+          source_tarot_reading_id?: string | null;
           amount?: number;
           currency?: string;
           product_name_snapshot?: string | null;
@@ -651,7 +654,7 @@ export type Database = {
         Row: {
           id: string;
           generation_key: string;
-          result_type: "free" | "paid" | "tarot_cross";
+          result_type: "free" | "paid" | "tarot_cross" | "paid_tarot_cross";
           profile_id: string | null;
           chart_id: string | null;
           order_id: string | null;
@@ -678,7 +681,7 @@ export type Database = {
         Insert: {
           id?: string;
           generation_key: string;
-          result_type: "free" | "paid" | "tarot_cross";
+          result_type: "free" | "paid" | "tarot_cross" | "paid_tarot_cross";
           profile_id?: string | null;
           chart_id?: string | null;
           order_id?: string | null;
@@ -705,7 +708,7 @@ export type Database = {
         Update: {
           id?: string;
           generation_key?: string;
-          result_type?: "free" | "paid" | "tarot_cross";
+          result_type?: "free" | "paid" | "tarot_cross" | "paid_tarot_cross";
           profile_id?: string | null;
           chart_id?: string | null;
           order_id?: string | null;

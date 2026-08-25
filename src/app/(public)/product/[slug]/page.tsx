@@ -22,10 +22,10 @@ export default async function ProductPage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ result?: string }>;
+  searchParams: Promise<{ result?: string; tarot?: string }>;
 }) {
   const { slug } = await params;
-  const { result: resultId } = await searchParams;
+  const { result: resultId, tarot: tarotReadingId } = await searchParams;
   const product = await getProductBySlug(slug);
   if (!product || product.status !== "ACTIVE") notFound();
 
@@ -44,7 +44,16 @@ export default async function ProductPage({
     // Unowned/invalid result query is ignored — never trust URL alone for PHASE 6 checkout
   }
 
+  const linkedTarotReadingId =
+    tarotReadingId && /^[0-9a-f-]{36}$/i.test(tarotReadingId)
+      ? tarotReadingId
+      : null;
+
   return (
-    <ProductDetail product={product} linkedFreeResultId={linkedResultId} />
+    <ProductDetail
+      product={product}
+      linkedFreeResultId={linkedResultId}
+      linkedTarotReadingId={linkedTarotReadingId}
+    />
   );
 }

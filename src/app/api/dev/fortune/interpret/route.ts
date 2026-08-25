@@ -65,7 +65,7 @@ export async function POST(request: Request) {
     promptDefinitionId: "11111111-1111-1111-1111-111111111101",
     promptVersionId: "22222222-2222-2222-2222-222222222201",
     promptVersionNumber: 1,
-    productInstruction: "종합 사주 리포트 콘텐츠를 작성하십시오.",
+    productInstruction: "나의 사주 사용설명서 콘텐츠를 작성하십시오.",
   };
 
   const interpreter = createFortuneInterpreter(
@@ -77,7 +77,7 @@ export async function POST(request: Request) {
       const result = await generateFreeInterpretation(chart, promptVersion, {
         interpreter,
         presentation: { nickname: input.nickname },
-        product: { slug: input.productSlug, name: "종합 사주 리포트" },
+        product: { slug: input.productSlug, name: "나의 사주 사용설명서" },
       });
       return NextResponse.json({
         ok: true,
@@ -93,7 +93,7 @@ export async function POST(request: Request) {
 
     const result = await generatePaidInterpretation(
       chart,
-      { slug: input.productSlug, name: "종합 사주 리포트", targetLengthChars: 4000 },
+      { slug: input.productSlug, name: "나의 사주 사용설명서", targetLengthChars: 4000 },
       promptVersion,
       {
         interpreter,
