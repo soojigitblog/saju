@@ -33,10 +33,10 @@ describe("FINAL RELEASE visible saju evidence polish", () => {
   it("shows at least 2 evidence blocks on Career and Love", () => {
     const career = htmlFor("2026-career", "나의 일 사용설명서");
     const love = htmlFor("2026-love", "나의 연애 사용설명서");
-    expect((career.match(/왜 이런 해석이 나왔나요\?/g) ?? []).length).toBeGreaterThanOrEqual(2);
-    expect((love.match(/왜 이런 해석이 나왔나요\?/g) ?? []).length).toBeGreaterThanOrEqual(2);
-    expect(career).toMatch(/명식에서 읽은 근거/);
-    expect(love).toMatch(/쉽게 말하면/);
+    expect((career.match(/사주에서는 왜 이렇게 보는지|왜 이런 해석이 나왔나요\?/g) ?? []).length).toBeGreaterThanOrEqual(2);
+    expect((love.match(/사주에서는 왜 이렇게 보는지|왜 이런 해석이 나왔나요\?/g) ?? []).length).toBeGreaterThanOrEqual(2);
+    expect(career).toMatch(/명식 근거|명식에서 읽은 근거/);
+    expect(love).toMatch(/쉬운 뜻|쉽게 말하면/);
     expect(career).not.toMatch(/경로 균형/);
     expect(love).not.toMatch(/지나치게 무던한/);
   });
@@ -53,7 +53,7 @@ describe("FINAL RELEASE visible saju evidence polish", () => {
   it("removes money customer meta practicalMeaning", () => {
     const money = htmlFor("2026-money", "나의 돈 사용설명서");
     expect(money).not.toMatch(/돈 성향은[^.]*입체적/);
-    expect(money).toMatch(/왜 이런 해석이 나왔나요\?/);
-    expect((money.match(/class="page /g) ?? []).length).toBe(4);
+    expect(money).toMatch(/사주에서는 왜 이렇게 보는지|왜 이런 해석이 나왔나요\?/);
+    expect((money.match(/class="page /g) ?? []).length).toBeGreaterThanOrEqual(6);
   });
 });

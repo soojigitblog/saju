@@ -174,6 +174,37 @@ export const paidSectionSchema = z.object({
   includeWhyBox: z.boolean().optional(),
   /** Paradox / reversal insight for this chapter (optional). */
   paradoxNote: z.string().min(1).max(220).optional(),
+  // --- Consulting-grade optional depth (PHASE consulting) ---
+  discoveryLevel: z.union([z.literal(1), z.literal(2), z.literal(3)]).optional(),
+  reactionChain: z
+    .array(
+      z.object({
+        label: z.string().min(1).max(40),
+        text: z.string().min(1).max(160),
+      })
+    )
+    .min(2)
+    .max(8)
+    .optional(),
+  selfInterpretation: z.string().min(1).max(220).optional(),
+  outsideInterpretation: z.string().min(1).max(220).optional(),
+  /** How the person often misreads this pattern as a personality flaw. */
+  selfMisread: z.string().min(1).max(220).optional(),
+  /** Level 2–3 causal explanation beyond coreInsight. */
+  whyDeeper: z.string().min(1).max(480).optional(),
+});
+
+/** Cross-domain bridge (Total consulting). */
+export const paidCrossDomainLinkSchema = z.object({
+  from: z.string().min(1).max(24),
+  to: z.string().min(1).max(24),
+  bridge: z.string().min(1).max(280),
+});
+
+/** Start → reaction → result pattern chain (Total consulting). */
+export const paidPatternChainSchema = z.object({
+  title: z.string().min(1).max(60),
+  steps: z.array(z.string().min(1).max(120)).min(3).max(8),
 });
 
 /** Optional rhythm notes — NOT 대운/세운. */
@@ -274,8 +305,12 @@ export const paidFortuneReportSchema = z.object({
   /** Total only: 사주 설계도 3단 설명 */
   blueprint: paidBlueprintSchema.optional(),
   sections: z.array(paidSectionSchema).min(6).max(14),
-  contradictions: z.array(paidContradictionSchema).max(4).optional(),
+  contradictions: z.array(paidContradictionSchema).max(6).optional(),
   strengthShadows: z.array(paidStrengthShadowSchema).max(5).optional(),
+  /** Total consulting: domain-to-domain discovery bridges. */
+  crossDomainLinks: z.array(paidCrossDomainLinkSchema).max(8).optional(),
+  /** Total consulting: repeated start→reaction→result chains. */
+  patternChains: z.array(paidPatternChainSchema).max(6).optional(),
   /** Total: “이런 장면, 익숙하지 않나요?” spread (6~10). */
   lifeScenes: z.array(z.string().min(1).max(220)).max(12).optional(),
   actionItems: z.array(paidActionItemSchema).min(5).max(12),
@@ -294,6 +329,11 @@ export type PaidFortuneReport = z.infer<typeof paidFortuneReportSchema>;
 export type PaidSectionKey = z.infer<typeof paidSectionKeySchema>;
 export type PaidMonthlyOutlook = z.infer<typeof paidMonthlyOutlookSchema>;
 export type PaidSection = z.infer<typeof paidSectionSchema>;
+export type PaidContradiction = z.infer<typeof paidContradictionSchema>;
+export type PaidStrengthShadow = z.infer<typeof paidStrengthShadowSchema>;
+export type PaidActionItem = z.infer<typeof paidActionItemSchema>;
+export type PaidCrossDomainLink = z.infer<typeof paidCrossDomainLinkSchema>;
+export type PaidPatternChain = z.infer<typeof paidPatternChainSchema>;
 
 export const paidFortuneReportStrictSchema = paidFortuneReportSchema;
 

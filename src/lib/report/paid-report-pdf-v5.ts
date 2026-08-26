@@ -9,6 +9,20 @@ import type {
 } from "@/lib/ai/interpretation-context-v2";
 import type { PaidFortuneReport, PaidSection } from "@/lib/ai/schemas/paid-report";
 import type { FortuneAiContext } from "@/lib/ai/types";
+import {
+  glossaryCompactHtml,
+  glossFirstMentions,
+  sanitizeEditorialCopy,
+  scopeBlockHtml,
+  stripLabeledPrefix,
+} from "@/lib/report/v5/easy-korean";
+import {
+  buildCareerValuePack,
+  buildLoveValuePack,
+  buildMoneyValuePack,
+  buildTotalValuePack,
+  type InsightUnit,
+} from "@/lib/report/v5/easy-value-pack";
 import { v5BaseCss, v5FontsHead } from "@/lib/report/v5/css";
 import { coverTitleForProduct, KNOWN_PARTICLE_ERRORS } from "@/lib/report/v5/tokens";
 
@@ -21,43 +35,258 @@ function esc(s: string | undefined | null) {
 }
 
 function cleanCustomerText(s: string): string {
-  return s
-    .replace(/이 장은[^.。]*예언하지 않습니다[^.。]*[。.…]?/g, "")
-    .replace(/재물\s*focused\s*report[^。.…]*/gi, "")
-    .replace(/이 리포트를 읽고 나면[^。.…]*/g, "")
-    .replace(/Focused\s*report[^。.…]*/gi, "")
-    .replace(/단일 성격 문장이 아니라[^。.…]*/g, "")
-    .replace(/같은 단어로 덮지 않고[^。.…]*/g, "")
-    .replace(/이\s*(재물|일|연애)\s*리포트의\s*핵심은[^.。]*[。.…]?/g, "")
-    .replace(/[^。.\n]{0,24}리포트의\s*핵심은[^.。]*[。.…]?/g, "")
-    .replace(/좋은\s*재물\s*리포트는[^.。]*[。.…]?/g, "")
-    .replace(/연애\s*focused\s*report[^.。]*[。.…]?/gi, "")
-    .replace(/돈 성향은[^.。]*입체적입니다[。.…]?/g, "")
-    .replace(/사람과 돈을 별도 장면으로 보는 것이[^.。]*[。.…]?/g, "")
-    .replace(/\s{2,}/g, " ")
+  return sanitizeEditorialCopy(
+    s
+      .replace(/이 장은[^.。]*예언하지 않습니다[^.。]*[。.…]?/g, "")
+      .replace(/재물\s*focused\s*report[^。.…]*/gi, "")
+      .replace(/이 리포트를 읽고 나면[^。.…]*/g, "")
+      .replace(/Focused\s*report[^。.…]*/gi, "")
+      .replace(/단일 성격 문장이 아니라[^。.…]*/g, "")
+      .replace(/같은 단어로 덮지 않고[^。.…]*/g, "")
+      .replace(/이\s*(재물|일|연애)\s*리포트의\s*핵심은[^.。]*[。.…]?/g, "")
+      .replace(/[^。.\n]{0,24}리포트의\s*핵심은[^.。]*[。.…]?/g, "")
+      .replace(/좋은\s*재물\s*리포트는[^.。]*[。.…]?/g, "")
+      .replace(/연애\s*focused\s*report[^.。]*[。.…]?/gi, "")
+      .replace(/돈 성향은[^.。]*입체적입니다[。.…]?/g, "")
+      .replace(/사람과 돈을 별도 장면으로 보는 것이[^.。]*[。.…]?/g, "")
+      .replace(/\s{2,}/g, " ")
+      .trim()
+  );
+}
+
+/** Exact-sentence key for global duplicate sweep (body copy only). */
+function exactNorm(s: string): string {
+  return cleanCustomerText(s)
+    .replace(/\([^)]*\)/g, "")
+    .replace(/\s+/g, " ")
     .trim();
+}
+
+function hasExact(used: Set<string>, line: string): boolean {
+  const key = exactNorm(line);
+  if (!key) return true;
+  if (used.has(key)) return true;
+  for (const u of used) {
+    if (u === key) return true;
+  }
+  return false;
+}
+
+function claimExact(
+  used: Set<string>,
+  raw: string,
+  glossSeen?: Set<string>
+): string {
+  const cleaned = cleanCustomerText(raw);
+  if (!cleaned) return "";
+  const t = glossSeen ? glossFirstMentions(cleaned, glossSeen) : cleaned;
+  if (!t) return "";
+  const key = exactNorm(t);
+  if (key.length >= 12 && hasExact(used, t)) return "";
+  if (key.length >= 12) used.add(key);
+  return t;
+}
+
+/** Reserve detail sentences so Overview can only show a shorter teaser, never the same sentence. */
+function reserveDetailLines(reserved: Set<string>, units: InsightUnit[]) {
+  for (const u of units) {
+    for (const raw of [
+      u.conclusion,
+      u.moment,
+      u.whyMatters,
+      u.counter,
+      ...(u.scenes ?? []),
+      u.evidenceNote,
+    ]) {
+      if (!raw) continue;
+      const key = exactNorm(raw);
+      if (key.length >= 18) reserved.add(key);
+    }
+  }
+}
+
+function reserveRawLines(reserved: Set<string>, lines: (string | undefined)[]) {
+  for (const raw of lines) {
+    if (!raw) continue;
+    const key = exactNorm(raw);
+    if (key.length >= 18) reserved.add(key);
+  }
+}
+
+/**
+ * Curated Overview teasers — same insight, natural short form.
+ * Never invent new insights; never mechanical “때가 있다 / 편이다” morphing.
+ */
+const OVERVIEW_TEASER_RULES: Array<{ re: RegExp; teaser: string }> = [
+  // Career
+  { re: /끝이 보이는 일에서 유독 강해지는/, teaser: "끝이 보일수록 힘이 붙는 편" },
+  { re: /완료 조건을 같이 적어/, teaser: "완료 조건을 함께 정해 주는 사람이 편할 수 있음" },
+  { re: /일이 꼬이면 말수가 줄고/, teaser: "일이 꼬이면 메모와 체크리스트가 늘어남" },
+  { re: /질문이 많은 건/, teaser: "질문이 많아지는 건 기준을 찾는 과정일 수 있음" },
+  { re: /성과가 말이 되는 구조/, teaser: "성과가 설명될수록 꾸준함이 오래감" },
+  { re: /완료 조건이 보여야 제대로 힘을/, teaser: "완료 조건이 보여야 힘이 살아남" },
+  { re: /내가 하면 빠르니까/, teaser: "혼자 떠안는 속도가 과부하로 이어질 수 있음" },
+  { re: /기준 문장.?이 부족/, teaser: "회의가 길어질 땐 기준 문장이 모자랄 수 있음" },
+  { re: /기준 없는 수정이 반복/, teaser: "기준 없는 수정이 반복되면 에너지가 빠짐" },
+  { re: /결과가 흔들리지 않는다는/, teaser: "결과의 흔들림 없음이 인정 방식일 수 있음" },
+  { re: /지금이 더 이상 설명되지 않을/, teaser: "지금 구조가 설명되지 않을 때 움직이게 됨" },
+  { re: /어디까지 맡을지를 먼저/, teaser: "어디까지 맡을지를 먼저 정하는 편" },
+  { re: /시작 전에 범위.?완료 조건을 확인/, teaser: "시작 전에 범위와 완료 조건을 확인하는 편" },
+  { re: /역할이 흐리면 스스로 더 많이 떠안/, teaser: "역할이 흐리면 혼자 더 떠안을 수 있음" },
+  { re: /기준과 보상이 흐려질 때 이동/, teaser: "기준·보상이 흐려질 때 이동을 검토하게 됨" },
+  { re: /기준 없는 수정과 역할 불명확/, teaser: "기준 없는 수정과 흐린 역할에서 마찰이 커짐" },
+  { re: /느낌상 다시.?같은 요청/, teaser: "기준 없는 수정이 반복되면 과정이 더 피곤해짐" },
+  { re: /책임 범위가 흐리면 스스로 더 많이/, teaser: "책임 범위가 흐리면 혼자 더 떠안을 수 있음" },
+  { re: /조용히 듣는 건 동의가 아니라/, teaser: "조용히 듣는 건 정리 중일 수 있음" },
+  { re: /혼자 초안을 정리하고/, teaser: "초안 정리 후 품질을 맞추는 리듬에서 힘이 남" },
+
+  // Love
+  { re: /확신 없이 앞서가는/, teaser: "확신 전에는 속도를 조절하는 편" },
+  { re: /말보다 태도의 일관성을 더 오래/, teaser: "말보다 태도의 일관성을 오래 살핌" },
+  { re: /확신 후에는 말보다 행동이/, teaser: "확신 후에는 현실적인 챙김이 늘어남" },
+  { re: /확신이 생기면 표현보다 실질적 챙김/, teaser: "확신 후에는 현실적인 챙김이 늘어남" },
+  { re: /호감이 있어도 확신 전에는 표현 속도/, teaser: "확신 전에는 표현이 늦게 보일 수 있음" },
+  { re: /좋아할수록 말수가 줄고/, teaser: "호감이 있어도 표현은 늦게 보일 수 있음" },
+  { re: /작은 서운함이 정리되지 않고/, teaser: "서운함은 한 번보다 반복될 때 커짐" },
+  { re: /정리될 때까지 말을 아끼/, teaser: "갈등 초반에는 말이 줄어들 수 있음" },
+  { re: /태도.?일관성에서 먼저 반응/, teaser: "태도·일관성에서 먼저 반응하는 편" },
+  { re: /기준이 채워지면 속도가 바뀌/, teaser: "기준이 채워지면 속도가 바뀌는 전환점이 생김" },
+  { re: /말로 길게 설명하기보다 실질/, teaser: "말보다 실질 준비로 보이는 편" },
+  { re: /좋아함보다 신뢰가 먼저/, teaser: "좋아함보다 신뢰가 먼저 쌓여야 마음이 편해짐" },
+  { re: /관계 정의 전에는 속도를 조절|관계 정의 전에는 스스로 속도를/, teaser: "확신 전에는 속도를 조절하는 편" },
+  { re: /확신이 생기면 챙김의 속도/, teaser: "확신 후에는 현실적인 챙김이 늘어남" },
+  { re: /분위기는 좋아도 확신 전에는/, teaser: "확신 전에는 관찰이 먼저인 편" },
+  { re: /행동 패턴을 더 오래 볼/, teaser: "말보다 행동 패턴을 더 오래 살핌" },
+  { re: /시간.?실행.?정리된 배려/, teaser: "확신 후에는 실질 배려로 마음을 보임" },
+  { re: /관계를 지키기 위한 기준도 함께/, teaser: "확신이 생기면 기준도 함께 세우려 함" },
+  { re: /화려한 표현보다 태도와 일관성/, teaser: "말보다 태도의 일관성을 오래 살핌" },
+
+  // Money
+  { re: /버는 데서 보는 기준과/, teaser: "벌 때와 쓸 때 중요하게 보는 기준이 다름" },
+  { re: /쓰는 데서 보는 기준이 다를/, teaser: "벌 때와 쓸 때 중요하게 보는 기준이 다름" },
+  { re: /한 달 뒤엔 큰 구멍/, teaser: "작은 반복 지출이 나중에 크게 느껴질 수 있음" },
+  { re: /금액보다.{0,4}찜찜함.{0,4}이 먼저/, teaser: "결정을 미룰수록 금액보다 찜찜함이 커질 수 있음" },
+  { re: /결정을 미루는 날이 길어질수록/, teaser: "결정을 미룰수록 금액보다 찜찜함이 커질 수 있음" },
+  { re: /큰돈은 막는데,\s*작은 반복/, teaser: "큰돈보다 작은 반복을 늦게 발견하는 편" },
+  { re: /끝나는 날짜가 있는 작은 약속/, teaser: "끝나는 날짜가 있는 작은 약속이 더 잘 남음" },
+  { re: /능력보다 환경이 먼저 맞아야/, teaser: "능력보다 환경이 먼저 맞아야 강점이 작동함" },
+  { re: /반복 장면에 맞는 규칙 다섯/, teaser: "반복 장면에 맞는 규칙이 더 쓸모 있음" },
+  { re: /정산 문장이 없을 때 찜찜함/, teaser: "정산 문장이 없으면 찜찜함이 커질 수 있음" },
+
+  // Total / shared discovery
+  { re: /설명 가능한 흐름인가가/, teaser: "돈에서는 금액보다 흐름이 설명되는지가 중요함" },
+  { re: /마음을 정하기 전의 속도/, teaser: "연애에서는 마음을 정하기 전과 후의 속도가 다름" },
+  { re: /확신 전과 후의 속도 차이/, teaser: "연애에서는 마음을 정하기 전과 후의 속도가 다름" },
+  { re: /정리가 끝나지 않은 상태가 길어질/, teaser: "끝나지 않은 일이 오래 남을수록 스트레스가 쌓임" },
+  { re: /스트레스는 일이 많아서보다/, teaser: "끝나지 않은 일이 오래 남을수록 스트레스가 쌓임" },
+  { re: /속으로는 이미 내부 결론/, teaser: "겉으로 맞추는 동안 속에서는 이미 결론이 진행될 수 있음" },
+  { re: /수집과 확정의 속도가 서로 다를/, teaser: "판단은 수집과 확정의 속도가 다름" },
+  { re: /처음의 나와 가까워진 뒤의 내가/, teaser: "처음과 가까워진 뒤의 내가 다르게 보일 수 있음" },
+  { re: /과해지는 구간을 아는 것이 더 중요/, teaser: "강점보다 과해지는 구간을 아는 게 중요함" },
+  { re: /재촉받을수록 바로 결론보다 자료/, teaser: "재촉받을수록 자료를 더 모을 수 있음" },
+  { re: /가까운 사이일수록 처음보다 경계/, teaser: "가까워질수록 경계가 선명해질 수 있음" },
+];
+
+function lookupOverviewTeaser(line: string): string {
+  const t = cleanCustomerText(line);
+  if (!t) return "";
+  for (const row of OVERVIEW_TEASER_RULES) {
+    if (row.re.test(t)) return row.teaser;
+  }
+  return "";
+}
+
+/** Soft style only — never invent subjects or glue “때가 있다/편이다”. */
+function overviewTeaserFallback(line: string): string {
+  const t = cleanCustomerText(line);
+  if (t.length < 12) return "";
+  if (/때가 있다|편이다|타입일 때|사람일 때/.test(t)) return "";
+
+  let out = t
+    .replace(/수 있습니다\.?$/u, "수 있음")
+    .replace(/수 있다\.?$/u, "수 있음")
+    .replace(/습니다\.?$/u, "음")
+    .replace(/입니다\.?$/u, "임");
+
+  // Keep short complete claims; omit long unmapped detail clones.
+  if (exactNorm(out) === exactNorm(t) && t.length > 40) return "";
+  if (out.length < 10 || out.length > 44) return "";
+  if (/때가 있다|편이다/.test(out)) return "";
+  // Reject subject-less fragments that start mid-clause.
+  if (/^(더 |먼저 |길어질|커질|보일|다를)/.test(out)) return "";
+  return out;
+}
+
+function overviewClaim(
+  used: Set<string>,
+  reservedDetail: Set<string>,
+  raw: string,
+  glossSeen?: Set<string>
+): string {
+  const cleaned = cleanCustomerText(raw);
+  if (!cleaned) return "";
+
+  const mapped = lookupOverviewTeaser(cleaned);
+  if (mapped) {
+    if (hasExact(used, mapped)) return "";
+    return claimExact(used, mapped, glossSeen);
+  }
+
+  const key = exactNorm(cleaned);
+  const clash = reservedDetail.has(key) || hasExact(used, cleaned);
+  if (clash || cleaned.length > 40) {
+    const teaser = overviewTeaserFallback(cleaned);
+    if (!teaser || hasExact(used, teaser) || reservedDetail.has(exactNorm(teaser))) {
+      return "";
+    }
+    return claimExact(used, teaser, glossSeen);
+  }
+  return claimExact(used, cleaned, glossSeen);
+}
+
+/** Human-language teaser QA — mechanical morph / missing-subject patterns. */
+export function findAwkwardTeaserPatterns(text: string): string[] {
+  const hits: string[] = [];
+  const plain = text.replace(/<[^>]+>/g, " ");
+  for (const re of [
+    /[가-힣]{2,20}일 때가 있다/g,
+    /[가-힣]{2,20}타입일 때가 있다/g,
+    /때가 있다/g,
+    /편이다/g,
+    /흐름인가가/g,
+  ]) {
+    for (const m of plain.matchAll(re)) hits.push(m[0]!);
+  }
+  return [...new Set(hits)];
 }
 
 /** Drop lines that semantically duplicate a primary insight already used. */
 function dedupeLines(lines: string[], used: Set<string>, limit = 3): string[] {
   const out: string[] = [];
   for (const raw of lines) {
-    const line = cleanCustomerText(raw);
+    const line = claimExact(used, raw);
     if (!line) continue;
-    const key = line.slice(0, 28);
-    let dup = false;
-    for (const u of used) {
-      if (u.includes(key.slice(0, 16)) || key.includes(u.slice(0, 16))) {
-        dup = true;
-        break;
-      }
-    }
-    if (dup) continue;
-    used.add(key);
     out.push(line);
     if (out.length >= limit) break;
   }
   return out;
+}
+
+function overviewBodies(
+  lines: string[],
+  used: Set<string>,
+  reservedDetail: Set<string>,
+  glossSeen: Set<string>,
+  limit = 3
+): string {
+  const out: string[] = [];
+  for (const raw of lines) {
+    const line = overviewClaim(used, reservedDetail, raw, glossSeen);
+    if (!line) continue;
+    out.push(line);
+    if (out.length >= limit) break;
+  }
+  return out.map((p) => `<p class="body">${esc(p)}</p>`).join("");
 }
 
 function portraitBodies(lines: string[] | undefined, used: Set<string>, limit = 3) {
@@ -318,7 +547,7 @@ function evidenceMeaningTail(evs: EvidenceRecord[], kind: ReportKindV5): string 
 
   if (kind === "career") {
     if (el && hasRob) {
-      return `무슨 일을 하느냐보다 ${elementNeutralMeaning(el)} 쪽 기준을 세우고 결과를 확인할 수 있는 환경에서 힘을 안정적으로 쓰는 쪽에 가깝습니다.`;
+      return `정리하고 판단할 기준이 분명하고, 결과를 직접 확인할 수 있는 환경에서 힘을 안정적으로 쓰는 쪽에 가깝습니다.`;
     }
     if (hasDayMaster && hasMetal) {
       return "강점이 재현되는 만큼 확인과 책임을 스스로 더 오래 붙들어 과부하로 이어지기 쉽습니다.";
@@ -433,7 +662,21 @@ function customerPlainFromEvidences(evs: EvidenceRecord[], kind: ReportKindV5): 
   const clauses = evs.map(evidenceFactClause).filter(Boolean);
   if (clauses.length >= 2) {
     const tail = evidenceMeaningTail(evs, kind);
-    if (tail) return `${clauses[0]} ${clauses[1]} 구조를 함께 보면, ${tail}`;
+    if (tail) {
+      const c0 = clauses[0]!
+        .replace(/이 함께 작용하는$/, "")
+        .replace(/가 함께 작용하는$/, "");
+      const c1 = clauses[1]!
+        .replace(/이 함께 작용하는$/, "")
+        .replace(/가 함께 작용하는$/, "")
+        .replace(/십성이 함께 작용하는$/, "십성");
+      // Keep connective first clause: “…두드러지고 …놓인 구조를 함께 보면”
+      if (/고$|고,$/.test(c0) || /되고$/.test(c0)) {
+        return sanitizeEditorialCopy(`${c0} ${c1} 구조를 함께 보면, ${tail}`);
+      }
+      const particle = /[가-힣)）]$/.test(c0) ? "과" : "와";
+      return sanitizeEditorialCopy(`${c0}${particle} ${c1}을 함께 보면, ${tail}`);
+    }
   }
   if (evs.length === 1) return customerPlainFromEvidence(evs[0]!, kind);
   return evs.map((e) => customerPlainFromEvidence(e, kind)).join(" ");
@@ -455,7 +698,7 @@ function structuralPlain(ev: EvidenceRecord, kind: ReportKindV5): string {
         return "관계가 깊어질수록 태도와 속도가 달라지는 패턴이 두드러지기 쉽습니다.";
       }
       if (kind === "money") {
-        return "돈 앞에서 판단 속도가 달라지는 중심축으로 읽힐 수 있습니다.";
+        return "돈 앞에서 판단 속도가 달라지는 중심으로 읽힐 수 있습니다.";
       }
       return sajuMapCustomerMeaning(ev);
     case "ELEMENT_DOMINANCE":
@@ -490,7 +733,7 @@ function structuralPlain(ev: EvidenceRecord, kind: ReportKindV5): string {
         return "일의 만족·누적 방식과 맞닿는 지점을 보여줍니다.";
       }
       if (kind === "money") {
-        return "가까운 장면에서의 돈 반응이 달라지는 축으로 읽힐 수 있습니다.";
+        return "가까운 장면에서의 돈 반응이 달라지는 지점으로 읽힐 수 있습니다.";
       }
       return sajuMapCustomerMeaning(ev);
     case "ELEMENT_RELATION":
@@ -499,7 +742,7 @@ function structuralPlain(ev: EvidenceRecord, kind: ReportKindV5): string {
         : "기운 간 관계가 해당 영역에서 속도·압력 차이를 만들 수 있습니다.";
     default:
       if (kind === "money") {
-        return "이 축이 장면마다 다른 출발점으로 작동할 수 있습니다.";
+        return "이 신호가 장면마다 다른 출발점으로 작동할 수 있습니다.";
       }
       return `${ev.description} — 이 신호가 장면마다 다른 출발점으로 작동할 수 있습니다.`;
   }
@@ -592,11 +835,73 @@ function evidenceBlock(opts: {
   }
 
   return `<div class="ev-block" data-report-kind="${reportKind}">
-  <p class="ev-kicker">왜 이런 해석이 나왔나요?</p>
-  <p class="ev-signal"><span class="lab">명식에서 읽은 근거</span>${esc(signal)}</p>
-  <p class="ev-plain"><span class="lab">쉽게 말하면</span>${esc(plain)}</p>
-  <p class="ev-link"><span class="lab">그래서</span>${esc(link)}</p>
+  <p class="ev-kicker">사주에서는 왜 이렇게 보는지</p>
+  <p class="ev-signal"><span class="lab">명식 근거</span>${esc(signal)}</p>
+  <p class="ev-plain"><span class="lab">쉬운 뜻</span>${esc(plain)}</p>
 </div>`;
+}
+
+function insightHtml(
+  unit: InsightUnit,
+  glossSeen: Set<string>,
+  evidenceHtml = "",
+  opts?: { omitMoment?: boolean; usedLines?: Set<string> }
+): string {
+  const used = opts?.usedLines;
+  const take = (raw: string) => {
+    if (!used) {
+      return glossFirstMentions(cleanCustomerText(raw), glossSeen);
+    }
+    return claimExact(used, raw, glossSeen);
+  };
+
+  const q = take(unit.question);
+  const ans = take(unit.conclusion);
+  if (!q || !ans) return "";
+  const scenes = (unit.scenes ?? [])
+    .map((s) => take(s))
+    .filter(Boolean)
+    .slice(0, 3);
+  let counter = unit.counter ? take(unit.counter) : "";
+  if (counter) counter = stripLabeledPrefix(counter);
+  const why = unit.whyMatters ? take(unit.whyMatters) : "";
+  const moment =
+    opts?.omitMoment || !unit.moment ? "" : take(unit.moment);
+  const evNote = unit.evidenceNote ? take(unit.evidenceNote) : "";
+
+  return `<div class="insight" data-insight="${esc(unit.id)}">
+  <p class="q">${esc(q)}</p>
+  <p class="ans">${esc(ans)}</p>
+  ${scenes.map((s) => `<p class="scene">${esc(s)}</p>`).join("")}
+  ${counter ? `<p class="counter"><span class="lab">반대로</span>${esc(counter)}</p>` : ""}
+  ${why ? `<p class="why"><span class="lab">그래서</span>${esc(why)}</p>` : ""}
+  ${moment ? `<p class="moment">${esc(moment)}</p>` : ""}
+  ${evidenceHtml || (evNote ? `<div class="ev-block"><p class="ev-kicker">사주에서는 왜 이렇게 보는지</p><p class="ev-plain">${esc(evNote)}</p></div>` : "")}
+</div>`;
+}
+
+function momentsHtml(
+  lines: string[],
+  glossSeen: Set<string>,
+  limit = 5,
+  exclude: string[] = [],
+  opts?: { used?: Set<string>; reservedDetail?: Set<string>; overview?: boolean }
+): string {
+  const banned = exclude.map((e) => exactNorm(e)).filter(Boolean);
+  const used = opts?.used ?? new Set<string>();
+  const reserved = opts?.reservedDetail ?? new Set<string>();
+  const items: string[] = [];
+  for (const l of lines) {
+    const claimed = opts?.overview
+      ? overviewClaim(used, reserved, l, glossSeen)
+      : claimExact(used, l, glossSeen);
+    if (!claimed) continue;
+    if (banned.some((b) => b && exactNorm(claimed).includes(b.slice(0, 16)))) continue;
+    items.push(claimed);
+    if (items.length >= limit) break;
+  }
+  if (!items.length) return "";
+  return `<div class="moment-list">${items.map((m) => `<p class="moment">${esc(m)}</p>`).join("")}</div>`;
 }
 
 /** Never assemble Korean particles onto dynamic titles/poles. */
@@ -652,7 +957,7 @@ function dashHtml(report: PaidFortuneReport, max = 5) {
     .slice(0, max)
     .map(
       (d) =>
-        `<div class="dash-row"><span class="l">${esc(d.label)}</span><span class="v">${esc(d.value)}</span></div>`
+        `<div class="dash-row"><span class="l">${esc(cleanCustomerText(d.label))}</span><span class="v">${esc(cleanCustomerText(d.value))}</span></div>`
     )
     .join("");
 }
@@ -688,10 +993,10 @@ function coverPage(
 </div>`;
 }
 
-function playbookItems(items: string[]) {
+function playbookItems(items: string[], limit = 5) {
   return items
     .filter(Boolean)
-    .slice(0, 4)
+    .slice(0, limit)
     .map(
       (p, i) =>
         `<div class="play"><p class="n sans">RULE ${String(i + 1).padStart(2, "0")}</p><p class="body">${esc(cleanCustomerText(p))}</p></div>`
@@ -717,124 +1022,115 @@ function splitEarnSpend(scenesIn: string[] | undefined) {
 function buildMoney(input: {
   nickname: string;
   report: PaidFortuneReport;
+  ctx?: FortuneAiContext;
   v2?: InterpretationContextV2;
 }): string {
   const r = input.report;
   const s = (k: string) => sectionByKey(r, k);
-  const total = 4;
+  const total = 7;
   const used = new Set<string>();
+  const reservedDetail = new Set<string>();
+  const glossSeen = new Set<string>();
   const evUsed = new Set<string>();
   const structure = s("money_v4_structure");
   const earnSec = s("money_v4_earn_spend");
-  const blind = s("money_v4_blindspot");
-  const work = s("money_v4_work");
   const people = s("money_v4_people");
-  const play = s("money_v4_playbook");
   const { earn, spend } = splitEarnSpend(earnSec?.behaviorScenes);
+  const pack = buildMoneyValuePack(r, input.ctx ?? ({} as FortuneAiContext), input.v2);
+  const byId = (id: string) => pack.find((u) => u.id === id)!;
+  reserveDetailLines(reservedDetail, pack);
   const primaryShare = structure?.pullQuote ?? r.shareableInsights?.[0];
-  if (primaryShare) used.add(primaryShare.slice(0, 28));
-
-  const blindLines = dedupeLines(blind?.behaviorScenes ?? [], used, 3);
-  const workLines = dedupeLines(work?.behaviorScenes ?? [], used, 2);
-  const peopleLines = dedupeLines(people?.behaviorScenes ?? [], used, 2);
-
-  for (const line of [...earn, ...spend, peopleLines[0] ?? ""]) {
-    if (line) used.add(line.slice(0, 28));
-  }
-  const earnExtra = dedupeLines(
-    [earnSec?.counterPattern ?? "", earnSec?.strengthSide ?? ""].filter(Boolean),
-    used,
-    2
-  );
-  const spendExtra = dedupeLines([earnSec?.shadowSide ?? ""].filter(Boolean), used, 2);
-  const spendFromCore = cleanCustomerText(earnSec?.coreInsight ?? "");
-  const spendBodies =
-    spendExtra.length > 0
-      ? spendExtra
-      : spendFromCore && !/입체적|리포트/.test(spendFromCore)
-        ? [spendFromCore]
-        : ["쓸 때는 필요성보다 허용 범위를 먼저 확인하려는 쪽에 가깝습니다."];
-
-  const belowMap = `<div class="two">
-    <div><p class="col-h">벌 때의 리듬</p>${bodies(
-      earnExtra.length
-        ? earnExtra
-        : ["벌 때는 대가의 정당성이 보일 때 힘이 오래 갑니다."]
-    )}</div>
-    <div><p class="col-h">쓸 때의 리듬</p>${bodies(spendBodies)}</div>
-  </div>`;
+  if (primaryShare) reserveRawLines(reservedDetail, [primaryShare]);
 
   const structureEv = evidenceBlock({
     v2: input.v2,
     section: structure,
-    domainLink:
-      structure?.coreInsight ??
-      "큰돈에서는 기준을 먼저 세우고, 작은 반복에서는 시야가 늦어질 수 있습니다.",
+    domainLink: structure?.coreInsight ?? "큰돈과 작은 반복에서 판단 속도가 달라질 수 있습니다.",
     usedSignals: evUsed,
     reportKind: "money",
   });
   const earnEv = evidenceBlock({
     v2: input.v2,
     section: earnSec,
-    domainLink:
-      "벌 때는 대가의 정당성을, 쓸 때는 허용할 수 있는 범위를 더 먼저 확인하는 쪽에 가깝습니다.",
+    domainLink: earnSec?.coreInsight ?? "벌기와 쓰기에서 기준이 갈라질 수 있습니다.",
     usedSignals: evUsed,
     reportKind: "money",
   });
+
+  const moments = (pack.map((u) => u.moment).filter(Boolean) as string[]).filter(
+    (m) => !/인색/.test(m)
+  );
+  const peopleTeaser =
+    overviewClaim(used, reservedDetail, people?.behaviorScenes?.[0] ?? "", glossSeen) ||
+    "정산 문장이 없을 때 찜찜함이 커질 수 있습니다.";
 
   return [
     coverPage("money", input.nickname, "MONEY MANUAL", 1, total),
     `<div class="page paper sans" data-shot="profile" data-layout="profile-dashboard">
   <p class="kicker">나의 돈 프로필</p>
-  <p class="sig serif">${esc(r.signatureStatement)}</p>
+  <p class="sig serif">${esc(glossFirstMentions(cleanCustomerText(r.signatureStatement), glossSeen))}</p>
   <div class="dash-grid">${dashHtml(r)}</div>
   ${scalesHtml(r)}
   <div class="rule"></div>
-  <p class="section-title serif">돈을 움직이는 구조</p>
-  <p class="lead">${esc(cleanCustomerText(structure?.coreInsight ?? ""))}</p>
-  ${bodies(dedupeLines(structure?.behaviorScenes ?? [], used, 2))}
-  ${structureEv || why(structure)}
+  <p class="section-title serif">읽고 나면 이런 장면이 떠오를 수 있어요</p>
+  ${momentsHtml(moments, glossSeen, 5, [primaryShare ?? ""], {
+    used,
+    reservedDetail,
+    overview: true,
+  })}
   ${pullQuote(primaryShare)}
   ${footer(2, total)}
 </div>`,
-    `<div class="page tint sans" data-shot="earn-spend" data-layout="two-column">
+    `<div class="page tint sans" data-shot="core-structure" data-layout="insight">
+  <p class="kicker">돈의 기본 구조</p>
+  <h2 class="part-title serif">큰돈과 작은 반복</h2>
+  ${insightHtml(byId("money-core"), glossSeen, structureEv, {
+    omitMoment: true,
+    usedLines: used,
+  })}
+  ${footer(3, total)}
+</div>`,
+    `<div class="page paper sans" data-shot="earn-spend" data-layout="two-column">
   <p class="kicker">벌기 · 쓰기 · 반응</p>
   <h2 class="part-title serif">같은 사람이 다르게 움직이는 지점</h2>
-  <p class="lead">${esc(cleanCustomerText(earnSec?.coreInsight ?? ""))}</p>
   <div class="imap">
     <div class="imap-head">돈의 반응 Map</div>
     <div class="imap-grid">
       <div class="imap-cell"><p class="lab">큰 지출</p><p class="val">${esc(spend[0] ?? "허용 범위를 먼저 정하려 할 수 있습니다.")}</p></div>
       <div class="imap-cell"><p class="lab">반복 소액</p><p class="val">${esc(spend[1] ?? "피로한 날 편의 소비가 예외처럼 늘 수 있습니다.")}</p></div>
       <div class="imap-cell"><p class="lab">수입</p><p class="val">${esc(earn[0] ?? "기준이 보이는 보상에서 힘이 오래 갑니다.")}</p></div>
-      <div class="imap-cell"><p class="lab">관계 비용</p><p class="val">${esc(peopleLines[0] ?? "정산 문장이 없을 때 금액보다 찜찜함이 커질 수 있습니다.")}</p></div>
+      <div class="imap-cell"><p class="lab">관계 비용</p><p class="val">${esc(peopleTeaser)}</p></div>
     </div>
   </div>
-  ${belowMap}
-  ${earnEv}
-  ${footer(3, total)}
+  ${insightHtml(byId("money-earn-spend"), glossSeen, earnEv, { usedLines: used })}
+  ${footer(4, total)}
 </div>`,
-    `<div class="page paper sans" data-shot="blindspot-final" data-layout="pattern-spread">
-  <p class="kicker">사각지대 · 실행 · 초상</p>
-  <h2 class="part-title serif">${esc(blind?.title ?? "놓치기 쉬운 패턴")}</h2>
-  <p class="lead">${esc(cleanCustomerText(blind?.coreInsight ?? ""))}</p>
-  ${blindLines.map((b, i) => `<div class="pattern"><h3 class="serif">패턴 ${i + 1}</h3><p class="body">${esc(b)}</p></div>`).join("")}
-  ${blind?.paradoxNote ? `<p class="caption">${esc(cleanCustomerText(blind.paradoxNote))}</p>` : ""}
-  <div class="rule"></div>
-  <div class="two">
-    <div><p class="col-h">일·부업과 돈</p><p class="body">${esc(cleanCustomerText(work?.coreInsight ?? ""))}</p>${bodies(workLines)}</div>
-    <div><p class="col-h">사람과 돈</p><p class="body">${esc(cleanCustomerText(people?.coreInsight ?? ""))}</p>${bodies(peopleLines.slice(0, 1))}</div>
-  </div>
-  <div class="rule"></div>
-  ${playbookItems(
-    (play?.behaviorScenes ?? r.actionItems?.map((a) => `${a.what} — ${a.how}`) ?? []).slice(0, 3)
-  )}
+    `<div class="page tint sans" data-shot="save-delay" data-layout="insight">
+  <p class="kicker">모으기 · 미루기 · 사각지대</p>
+  <h2 class="part-title serif">새어 나가는 지점</h2>
+  ${insightHtml(byId("money-save"), glossSeen, "", { usedLines: used })}
+  ${insightHtml(byId("money-delay"), glossSeen, "", { usedLines: used })}
+  ${footer(5, total)}
+</div>`,
+    `<div class="page paper sans" data-shot="income-people" data-layout="insight">
+  <p class="kicker">수입 구조 · 가까운 사람과 돈 · 스트레스</p>
+  <h2 class="part-title serif">구조가 바뀌면 판단도 바뀝니다</h2>
+  ${insightHtml(byId("money-income-structure"), glossSeen, "", { usedLines: used })}
+  ${insightHtml(byId("money-close-people"), glossSeen, "", { usedLines: used })}
+  ${insightHtml(byId("money-stress"), glossSeen, "", { usedLines: used })}
+  ${footer(6, total)}
+</div>`,
+    `<div class="page tint sans" data-shot="rules-final" data-layout="final-portrait">
+  <p class="kicker">Money Rules · 초상</p>
+  <h2 class="part-title serif">나에게 맞는 규칙</h2>
+  ${playbookItems(byId("money-rules").scenes.slice(0, 5))}
   <div class="rule"></div>
   ${portraitBodies(r.finalSummary.portraitNarrative, used, 2)}
   <p class="closing serif">${esc(cleanCustomerText(r.finalSummary.closingLine))}</p>
-  <p class="caption" style="margin-top:8px">이 리포트가 보는 범위 · ${esc(cleanCustomerText(r.scopeNotes ?? ""))}</p>
+  ${glossaryCompactHtml(esc, [...glossSeen])}
+  ${scopeBlockHtml(esc)}
   <p class="caption" style="margin-top:4px">${esc(r.disclaimer)}</p>
-  ${footer(4, total)}
+  ${footer(7, total)}
 </div>`,
   ].join("\n");
 }
@@ -842,173 +1138,165 @@ function buildMoney(input: {
 function buildCareer(input: {
   nickname: string;
   report: PaidFortuneReport;
+  ctx?: FortuneAiContext;
   v2?: InterpretationContextV2;
 }): string {
   const r = input.report;
   const s = (k: string) => sectionByKey(r, k);
-  const total = 4;
+  const total = 7;
   const used = new Set<string>();
+  const reservedDetail = new Set<string>();
+  const glossSeen = new Set<string>();
+  const evUsed = new Set<string>();
   const strength = s("career_strength_work");
   const friction = s("career_org_friction");
-  const character = s("career_character");
-  const conflict = s("career_conflict");
   const overload = s("career_overload");
-  const recognition = s("career_recognition");
   const change = s("career_change_signal");
-  const path = s("career_path_type");
-
-  const envGood = dedupeLines(strength?.behaviorScenes ?? [], used, 2);
-  const envHard = dedupeLines(friction?.behaviorScenes ?? [], used, 2);
-  // Lifecycle uses NEW stages — avoid copying envGood lines
+  const pack = buildCareerValuePack(r, input.ctx ?? ({} as FortuneAiContext), input.v2);
+  const byId = (id: string) => pack.find((u) => u.id === id)!;
+  reserveDetailLines(reservedDetail, pack);
+  const primaryShare = r.shareableInsights?.[0] ?? strength?.shareableLine;
+  reserveRawLines(reservedDetail, [
+    primaryShare,
+    ...(strength?.behaviorScenes ?? []),
+    ...(friction?.behaviorScenes ?? []),
+  ]);
+  const envGoodHtml = overviewBodies(
+    strength?.behaviorScenes ?? [],
+    used,
+    reservedDetail,
+    glossSeen,
+    2
+  );
+  const envHardHtml = overviewBodies(
+    [friction?.coreInsight ?? "", ...(friction?.behaviorScenes ?? [])],
+    used,
+    reservedDetail,
+    glossSeen,
+    2
+  );
   const lifecycle = [
     {
       n: "01",
       label: "새 업무",
       body:
-        dedupeLines(
-          character?.behaviorScenes ?? ["기준을 먼저 세우려 할 수 있습니다."],
+        overviewClaim(
           used,
-          1
-        )[0] ?? "기준을 먼저 세우려 할 수 있습니다.",
+          reservedDetail,
+          byId("career-start")?.scenes[0] ?? "기준을 먼저 세우려 할 수 있습니다.",
+          glossSeen
+        ) || "기준을 먼저 세우려 할 수 있습니다.",
     },
     {
       n: "02",
       label: "익숙해짐",
-      body: "목표가 말로 정리되면 속도보다 재현 가능한 품질이 먼저 올라갑니다.",
+      body: "목표가 말로 정리되면 완성 리듬이 먼저 올라갑니다.",
     },
     {
       n: "03",
       label: "책임 증가",
       body:
-        dedupeLines(
-          [
-            friction?.behaviorScenes?.[1] ??
-              "역할이 흐리면 스스로 더 많이 떠안을 수 있습니다.",
-          ],
+        overviewClaim(
           used,
-          1
-        )[0] ?? "역할이 흐리면 스스로 더 많이 떠안을 수 있습니다.",
+          reservedDetail,
+          byId("career-takeon")?.scenes[0] ?? "역할이 흐리면 스스로 더 많이 떠안을 수 있습니다.",
+          glossSeen
+        ) || "역할이 흐리면 스스로 더 많이 떠안을 수 있습니다.",
     },
     {
       n: "04",
       label: "갈등",
-      body:
-        dedupeLines(
-          conflict?.behaviorScenes ?? [
-            "자리에서는 듣고, 나중에 정리해 말할 수 있습니다.",
-          ],
-          used,
-          1
-        )[0] ?? "자리에서는 듣고, 나중에 정리해 말할 수 있습니다.",
+      body: "반복 이슈에서는 경계가 점점 선명해질 수 있습니다.",
     },
     {
       n: "05",
       label: "변화 욕구",
       body:
-        dedupeLines(
-          change?.behaviorScenes ?? [
-            "역할은 늘어나는데 기준과 보상이 흐려질 때 이동을 검토하게 됩니다.",
-          ],
+        overviewClaim(
           used,
-          1
-        )[0] ??
-        "역할은 늘어나는데 기준과 보상이 흐려질 때 이동을 검토하게 됩니다.",
+          reservedDetail,
+          byId("career-hate-vs-fit")?.scenes[0] ?? "기준과 보상이 흐려질 때 이동을 검토하게 됩니다.",
+          glossSeen
+        ) || "기준과 보상이 흐려질 때 이동을 검토하게 됩니다.",
     },
   ];
-  // Primary change insight reserved for overload page — do not reuse in lifecycle
-  if (change?.coreInsight) used.add(change.coreInsight.slice(0, 28));
-  if (change?.shareableLine) used.add(change.shareableLine.slice(0, 28));
-
-  const primaryShare = r.shareableInsights?.[0] ?? strength?.shareableLine;
-  const check = s("career_check");
-  const overloadCallout = dedupeLines(overload?.behaviorScenes ?? [], used, 1)[0];
-  const pathCallout = dedupeLines(
-    [path?.counterPattern ?? ""].filter(Boolean),
-    used,
-    1
-  )[0];
-  const checkCallout = dedupeLines(
-    [check?.coreInsight ?? "", check?.counterPattern ?? ""].filter(Boolean),
-    used,
-    1
-  )[0];
-  const evUsed = new Set<string>();
   const strengthEv = evidenceBlock({
     v2: input.v2,
     section: strength,
-    domainLink:
-      strength?.coreInsight ??
-      "완료 조건·검수 지점이 보일 때 강점이 재현되기 쉽습니다.",
+    domainLink: strength?.coreInsight ?? "완료 조건이 보일 때 강점을 꾸준히 발휘하기 쉽습니다.",
     usedSignals: evUsed,
     reportKind: "career",
   });
   const overloadEv = evidenceBlock({
     v2: input.v2,
-    section: overload,
-    domainLink:
-      overload?.coreInsight ??
-      "확인과 책임을 스스로 더 오래 붙들 때 과부하가 시작될 수 있습니다.",
+    section: overload ?? change,
+    domainLink: overload?.coreInsight ?? "확인과 책임을 스스로 더 붙들 때 과부하가 시작될 수 있습니다.",
     usedSignals: evUsed,
     reportKind: "career",
   });
-  const changeEv =
-    overloadEv
-      ? ""
-      : evidenceBlock({
-          v2: input.v2,
-          section: change,
-          domainLink:
-            change?.coreInsight ??
-            "구조가 더 이상 설명되지 않을 때 이동 욕구가 커질 수 있습니다.",
-          usedSignals: evUsed,
-          reportKind: "career",
-        });
+  const moments = pack.map((u) => u.moment).filter(Boolean) as string[];
 
   return [
     coverPage("career", input.nickname, "WORK MANUAL", 1, total),
     `<div class="page tint sans" data-shot="environment" data-layout="two-column">
   <p class="kicker">프로필 · 환경</p>
-  <p class="sig serif">${esc(r.signatureStatement)}</p>
+  <p class="sig serif">${esc(glossFirstMentions(cleanCustomerText(r.signatureStatement), glossSeen))}</p>
   <div class="dash-grid">${dashHtml(r, 4)}</div>
   ${pullQuote(primaryShare)}
   <div class="rule"></div>
   <p class="section-title serif">Work Environment Map</p>
   <div class="env-map">
-    <div class="env-side good"><p class="h">강점이 살아남</p>${bodies(envGood)}</div>
-    <div class="env-side hard"><p class="h">과부하가 커짐</p><p class="body">${esc(cleanCustomerText(friction?.coreInsight ?? ""))}</p>${bodies(envHard)}</div>
+    <div class="env-side good"><p class="h">강점이 살아남</p>${envGoodHtml}</div>
+    <div class="env-side hard"><p class="h">과부하가 커짐</p>${envHardHtml}</div>
   </div>
-  ${strengthEv}
-  <p class="section-title serif">업무 생애주기</p>
-  <div class="tl">${lifecycle.map((st) => `<div class="tl-step"><div class="tl-n serif">${st.n}</div><div><p class="tl-label">${esc(st.label)}</p><p class="tl-body">${esc(st.body)}</p></div></div>`).join("")}</div>
+  ${momentsHtml(moments, glossSeen, 5, [primaryShare ?? ""], {
+    used,
+    reservedDetail,
+    overview: true,
+  })}
   ${footer(2, total)}
 </div>`,
-    `<div class="page paper sans" data-shot="overload" data-layout="strength-shadow">
-  <p class="kicker">인정 · 과부하 · 변화</p>
-  <h2 class="part-title serif">강점이 그림자가 되는 순간</h2>
-  <div class="two">
-    <div><p class="col-h">인정받는 방식</p><p class="body">${esc(cleanCustomerText(recognition?.coreInsight ?? ""))}</p>${bodies(dedupeLines(recognition?.behaviorScenes ?? [], used, 1))}</div>
-    <div><p class="col-h">협업 갈등</p><p class="body">${esc(cleanCustomerText(conflict?.coreInsight ?? ""))}</p>${bodies(dedupeLines(conflict?.behaviorScenes ?? [], used, 1))}</div>
-  </div>
-  <div class="shadow"><p class="num serif">01</p><div><h3 class="serif">과부하</h3><p class="body">${esc(cleanCustomerText(overload?.coreInsight ?? ""))}</p><p class="caption">${esc(cleanCustomerText(overload?.counterPattern ?? ""))}</p></div></div>
-  <div class="shadow"><p class="num serif">02</p><div><h3 class="serif">변화 신호</h3><p class="body">${esc(cleanCustomerText(change?.coreInsight ?? path?.coreInsight ?? ""))}</p>${bodies(dedupeLines(change?.behaviorScenes ?? [], used, 2))}<p class="caption">${esc(cleanCustomerText(change?.counterPattern ?? "기준과 보상이 정리되면 같은 자리에서도 다시 버틸 수 있습니다."))}</p></div></div>
-  ${overloadEv || changeEv}
-  ${callout("지치기 쉬운 장면", overloadCallout)}
-  ${callout("다른 모습이 나오는 조건", pathCallout)}
-  <div class="rule"></div>
-  ${playbookItems((r.actionItems ?? []).slice(0, 2).map((a) => `${a.what} — ${a.how}`))}
+    `<div class="page paper sans" data-shot="env-start" data-layout="insight">
+  <p class="kicker">환경 · 시작 패턴</p>
+  <h2 class="part-title serif">일이 살아나는 조건</h2>
+  ${insightHtml(byId("career-env"), glossSeen, strengthEv, { usedLines: used })}
+  ${insightHtml(byId("career-start"), glossSeen, "", { usedLines: used })}
+  <p class="section-title serif">업무 생애주기</p>
+  <div class="tl">${lifecycle.map((st) => `<div class="tl-step"><div class="tl-n serif">${st.n}</div><div><p class="tl-label">${esc(st.label)}</p><p class="tl-body">${esc(st.body)}</p></div></div>`).join("")}</div>
   ${footer(3, total)}
 </div>`,
-    `<div class="page tint sans" data-shot="final" data-layout="final-portrait">
+    `<div class="page tint sans" data-shot="tangled-boss" data-layout="insight">
+  <p class="kicker">꼬임 · 지시 · 협업</p>
+  <h2 class="part-title serif">사람과 기준이 겹칠 때</h2>
+  ${insightHtml(byId("career-tangled"), glossSeen, "", { usedLines: used })}
+  ${insightHtml(byId("career-boss"), glossSeen, "", { usedLines: used })}
+  ${insightHtml(byId("career-collab"), glossSeen, "", { usedLines: used })}
+  ${footer(4, total)}
+</div>`,
+    `<div class="page paper sans" data-shot="overload" data-layout="insight">
+  <p class="kicker">인정 · 떠맡음 · 과부하</p>
+  <h2 class="part-title serif">강점이 그림자가 되는 순간</h2>
+  ${insightHtml(byId("career-recognition"), glossSeen, "", { usedLines: used })}
+  ${insightHtml(byId("career-takeon"), glossSeen, overloadEv, { usedLines: used })}
+  ${footer(5, total)}
+</div>`,
+    `<div class="page tint sans" data-shot="fit-org" data-layout="insight">
+  <p class="kicker">싫증 vs 환경 · 오래 버틸 조건</p>
+  <h2 class="part-title serif">떠나기 전에 나누어 볼 것</h2>
+  ${insightHtml(byId("career-hate-vs-fit"), glossSeen, "", { usedLines: used })}
+  ${insightHtml(byId("career-org"), glossSeen, "", { usedLines: used })}
+  ${footer(6, total)}
+</div>`,
+    `<div class="page paper sans" data-shot="final" data-layout="final-portrait">
   <p class="kicker">플레이북 · 초상</p>
   <h2 class="part-title serif">한 사람으로 다시 묶기</h2>
-  ${playbookItems((r.actionItems ?? []).slice(2).map((a) => `${a.what} — ${a.how}`))}
-  ${callout("바로 써먹는 점검", checkCallout)}
+  ${playbookItems((r.actionItems ?? []).map((a) => `${a.what} — ${a.how}`))}
   <div class="rule"></div>
-  ${portraitBodies(r.finalSummary.portraitNarrative, used, 3)}
+  ${portraitBodies(r.finalSummary.portraitNarrative, used, 2)}
   <p class="closing serif">${esc(cleanCustomerText(r.finalSummary.closingLine))}</p>
-  <div class="rule"></div>
-  <p class="caption">이 리포트가 보는 범위 · ${esc(cleanCustomerText(r.scopeNotes ?? ""))}</p>
-  ${footer(4, total)}
+  ${glossaryCompactHtml(esc, [...glossSeen])}
+  ${scopeBlockHtml(esc)}
+  ${footer(7, total)}
 </div>`,
   ].join("\n");
 }
@@ -1016,166 +1304,168 @@ function buildCareer(input: {
 function buildLove(input: {
   nickname: string;
   report: PaidFortuneReport;
+  ctx?: FortuneAiContext;
   v2?: InterpretationContextV2;
 }): string {
   const r = input.report;
   const s = (k: string) => sectionByKey(r, k);
-  const total = 4;
+  const total = 7;
   const used = new Set<string>();
-  const attraction = s("love_attraction");
+  const reservedDetail = new Set<string>();
+  const glossSeen = new Set<string>();
+  const evUsed = new Set<string>();
   const before = s("love_before");
   const after = s("love_after");
-  const expression = s("love_expression");
-  const needs = s("love_needs");
   const fight = s("love_fight");
   const distance = s("love_distance");
-  const fit = s("love_fit");
-
-  const beforeInsight = cleanCustomerText(before?.coreInsight ?? "");
-  const afterInsight = cleanCustomerText(after?.coreInsight ?? "");
-  used.add(beforeInsight.slice(0, 28));
-  used.add(afterInsight.slice(0, 28));
-
-  // Lifecycle: stage-specific action/conflict/recovery only — no before/after copy
+  const pack = buildLoveValuePack(r, input.ctx ?? ({} as FortuneAiContext), input.v2);
+  const byId = (id: string) => pack.find((u) => u.id === id)!;
+  reserveDetailLines(reservedDetail, pack);
+  reserveRawLines(reservedDetail, [
+    before?.coreInsight,
+    after?.coreInsight,
+    ...(before?.behaviorScenes ?? []),
+    ...(after?.behaviorScenes ?? []),
+  ]);
   const lifecycle = [
     {
       n: "호감",
       d:
-        dedupeLines(
-          attraction?.behaviorScenes ?? ["태도·일관성에서 먼저 반응할 수 있습니다."],
+        overviewClaim(
           used,
-          1
-        )[0] ?? "태도·일관성에서 먼저 반응할 수 있습니다.",
+          reservedDetail,
+          byId("love-open")?.scenes[0] ?? "태도·일관성에서 먼저 반응할 수 있습니다.",
+          glossSeen
+        ) || "태도·일관성에서 먼저 반응할 수 있습니다.",
     },
     {
       n: "확신",
       d:
-        before?.counterPattern ??
-        "기준이 채워지면 속도가 갑자기 바뀌는 전환점이 생길 수 있습니다.",
+        overviewClaim(
+          used,
+          reservedDetail,
+          before?.counterPattern ?? "기준이 채워지면 속도가 바뀌는 전환점이 생길 수 있습니다.",
+          glossSeen
+        ) || "기준이 채워지면 속도가 바뀌는 전환점이 생길 수 있습니다.",
     },
     {
       n: "친밀",
       d:
-        dedupeLines(
-          expression?.behaviorScenes ?? [
-            "말로 길게 설명하기보다 실질 준비로 보일 수 있습니다.",
-          ],
+        overviewClaim(
           used,
-          1
-        )[0] ?? "말로 길게 설명하기보다 실질 준비로 보일 수 있습니다.",
+          reservedDetail,
+          byId("love-quiet")?.scenes[0] ?? "말로 길게 설명하기보다 실질 준비로 보일 수 있습니다.",
+          glossSeen
+        ) || "말로 길게 설명하기보다 실질 준비로 보일 수 있습니다.",
     },
     {
       n: "갈등",
       d:
-        dedupeLines(
-          fight?.behaviorScenes ?? ["정리될 때까지 말을 아낄 수 있습니다."],
+        overviewClaim(
           used,
-          1
-        )[0] ?? "정리될 때까지 말을 아낄 수 있습니다.",
+          reservedDetail,
+          byId("love-fight")?.scenes[0] ?? "정리될 때까지 말을 아낄 수 있습니다.",
+          glossSeen
+        ) || "정리될 때까지 말을 아낄 수 있습니다.",
     },
     {
       n: "회복",
-      d:
-        dedupeLines(
-          fit?.behaviorScenes ??
-            distance?.behaviorScenes ?? [
-              "같은 일이 반복되지 않을 근거에서 회복이 시작됩니다.",
-            ],
-          used,
-          1
-        )[0] ?? "같은 일이 반복되지 않을 근거에서 회복이 시작됩니다.",
+      d: "같은 일이 반복되지 않을 근거가 보이면 회복이 시작될 수 있습니다.",
     },
   ];
-  used.add(lifecycle[1]!.d.slice(0, 28));
-
-  // Contradiction = misunderstanding consequence, not before/after re-explain
-  const contraHtml = (r.contradictions ?? [])
-    .slice(0, 2)
-    .map(
-      (c) =>
-        `<div class="contra"><div class="contra-poles serif"><span>${esc(c.poleA)}</span><span class="sep">↔</span><span>${esc(c.poleB)}</span></div><p class="body">${esc(c.howItShows)}</p><p class="caption">상대에게 · ${esc(c.downside ?? c.result ?? "")}</p></div>`
-    )
-    .join("");
-
   const primaryShare = before?.shareableLine ?? r.shareableInsights?.[0];
-  const afterCallout = dedupeLines(
-    [after?.counterPattern ?? "", needs?.behaviorScenes?.[0] ?? ""].filter(Boolean),
-    used,
-    1
-  )[0];
-  // Drop weak unsupported claim ("지나치게 무던한…") unless strongly evidenced — skip it
-  const fitSafe = [fit?.behaviorScenes?.[0] ?? "", distance?.counterPattern ?? ""].filter(
-    (x) => x && !/지나치게 무던한/.test(x)
-  );
-  const fitCallout = dedupeLines(fitSafe, used, 1)[0];
-  const evUsed = new Set<string>();
   const beforeEv = evidenceBlock({
     v2: input.v2,
     section: before,
-    domainLink:
-      before?.coreInsight ??
-      "관계 정의 전에는 스스로 속도를 조절하는 쪽에 가깝습니다.",
+    domainLink: before?.coreInsight ?? "관계 정의 전에는 속도를 조절하는 쪽에 가깝습니다.",
     usedSignals: evUsed,
     reportKind: "love",
   });
   const fightEv = evidenceBlock({
     v2: input.v2,
     section: fight ?? distance,
-    domainLink:
-      fight?.coreInsight ??
-      distance?.coreInsight ??
-      "갈등은 폭발보다 정리와 거리 조절로 먼저 나타날 수 있습니다.",
+    domainLink: fight?.coreInsight ?? "갈등은 폭발보다 정리와 거리 조절로 먼저 나타날 수 있습니다.",
     usedSignals: evUsed,
     reportKind: "love",
   });
+  const moments = (pack.map((u) => u.moment).filter(Boolean) as string[]).filter(
+    (m) => !/사과의 크기|재발 방지|다시 가까워질/.test(m)
+  );
+
+  const beforeTeaser =
+    overviewClaim(used, reservedDetail, before?.coreInsight ?? "", glossSeen) ||
+    "확신 전에는 속도를 조절하는 쪽에 가깝습니다.";
+  const afterTeaser =
+    overviewClaim(used, reservedDetail, after?.coreInsight ?? "", glossSeen) ||
+    "확신이 생기면 챙김의 속도가 달라질 수 있습니다.";
 
   return [
     coverPage("love", input.nickname, "LOVE MANUAL", 1, total),
     `<div class="page tint sans" data-shot="before-after" data-layout="two-column">
   <p class="kicker">프로필 · 확신 전·후</p>
-  <p class="sig serif">${esc(r.signatureStatement)}</p>
+  <p class="sig serif">${esc(glossFirstMentions(cleanCustomerText(r.signatureStatement), glossSeen))}</p>
   <div class="dash-grid">${dashHtml(r, 4)}</div>
   ${pullQuote(primaryShare)}
   <div class="rule"></div>
   <div class="two">
-    <div><p class="col-h">확신 전</p><p class="body">${esc(beforeInsight)}</p>${bodies(dedupeLines(before?.behaviorScenes ?? [], used, 2))}</div>
-    <div><p class="col-h">확신 후</p><p class="body">${esc(afterInsight)}</p>${bodies(dedupeLines(after?.behaviorScenes ?? [], used, 2))}</div>
+    <div><p class="col-h">확신 전</p><p class="body">${esc(beforeTeaser)}</p>${overviewBodies(before?.behaviorScenes ?? [], used, reservedDetail, glossSeen, 1)}</div>
+    <div><p class="col-h">확신 후</p><p class="body">${esc(afterTeaser)}</p>${overviewBodies(after?.behaviorScenes ?? [], used, reservedDetail, glossSeen, 1)}</div>
   </div>
-  ${beforeEv}
   <p class="section-title serif">Relationship Tempo</p>
   <div class="tempo">${lifecycle.map((st) => `<div class="tempo-step"><p class="n">${esc(st.n)}</p><p class="d">${esc(st.d)}</p></div>`).join("")}</div>
+  ${momentsHtml(moments, glossSeen, 5, [primaryShare ?? ""], {
+    used,
+    reservedDetail,
+    overview: true,
+  })}
   ${footer(2, total)}
 </div>`,
-    `<div class="page paper sans" data-shot="distance" data-layout="contradiction">
-  <p class="kicker">표현 · 거리 · 오해</p>
-  <h2 class="part-title serif">가까워질 때 / 멀어질 때</h2>
-  <div class="two">
-    <div><p class="col-h">애정 표현</p><p class="body">${esc(cleanCustomerText(expression?.coreInsight ?? ""))}</p><p class="caption">${esc(cleanCustomerText(needs?.coreInsight ?? ""))}</p></div>
-    <div><p class="col-h">서운함과 거리</p><p class="body">${esc(cleanCustomerText(fight?.coreInsight ?? distance?.coreInsight ?? ""))}</p>${bodies(dedupeLines(fight?.behaviorScenes ?? distance?.behaviorScenes ?? [], used, 2))}</div>
-  </div>
-  <div class="rule"></div>
-  <p class="section-title serif">오해로 읽히기 쉬운 지점</p>
-  ${contraHtml || `<p class="body">속도 차이 자체보다, 상대가 ‘관심 없음’으로 해석할 여지가 핵심입니다.</p>`}
-  ${fightEv}
-  ${callout("확신 후의 균형", afterCallout)}
-  <div class="rule"></div>
-  ${playbookItems((r.actionItems ?? []).slice(0, 2).map((a) => `${a.what} — ${a.how}`))}
+    `<div class="page paper sans" data-shot="open-check" data-layout="insight">
+  <p class="kicker">열림 · 확인 · 표현</p>
+  <h2 class="part-title serif">마음이 움직이는 방식</h2>
+  ${insightHtml(byId("love-before-after"), glossSeen, beforeEv, { usedLines: used })}
+  ${insightHtml(byId("love-open"), glossSeen, "", { usedLines: used })}
+  ${insightHtml(byId("love-check"), glossSeen, "", { usedLines: used })}
   ${footer(3, total)}
 </div>`,
-    `<div class="page tint sans" data-shot="final" data-layout="final-portrait">
+    `<div class="page tint sans" data-shot="quiet-felt" data-layout="insight">
+  <p class="kicker">티가 덜 나는 순간 · 사랑받는 감각 · 서운함</p>
+  <h2 class="part-title serif">가까이 있을수록</h2>
+  ${insightHtml(byId("love-quiet"), glossSeen, "", { usedLines: used })}
+  ${insightHtml(byId("love-felt"), glossSeen, "", { usedLines: used })}
+  ${insightHtml(byId("love-hurt"), glossSeen, "", { usedLines: used })}
+  ${footer(4, total)}
+</div>`,
+    `<div class="page paper sans" data-shot="fight-resolve" data-layout="insight">
+  <p class="kicker">갈등 · 회복</p>
+  <h2 class="part-title serif">멀어질 때 / 돌아올 때</h2>
+  ${insightHtml(byId("love-fight"), glossSeen, fightEv, { usedLines: used })}
+  ${insightHtml(byId("love-resolve"), glossSeen, "", { usedLines: used })}
+  ${footer(5, total)}
+</div>`,
+    `<div class="page tint sans" data-shot="long-misread" data-layout="pair-compare">
+  <p class="kicker">오래될수록 · 오해 지점</p>
+  <h2 class="part-title serif">상대에게 다르게 읽히기 쉬운 나</h2>
+  <div class="pair-compare">
+  ${insightHtml(byId("love-long"), glossSeen, "", { usedLines: used })}
+  ${insightHtml(byId("love-misread"), glossSeen, "", { usedLines: used })}
+  </div>
+  ${footer(6, total)}
+</div>`,
+    `<div class="page paper sans" data-shot="final" data-layout="final-portrait">
   <p class="kicker">플레이북 · 초상</p>
   <h2 class="part-title serif">한 사람으로 다시 묶기</h2>
-  ${playbookItems((r.actionItems ?? []).slice(2).map((a) => `${a.what} — ${a.how}`))}
-  ${callout("회복이 시작되는 조건", fitCallout)}
+  ${playbookItems((r.actionItems ?? []).map((a) => `${a.what} — ${a.how}`))}
   <div class="rule"></div>
-  ${portraitBodies(r.finalSummary.portraitNarrative, used, 3)}
+  ${portraitBodies(r.finalSummary.portraitNarrative, used, 2)}
   <p class="closing serif">${esc(cleanCustomerText(r.finalSummary.closingLine))}</p>
-  <div class="rule"></div>
-  <p class="caption">이 리포트가 보는 범위 · ${esc(cleanCustomerText(r.scopeNotes ?? ""))}</p>
-  ${footer(4, total)}
+  ${glossaryCompactHtml(esc, [...glossSeen])}
+  ${scopeBlockHtml(esc)}
+  ${footer(7, total)}
 </div>`,
   ].join("\n");
 }
+
 
 function sajuSignalsFromV2(v2: InterpretationContextV2 | undefined, ctx: FortuneAiContext) {
   // Domain-neutral FACT + customer meaning from evidence descriptions only.
@@ -1251,10 +1541,18 @@ function buildTotal(input: {
   const r = input.report;
   const ctx = input.ctx;
   const s = (k: string) => sectionByKey(r, k);
-  const total = 6;
+  const total = 11;
   const used = new Set<string>();
+  const reservedDetail = new Set<string>();
+  const glossSeen = new Set<string>();
   const fe = ctx.fiveElements;
   const maxFe = Math.max(fe.wood, fe.fire, fe.earth, fe.metal, fe.water, 1);
+  const pack = buildTotalValuePack(r, ctx, input.v2);
+  reserveDetailLines(reservedDetail, pack.unknownPatterns);
+  reserveDetailLines(reservedDetail, pack.situations);
+  reserveDetailLines(reservedDetail, pack.usage);
+  reserveDetailLines(reservedDetail, pack.counters);
+  reserveRawLines(reservedDetail, pack.moments);
 
   const elementOf = (stem: string) => {
     const map: Record<string, string> = {
@@ -1307,9 +1605,7 @@ function buildTotal(input: {
 
   const dmLabel = cleanCustomerText(r.blueprint?.dayMasterPlain ?? "");
   const signals = sajuSignalsFromV2(input.v2, ctx);
-
   const decision = s("total_v4_decision");
-  const stress = s("total_v4_stress");
   const relation = s("total_v4_relationship");
   const love = s("total_v4_love");
   const work = s("total_v4_work");
@@ -1331,8 +1627,19 @@ function buildTotal(input: {
   const shadowHtml = (r.strengthShadows ?? [])
     .slice(0, 3)
     .map(
-      (sh, i) =>
-        `<div class="shadow"><p class="num serif">${String(i + 1).padStart(2, "0")}</p><div><h3 class="serif">${esc(sh.strength)}</h3><p class="body">과해질 때 — ${esc(sh.overuse)}</p><p class="caption">균형 — ${esc(sh.balancePoint ?? "")}</p></div></div>`
+      (sh) =>
+        `<div class="shadow-row">
+  <div class="sc"><p class="lab">강점</p><p class="val">${esc(cleanCustomerText(sh.strength))}</p></div>
+  <div class="sc"><p class="lab">과해질 때</p><p class="val">${esc(cleanCustomerText(sh.overuse))}</p></div>
+  <div class="sc"><p class="lab">균형</p><p class="val">${esc(cleanCustomerText(sh.balancePoint ?? ""))}</p></div>
+</div>`
+    )
+    .join("");
+
+  const oiHtml = pack.outerInner
+    .map(
+      (row) =>
+        `<div class="oi-row"><div><p class="lab">겉으로</p><p class="val">${esc(cleanCustomerText(row.outer))}</p></div><div><p class="lab">속에서는</p><p class="val">${esc(cleanCustomerText(row.inner))}</p></div></div>`
     )
     .join("");
 
@@ -1340,16 +1647,12 @@ function buildTotal(input: {
     coverPage("total", input.nickname, "PERSONAL FOUR PILLARS", 1, total),
     `<div class="page paper sans" data-shot="core-inner" data-layout="editorial-feature">
   <p class="kicker">핵심 프로필 · 판단 · 스트레스</p>
-  <p class="sig serif">${esc(r.signatureStatement)}</p>
+  <p class="sig serif">${esc(glossFirstMentions(cleanCustomerText(r.signatureStatement), glossSeen))}</p>
   <div class="dash-grid">${dashHtml(r, 6)}</div>
   ${pullQuote(primaryShare)}
   <div class="rule"></div>
-  <p class="section-title serif">${esc(decision?.title ?? "판단")}</p>
-  <p class="lead">${esc(cleanCustomerText(decision?.coreInsight ?? ""))}</p>
-  ${bodies(dedupeLines(decision?.behaviorScenes ?? [], used, 2))}
-  <p class="section-title serif">${esc(stress?.title ?? "스트레스")}</p>
-  <p class="lead">${esc(cleanCustomerText(stress?.coreInsight ?? ""))}</p>
-  ${bodies(dedupeLines(stress?.behaviorScenes ?? [], used, 2))}
+  ${insightHtml(pack.unknownPatterns[0]!, glossSeen, "", { usedLines: used, omitMoment: true })}
+  ${insightHtml(pack.unknownPatterns[1]!, glossSeen, "", { usedLines: used })}
   ${footer(2, total)}
 </div>`,
     `<div class="page tint sans" data-shot="saju-map" data-layout="saju-map">
@@ -1361,12 +1664,40 @@ function buildTotal(input: {
   <p class="kicker">五行 Snapshot</p>
   <div class="fe-strip">${feBars}</div>
   <p class="kicker">이 명식에서 눈여겨볼 구조</p>
-  ${signals.map((sg) => `<div class="signal"><p class="h">${esc(cleanCustomerText(sg.h))}</p><p class="w">${esc(cleanCustomerText(sg.w))}</p></div>`).join("")}
+  ${signals.map((sg) => `<div class="signal"><p class="h">${esc(cleanCustomerText(sg.h))}</p><p class="w">${esc(glossFirstMentions(cleanCustomerText(sg.w), glossSeen))}</p></div>`).join("")}
   ${footer(3, total)}
+</div>`,
+    `<div class="page paper sans" data-shot="unknown-patterns" data-layout="insight">
+  <p class="kicker">나도 몰랐던 내 패턴</p>
+  <h2 class="part-title serif">헐, 나인데?</h2>
+  ${momentsHtml(pack.moments, glossSeen, 8, [primaryShare ?? ""], {
+    used,
+    reservedDetail,
+    overview: true,
+  })}
+  ${footer(4, total)}
+</div>`,
+    `<div class="page tint sans" data-shot="outer-inner" data-layout="insight">
+  <p class="kicker">겉으로 보이는 나 vs 속의 나</p>
+  <h2 class="part-title serif">같은 사람의 두 얼굴</h2>
+  ${oiHtml}
+  ${footer(5, total)}
+</div>`,
+    `<div class="page paper sans" data-shot="situations" data-layout="insight">
+  <p class="kicker">상황에 따라 달라지는 나</p>
+  <h2 class="part-title serif">평소 · 압박 · 익숙함 · 낯선 곳 · 깊어진 뒤</h2>
+  ${pack.situations.map((u) => insightHtml(u, glossSeen, "", { usedLines: used })).join("")}
+  ${footer(6, total)}
+</div>`,
+    `<div class="page tint sans" data-shot="usage" data-layout="insight">
+  <p class="kicker">관계 · 일 · 돈 · 스트레스 사용법</p>
+  <h2 class="part-title serif">어떻게 써먹을까</h2>
+  ${pack.usage.map((u) => insightHtml(u, glossSeen, "", { usedLines: used })).join("")}
+  ${footer(7, total)}
 </div>`,
     `<div class="page paper sans" data-shot="domains" data-layout="two-column">
   <p class="kicker">관계 · 사랑 · 일 · 돈</p>
-  <h2 class="part-title serif">영역이 달라질 때</h2>
+  <h2 class="part-title serif">영역마다 어떻게 다르게 보이나</h2>
   <div class="two">
     <div><p class="col-h">관계</p><p class="body">${esc(cleanCustomerText(relation?.coreInsight ?? ""))}</p>${bodies(dedupeLines(relation?.behaviorScenes ?? [], used, 1))}</div>
     <div><p class="col-h">사랑</p><p class="body">${esc(cleanCustomerText(love?.coreInsight ?? ""))}</p>${bodies(dedupeLines(love?.behaviorScenes ?? [], used, 1))}</div>
@@ -1379,18 +1710,27 @@ function buildTotal(input: {
     <div class="imap-head">Cross-domain Map</div>
     ${(r.profileDashboard ?? []).slice(0, 4).map((d) => `<div class="imap-row"><span class="lab">${esc(d.label)}</span><span>${esc(d.value)}</span></div>`).join("")}
   </div>
-  ${footer(4, total)}
+  ${footer(8, total)}
 </div>`,
     `<div class="page tint sans" data-shot="contradiction" data-layout="contradiction">
-  <p class="kicker">모순 · 그림자</p>
-  <h2 class="part-title serif">한 사람 안의 두 힘</h2>
+  <p class="kicker">모순 · 반전</p>
+  <h2 class="part-title serif">두 힘이 충돌할 때</h2>
   ${contraHtml}
   <div class="rule"></div>
-  ${shadowHtml}
+  ${pack.counters.map((u) => insightHtml(u, glossSeen, "", { usedLines: used })).join("")}
   ${pullQuote(secondShare && secondShare !== primaryShare ? secondShare : undefined)}
-  ${footer(5, total)}
+  ${footer(9, total)}
 </div>`,
-    `<div class="page paper sans" data-shot="final" data-layout="final-portrait">
+    `<div class="page paper sans" data-shot="shadow" data-layout="strength-shadow">
+  <p class="kicker">강점의 그림자</p>
+  <h2 class="part-title serif">빛나는 만큼 조심할 곳</h2>
+  <div class="shadow-compare">
+  <div class="shadow-head"><span>강점</span><span>과해질 때</span><span>균형</span></div>
+  ${shadowHtml}
+  </div>
+  ${footer(10, total)}
+</div>`,
+    `<div class="page tint sans" data-shot="final" data-layout="final-portrait">
   <p class="kicker">플레이북 · 최종 초상</p>
   <h2 class="part-title serif">한 사람으로 다시 묶기</h2>
   ${playbookItems(
@@ -1399,13 +1739,14 @@ function buildTotal(input: {
   <div class="rule"></div>
   ${portraitBodies(r.finalSummary.portraitNarrative, used, 3)}
   <p class="closing serif">${esc(cleanCustomerText(r.finalSummary.closingLine))}</p>
-  <div class="rule"></div>
-  <p class="caption">이 리포트가 보는 범위 · ${esc(cleanCustomerText(r.scopeNotes ?? ""))}</p>
+  ${glossaryCompactHtml(esc, [...glossSeen])}
+  ${scopeBlockHtml(esc)}
   <p class="caption" style="margin-top:4px">${esc(r.disclaimer)}</p>
-  ${footer(6, total)}
+  ${footer(11, total)}
 </div>`,
   ].join("\n");
 }
+
 
 export function buildPaidReportPdfHtmlV5(input: {
   nickname: string;
@@ -1418,11 +1759,11 @@ export function buildPaidReportPdfHtmlV5(input: {
   const slug = input.productSlug;
   let body: string;
   if (slug.includes("money")) {
-    body = buildMoney(input);
+    body = buildMoney({ ...input, ctx: input.ctx });
   } else if (slug.includes("career")) {
-    body = buildCareer(input);
+    body = buildCareer({ ...input, ctx: input.ctx });
   } else if (slug.includes("love")) {
-    body = buildLove(input);
+    body = buildLove({ ...input, ctx: input.ctx });
   } else {
     body = buildTotal(input);
   }

@@ -151,7 +151,7 @@ async function main() {
 
     per[job.stem] = {
       pageCount: (html.match(/class="page /g) ?? []).length,
-      evidenceBlocks: (html.match(/왜 이런 해석이 나왔나요\?/g) ?? []).length,
+      evidenceBlocks: (html.match(/사주에서는 왜 이렇게 보는지|왜 이런 해석이 나왔나요\?/g) ?? []).length,
       careerMoneyLeak,
       loveMoneyLeak,
       mapMoney,
@@ -204,7 +204,7 @@ async function main() {
       (total.tautologyHits?.length ?? tautology) === 0
         ? "PASS"
         : "FAIL",
-    moneyRegression: money.evidenceBlocks >= 1 && money.pageCount === 4 ? "PASS" : "FAIL",
+    moneyRegression: money.evidenceBlocks >= 1 && money.pageCount >= 4 ? "PASS" : "FAIL",
     totalDomainNeutralSajuMap:
       total.mapMoney === 0 && total.mapLove === 0 ? "PASS" : "FAIL",
     evidenceFidelity: crossLeak === 0 ? "PASS" : "FAIL",

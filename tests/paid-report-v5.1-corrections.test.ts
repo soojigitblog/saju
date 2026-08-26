@@ -110,15 +110,15 @@ describe("PHASE P3.1 V5.1 corrections", () => {
       ctx,
     });
     const count = (html: string) => (html.match(/class="page /g) ?? []).length;
-    // Flow pagination: density over page-count KPI (4–6 Focus, 7–10 Total OK)
-    expect(count(money)).toBeGreaterThanOrEqual(4);
-    expect(count(money)).toBeLessThanOrEqual(6);
-    expect(count(career)).toBeGreaterThanOrEqual(4);
-    expect(count(career)).toBeLessThanOrEqual(6);
-    expect(count(love)).toBeGreaterThanOrEqual(4);
-    expect(count(love)).toBeLessThanOrEqual(6);
-    expect(count(total)).toBeGreaterThanOrEqual(6);
-    expect(count(total)).toBeLessThanOrEqual(10);
+    // P3.5: Focus ~6–8, Total ~10–12
+    expect(count(money)).toBeGreaterThanOrEqual(6);
+    expect(count(money)).toBeLessThanOrEqual(8);
+    expect(count(career)).toBeGreaterThanOrEqual(6);
+    expect(count(career)).toBeLessThanOrEqual(8);
+    expect(count(love)).toBeGreaterThanOrEqual(6);
+    expect(count(love)).toBeLessThanOrEqual(8);
+    expect(count(total)).toBeGreaterThanOrEqual(10);
+    expect(count(total)).toBeLessThanOrEqual(12);
     expect((money.match(/저장해 두고 싶은 한 문장/g) ?? []).length).toBe(0);
     expect(money).toMatch(/class="pull /);
     expect(total).not.toMatch(/단일 성격 문장이 아니라/);

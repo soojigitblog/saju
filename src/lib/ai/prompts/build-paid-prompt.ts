@@ -4,6 +4,7 @@ import {
   targetLengthForPaidProduct,
   type PaidProductKind,
 } from "@/lib/ai/schemas/paid-report";
+import { consultingDiscoveryPromptBlock } from "@/lib/ai/prompts/consulting-discovery-skeleton";
 
 function moneyOutline(): string {
   return [
@@ -94,7 +95,9 @@ export function buildPaidUserPrompt(input: {
     `분량 목표 ≈${target}자. 빈 문장으로 페이지를 늘리지 말 것. 밀도 있는 insight.`,
     chapterOutline(kind),
     QUALITY_RULES,
+    consultingDiscoveryPromptBlock(),
     "reportKind는 상품 kind와 맞출 것. monthlyOutlook은 넣지 말 것.",
+    "NOTE: Live Gemini Acceptance는 Human Value Gate 통과 전 실행하지 않음.",
   ];
 
   if (input.productInstruction?.trim()) {

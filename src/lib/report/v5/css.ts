@@ -158,6 +158,33 @@ html,body{
 .shadow{display:grid;grid-template-columns:2.6rem 1fr;gap:6px;margin:10px 0}
 .shadow .num{font-family:${SERIF},serif;font-size:16pt;color:${C.goldSoft};line-height:1}
 .shadow h3{font-family:${SERIF},serif;font-size:11.5pt;color:${C.navy};margin-bottom:3px}
+.shadow-compare{margin-top:8px;border:1px solid ${C.lineSoft}}
+.shadow-head{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;padding:8px 10px;background:rgba(168,137,61,0.06);border-bottom:1px solid ${C.lineSoft};font-size:7.5pt;color:${C.gold};letter-spacing:0.04em}
+.shadow-head span{padding:0 4px}
+.shadow-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;border-bottom:1px solid ${C.lineSoft}}
+.shadow-row:last-child{border-bottom:none}
+.shadow-row .sc{padding:10px;border-right:1px solid ${C.lineSoft}}
+.shadow-row .sc:last-child{border-right:none}
+.shadow-row .lab{font-size:7.5pt;color:${C.gold};margin-bottom:4px}
+.shadow-row .val{font-size:9.5pt;line-height:1.5;color:${C.ink}}
+.page[data-shot="shadow"] .shadow-compare{margin-top:18px}
+.page[data-shot="shadow"] .part-title{margin-bottom:6px}
+.page[data-shot="shadow"] .shadow-head{padding:12px 14px;font-size:8.5pt}
+.page[data-shot="shadow"] .shadow-row .sc{padding:16px 14px;min-height:5.5rem}
+.page[data-shot="shadow"] .shadow-row .lab{font-size:8pt;margin-bottom:6px}
+.page[data-shot="shadow"] .shadow-row .val{font-size:11pt;line-height:1.6}
+.pair-compare{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:14px;align-items:stretch;min-height:68%}
+.pair-compare .insight{margin:0;padding:16px 16px 18px;border:1px solid ${C.lineSoft};border-bottom:1px solid ${C.lineSoft};background:${C.paper};height:100%}
+.pair-compare .insight .q{font-size:13.5pt;margin-bottom:10px;line-height:1.4}
+.pair-compare .insight .ans{font-size:11.2pt;line-height:1.7}
+.pair-compare .insight .scene{font-size:10.2pt;line-height:1.6;margin:8px 0}
+.page[data-layout="pair-compare"] .part-title{margin-bottom:6px}
+.page[data-layout="strength-shadow"] .shadow-compare{margin-top:22px}
+.page[data-layout="strength-shadow"] .part-title{margin-bottom:8px}
+.page[data-layout="strength-shadow"] .shadow-head{padding:14px 16px;font-size:9pt}
+.page[data-layout="strength-shadow"] .shadow-row .sc{padding:18px 16px;min-height:6.2rem}
+.page[data-layout="strength-shadow"] .shadow-row .lab{font-size:8.5pt;margin-bottom:8px}
+.page[data-layout="strength-shadow"] .shadow-row .val{font-size:11.5pt;line-height:1.65}
 
 .play{margin:8px 0;padding:0 0 0 12px;border-left:2px solid ${C.goldDim}}
 .play .n{font-size:7.5pt;color:${C.gold};margin-bottom:2px}
@@ -197,5 +224,46 @@ html,body{
 .ev-kicker{font-size:7.5pt;color:${C.gold};letter-spacing:0.04em;margin-bottom:6px}
 .ev-signal,.ev-plain,.ev-link{font-size:9.5pt;line-height:1.5;color:${C.body};margin:4px 0}
 .ev-block .lab{display:inline-block;min-width:7.2rem;color:${C.gold};font-weight:600;margin-right:6px}
+
+/* P3.5 easy-value — reuse palette, denser insight units */
+.insight{margin:8px 0 10px;padding-bottom:8px;border-bottom:1px solid ${C.lineSoft}}
+.insight .q{font-family:${SERIF},serif;font-size:12pt;color:${C.navy};margin-bottom:4px;line-height:1.4}
+.insight .ans{font-size:10.5pt;line-height:1.6;font-weight:600;color:${C.ink};margin:4px 0 6px}
+.insight .scene{font-size:9.8pt;line-height:1.55;color:${C.body};margin:3px 0;padding-left:10px;border-left:1.5px solid ${C.lineSoft}}
+.insight .counter{font-size:9.3pt;line-height:1.5;color:${C.warmGray};margin:5px 0;padding:6px 10px;background:rgba(168,137,61,0.05)}
+.insight .why{font-size:9.3pt;line-height:1.5;color:${C.body};margin:5px 0}
+.insight .why .lab,.insight .counter .lab{color:${C.gold};font-weight:600;margin-right:4px}
+.moment{font-family:${SERIF},serif;font-size:11pt;line-height:1.45;color:${C.navy};margin:6px 0;padding-left:10px;border-left:2px solid ${C.gold}}
+.moment-list .moment{margin:5px 0}
+.oi-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:8px 0;padding-bottom:8px;border-bottom:1px solid ${C.lineSoft}}
+.oi-row .lab{font-size:7.5pt;color:${C.gold};margin-bottom:3px}
+.oi-row .val{font-size:9.8pt;line-height:1.5;color:${C.ink}}
+.glossary{margin-top:8px;padding:8px 10px;border:1px solid ${C.lineSoft};background:${C.paper}}
+.gloss-row{display:grid;grid-template-columns:4.2rem 1fr;gap:8px;padding:3px 0;font-size:8.5pt;line-height:1.4}
+.gloss-row .t{color:${C.gold};font-weight:600}.gloss-row .d{color:${C.body}}
+.scope-block{margin-top:8px}.scope-tech{opacity:0.85;font-size:7.8pt!important}
+
+/* Consulting-grade depth blocks */
+.chain{margin:8px 0 10px;padding:8px 0}
+.chain-step{display:grid;grid-template-columns:5.2rem 1fr;gap:8px;padding:5px 0;border-bottom:1px solid ${C.lineSoft};font-size:9.6pt;line-height:1.45}
+.chain-step:last-child{border-bottom:none}
+.chain-step .lab{color:${C.gold};font-weight:600;font-size:7.5pt;letter-spacing:0.03em}
+.misread{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:8px 0}
+.misread .box{padding:8px 10px;border:1px solid ${C.lineSoft};background:${C.paper}}
+.misread .box .lab{font-size:7.5pt;color:${C.gold};margin-bottom:4px}
+.misread .box .val{font-size:9.6pt;line-height:1.5;color:${C.ink}}
+.self-mis{margin:8px 0;padding:8px 10px;border-left:2px solid ${C.goldDim};background:rgba(168,137,61,0.05)}
+.self-mis .lab{font-size:7.5pt;color:${C.gold};margin-bottom:3px}
+.self-mis .val{font-size:9.6pt;line-height:1.5}
+.xd-row{margin:8px 0;padding-bottom:8px;border-bottom:1px solid ${C.lineSoft}}
+.xd-row .pair{font-size:8pt;color:${C.gold};margin-bottom:3px}
+.xd-row .bridge{font-size:10pt;line-height:1.55;color:${C.ink}}
+.pchain{margin:10px 0;padding:8px 0;border-bottom:1px solid ${C.lineSoft}}
+.pchain .t{font-family:${SERIF},serif;font-size:11.5pt;color:${C.navy};margin-bottom:6px}
+.pchain .steps{font-size:9.8pt;line-height:1.55;color:${C.body}}
+.action-card{margin:8px 0;padding:8px 0 8px 12px;border-left:2px solid ${C.goldDim}}
+.action-card .when,.action-card .do,.action-card .because{font-size:9.5pt;line-height:1.5;margin:2px 0}
+.action-card .k{color:${C.gold};font-weight:600;margin-right:4px}
+.disc-narrative{font-size:10.4pt;line-height:1.65;color:${C.body};margin:6px 0 8px}
 `;
 }

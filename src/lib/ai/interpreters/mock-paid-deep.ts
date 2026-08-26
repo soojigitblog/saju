@@ -10,7 +10,7 @@ import type { FortuneAiContext } from "@/lib/ai/types";
 import type { FortuneChart } from "@/lib/fortune-engine/types";
 
 const SCOPE =
-  "이 리포트는 출생 명식(四柱), 오행 분포, 일간 기준 십성, 각 기둥의 천간·지지와 본기 정보를 바탕으로 구성합니다. 대운·세운·월운·용신·신강/신약·합충형파해의 확정 해석은 포함하지 않습니다.";
+  "이 리포트는 태어난 순간의 사주 구조를 중심으로 분석합니다. 특정 연도·월의 길흉이나 미래 시기를 맞히는 내용은 포함하지 않습니다.";
 
 function fiveSnapshot(ctx: FortuneAiContext) {
   return [
@@ -78,7 +78,7 @@ export function buildMockPaidResultDeep(
   const kind: PaidProductKind =
     /money/i.test(slug) ? "money" : /career|job/i.test(slug) ? "career" : /love/i.test(slug) ? "love" : /total/i.test(slug) ? "total" : "generic";
   const v2 = buildInterpretationContextV2(ctx, options?.chart);
-  const dm = `${ctx.dayMaster.stem}${ctx.dayMaster.hangul}`;
+  const dm = `${ctx.dayMaster.stem}(${ctx.dayMaster.hangul})`;
   const moneyCard = pickCard(v2, "money-threshold");
   const workCard = pickCard(v2, "work-environment");
   const loveCard = pickCard(v2, "love-distance");
@@ -107,7 +107,7 @@ export function buildMockPaidResultDeep(
           "정산 문장이 없는 상황에서는 금액보다 찜찜함이 먼저 커질 수 있습니다.",
         ],
         evidenceExplanation: [
-          `일간 ${dm}과 오행 분포를 함께 보면, 돈 판단의 중심은 즉흥보다 기준 정리에 가깝습니다.`,
+          `${dm} 일간과 오행 분포를 함께 보면, 돈 판단의 중심은 즉흥보다 기준 정리에 가깝습니다.`,
           `오행 우세·희소 축과 월간 십성 축이 함께 작동해 큰 흐름과 작은 누수를 다르게 보게 만듭니다.`,
         ],
         evidence: moneyCard.evidenceIds.map((id) => v2.evidenceRegistry.find((x) => x.id === id)?.sources[0] ?? "dayMaster").slice(0, 6),
@@ -297,7 +297,7 @@ export function buildMockPaidResultDeep(
       }),
       section("career_strength_work", {
         title: "강점이 살아나는 업무",
-        coreInsight: "목표·범위·검수 지점이 선명할 때 강점이 가장 재현되기 쉽습니다.",
+        coreInsight: "목표·범위·중간에 확인할 시점이 선명할 때, 강점을 꾸준히 발휘하기 쉽습니다.",
         behaviorScenes: [
           "혼자 초안을 정리하고, 마지막에 품질을 맞추는 리듬에서 강점이 살아날 수 있습니다.",
           "성과가 말이 되는 구조에서는 꾸준함이 오래갑니다.",
@@ -367,7 +367,7 @@ export function buildMockPaidResultDeep(
       }),
       section("career_path_type", {
         title: "잘 맞는 커리어 경로",
-        coreInsight: "명함보다 역할 구조가 중요해, 전문성 누적형·운영형·검수형 경로와의 궁합을 먼저 보는 편이 정확합니다.",
+        coreInsight: "명함보다 역할 구조가 중요해, 할수록 경험과 실력이 쌓이는 일·운영을 맡는 일·중간에 확인하며 완성하는 일과의 궁합을 먼저 보는 편이 정확합니다.",
         behaviorScenes: [
           "역할이 겹치지 않고 축적이 남는 일에서 오래 가기 쉽습니다.",
           "관계 소모가 핵심인 환경보다는 기준과 결과물이 남는 일이 편할 수 있습니다.",
@@ -689,7 +689,7 @@ export function buildMockPaidResultDeep(
     }),
     section("total_v4_work", {
       title: "일과 성취",
-      coreInsight: "일에서의 강점은 열정 과시보다, 완성도와 재현성을 끝까지 챙길 수 있는 구조에서 더 선명하게 드러납니다.",
+      coreInsight: "일에서의 강점은 열정 과시보다, 완성도와 끝까지 결과를 맞추는 힘에서 더 선명하게 드러납니다.",
       behaviorScenes: workCard.behaviorPossibilities,
       evidenceExplanation: ["오행 우세 축, 십성 분포 축, 월간 십성 축을 함께 보면 일 만족도의 조건이 분리됩니다."],
       evidence: ["fiveElements.metal", "tenGods.month.stem", "fiveElements.earth"],
@@ -700,7 +700,7 @@ export function buildMockPaidResultDeep(
     }),
     section("total_v4_money_link", {
       title: "돈과 통제",
-      coreInsight: "돈은 금액 자체보다, 내가 설명하고 검수할 수 있는 흐름인가에 따라 안정감이 크게 달라질 수 있습니다.",
+      coreInsight: "돈은 금액 자체보다, 내가 이해하고 확인할 수 있는 흐름인가에 따라 안정감이 크게 달라질 수 있습니다.",
       behaviorScenes: moneyCard.behaviorPossibilities,
       evidenceExplanation: [
         "돈이 판단·일·관계와 어떻게 연결되는지 보는 축입니다. 금액 길흉이 아니라 설명·검수 가능한 흐름인가를 봅니다.",
