@@ -17,7 +17,7 @@ type OrderItem = {
     paymentMethod: string;
     paidAt: string | null;
   };
-  report: { id: string; generationStatus: string } | null;
+  report: { id: string; generationStatus: string; errorCode?: string | null } | null;
   paymentUrl: string | null;
   reportUrl: string | null;
 };
@@ -26,7 +26,8 @@ function statusLabel(
   status: string,
   reportStatus?: string,
   paymentMethod?: string,
-  paidAt?: string | null
+  paidAt?: string | null,
+  reportErrorCode?: string | null
 ): string {
   const paid = Boolean(paidAt);
   if (status === "PENDING") {
@@ -34,7 +35,14 @@ function statusLabel(
       ? "입금 확인 대기 (운영자 확인 필요)"
       : "입금 대기";
   }
-  if (reportStatus === "FAILED" && paid) return "결제 완료 · 리포트 재생성 중";
+  if (
+    paid &&
+    reportStatus === "FAILED" &&
+    reportErrorCode === "PAID_REPORT_LIVE_DISABLED"
+  ) {
+    return "결제 확인됨 · 리포트 준비 중";
+  }
+  if (reportStatus === "FAILED" && paid) return "결제 확인됨 · 리포트 준비 중";
   if (status === "PAID" && reportStatus === "GENERATING") {
     return "결제 완료 · 리포트 준비 중";
   }
@@ -46,7 +54,7 @@ function statusLabel(
   if (status === "COMPLETED" || reportStatus === "COMPLETED") {
     return "완료";
   }
-  if (status === "FAILED" && paid) return "결제 완료 · 리포트 재생성 중";
+  if (status === "FAILED" && paid) return "결제 확인됨 · 리포트 준비 중";
   if (status === "EXPIRED") return "입금 기한 만료";
   return status;
 }
@@ -126,7 +134,8 @@ export default function MyResultsPage() {
                     item.order.status,
                     item.report?.generationStatus,
                     item.order.paymentMethod,
-                    item.order.paidAt
+                    item.order.paidAt,
+                    item.report?.errorCode
                   )}
                 </p>
                 <div className="mt-4 flex flex-wrap gap-2">

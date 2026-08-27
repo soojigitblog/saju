@@ -20,10 +20,14 @@ const bodySchema = z.object({
   depositorName: z.string().min(2).max(40),
   paymentMethod: z.enum(["BANK_TRANSFER", "TOSS"]).optional(),
   sourceTarotReadingId: uuidLike.optional(),
-  // Ignored — never trust client prices
+  // Ignored — never trust client prices or QA bypass flags
   amount: z.number().optional(),
   price: z.number().optional(),
   salePrice: z.number().optional(),
+  allowPreliveQaCheckout: z.boolean().optional(),
+  internalQaCheckout: z.boolean().optional(),
+  generationMode: z.string().optional(),
+  provider: z.enum(["mock", "gemini", "openai"]).optional(),
 });
 
 export async function POST(request: Request) {

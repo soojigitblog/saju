@@ -8,7 +8,6 @@ import {
   enrichConsultingGrade,
 } from "@/lib/ai/interpreters/mock-consulting-grade";
 import {
-  buildPaidReportPdfHtmlConsulting,
   findConsultingFrameworkLabels,
   findConsultingGarbledText,
   findConsultingGenericAdvice,
@@ -18,6 +17,7 @@ import {
   findInternalCustomerTerms,
   snapshotFields,
 } from "@/lib/report/paid-report-pdf-consulting";
+import { generatePaidReportPdf } from "@/lib/report/generate-paid-report-pdf";
 import { buildConsultingPack } from "@/lib/report/v5/consulting-value-pack";
 import { validateEvidenceMappings } from "@/lib/report/v5/consulting-evidence";
 
@@ -41,14 +41,14 @@ function reportFor(slug: string, name: string) {
 }
 
 function htmlFor(slug: string, name: string) {
-  return buildPaidReportPdfHtmlConsulting({
+  return generatePaidReportPdf({
     nickname: "수지",
     productName: name,
     productSlug: slug,
     report: buildMockPaidResult(ctx, name, { productSlug: slug, chart }),
-    ctx,
-    v2,
-  });
+    chart,
+    live: false,
+  }).html;
 }
 
 describe("CONSULTING-GRADE paid product", () => {

@@ -12,25 +12,18 @@ export type PaidReportAccess = {
   report: Report;
 };
 
-/**
- * Guest may access paid report if:
- * - guest_session_id matches cookie, OR
- * - access token hash matches (issued at payment confirm)
- */
-export async function getPaidReportForOwner(input: {
-  reportOrOrderId: string;
-  guestSessionId: string | null;
-  accessToken?: string | null;
-}): Promise<PaidReportAccess> {
+async function resolvePaidReportPair(
+  reportOrOrderId: string
+): Promise<PaidReportAccess> {
   let report =
-    (await getReportById(input.reportOrOrderId)) ??
-    (await getReportByOrderId(input.reportOrOrderId));
+    (await getReportById(reportOrOrderId)) ??
+    (await getReportByOrderId(reportOrOrderId));
 
   let order: Order | null = null;
   if (report) {
     order = await getOrderById(report.order_id);
   } else {
-    order = await getOrderById(input.reportOrOrderId);
+    order = await getOrderById(reportOrOrderId);
     if (order) {
       report = await getReportByOrderId(order.id);
     }
@@ -43,6 +36,21 @@ export async function getPaidReportForOwner(input: {
   if (!order.paid_at) {
     throw new FreeFlowError("FORBIDDEN", "결제된 리포트가 아닙니다.", 403);
   }
+
+  return { order, report };
+}
+
+/**
+ * Guest may access paid report if:
+ * - guest_session_id matches cookie, OR
+ * - access token hash matches (issued at payment confirm)
+ */
+export async function getPaidReportForOwner(input: {
+  reportOrOrderId: string;
+  guestSessionId: string | null;
+  accessToken?: string | null;
+}): Promise<PaidReportAccess> {
+  const { order, report } = await resolvePaidReportPair(input.reportOrOrderId);
 
   const guestOk =
     !!input.guestSessionId &&
@@ -59,4 +67,14 @@ export async function getPaidReportForOwner(input: {
   }
 
   return { order, report };
+}
+
+/**
+ * Admin/QA internal access — caller MUST have already passed assertAdminRequest.
+ * Does not relax customer mock PDF policy; serveConsultingPdf still uses accessActor.
+ */
+export async function getPaidReportForAdmin(input: {
+  reportOrOrderId: string;
+}): Promise<PaidReportAccess> {
+  return resolvePaidReportPair(input.reportOrOrderId);
 }

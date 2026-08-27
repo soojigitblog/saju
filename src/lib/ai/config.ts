@@ -68,6 +68,108 @@ export function assertPaidGeminiConfigured(): void {
   }
 }
 
+/**
+ * Pre-live gate: when false, customer paid sales/generation are closed.
+ * Does NOT mean "use mock instead of Gemini".
+ * Live PASS 후에만 true로 전환 — 자동 활성화 금지.
+ */
+export function isPaidReportLiveEnabled(): boolean {
+  const raw = process.env.PAID_REPORT_LIVE_ENABLED?.trim().toLowerCase();
+  return raw === "true" || raw === "1";
+}
+
+export type PaidGenerationActor = "customer" | "qa" | "admin" | "test";
+
+/**
+ * Internal QA checkout — server-only gate.
+ * NEVER true from customer HTTP (body/query/cookie).
+ * Requires ALLOW_PAID_QA_CHECKOUT=1 AND test runner (NODE_ENV=test / VITEST).
+ */
+export function isInternalQaCheckoutExecutionAllowed(): boolean {
+  if (process.env.ALLOW_PAID_QA_CHECKOUT !== "1") return false;
+  if (process.env.NODE_ENV === "test") return true;
+  if (process.env.VITEST === "true") return true;
+  return false;
+}
+
+/**
+ * Admin-authenticated QA seed (pre-live HTTP smoke / admin tooling).
+ * NEVER true from customer HTTP — only after assertAdminRequest at the route.
+ * Requires ALLOW_PAID_QA_CHECKOUT=1 AND (APP_ENV development|local|test).
+ * Does NOT relax customer mock PDF blocking or enable Paid Gemini Live.
+ */
+export function isAdminQaSeedExecutionAllowed(): boolean {
+  if (process.env.ALLOW_PAID_QA_CHECKOUT !== "1") return false;
+  const appEnv = (process.env.APP_ENV ?? "").toLowerCase();
+  return (
+    appEnv === "development" || appEnv === "local" || appEnv === "test"
+  );
+}
+
+/** @deprecated Use isInternalQaCheckoutExecutionAllowed — env flag alone is insufficient */
+export function isPaidPreliveQaCheckoutAllowed(): boolean {
+  return isInternalQaCheckoutExecutionAllowed();
+}
+
+/**
+ * Customer paid provider — NEVER returns mock.
+ *
+ * live=false → PAID_REPORT_LIVE_DISABLED
+ * live=true + gemini + no key → PAID_AI_NOT_CONFIGURED (via assert)
+ * live=true + configured → gemini (or configured non-mock provider)
+ */
+export function resolveEffectivePaidProviderForCustomer(): AiProviderName {
+  if (!isPaidReportLiveEnabled()) {
+    throw new Error("PAID_REPORT_LIVE_DISABLED");
+  }
+  const provider = resolveAiProviderForPaid();
+  if (provider === "mock") {
+    throw new Error("CUSTOMER_MOCK_PROVIDER_FORBIDDEN");
+  }
+  return provider;
+}
+
+/**
+ * Explicit actor-aware paid provider resolution.
+ * production customer + mock → HARD FAIL.
+ * qa/admin/test may request mock.
+ */
+export function resolvePaidProvider(input: {
+  actor: PaidGenerationActor;
+  requestedProvider?: AiProviderName | null;
+}): AiProviderName {
+  const actor = input.actor;
+  const requested = input.requestedProvider ?? null;
+
+  if (actor === "customer") {
+    if (requested === "mock") {
+      throw new Error("CUSTOMER_MOCK_PROVIDER_FORBIDDEN");
+    }
+    return resolveEffectivePaidProviderForCustomer();
+  }
+
+  // QA / admin / test
+  if (requested === "mock") {
+    assertMockAllowed();
+    return "mock";
+  }
+  if (requested === "gemini" || requested === "openai") {
+    return requested;
+  }
+
+  // Default for non-customer actors when live is off: mock (explicit QA path)
+  if (!isPaidReportLiveEnabled()) {
+    assertMockAllowed();
+    return "mock";
+  }
+
+  const configured = resolveAiProviderForPaid();
+  if (configured === "mock") {
+    assertMockAllowed();
+  }
+  return configured;
+}
+
 /** Explicit fallback provider — empty means NONE (no silent paid switch). */
 export function getAiFallbackProvider(): AiProviderName | null {
   const raw = process.env.AI_FALLBACK_PROVIDER?.trim().toLowerCase();

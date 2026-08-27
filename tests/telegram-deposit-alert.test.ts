@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+﻿import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   buildDepositCheckRequestedMessage,
   maskDepositorNameForAlert,
@@ -93,6 +93,7 @@ describe("deposit-ack telegram dedupe", () => {
       sourceResultId: free.freeResultId,
       depositorName: depositor,
       paymentMethod: "BANK_TRANSFER",
+      internalQaCheckout: true,
     });
     return { guest, orderId: created.order.id, orderNo: created.order.orderNo };
   }

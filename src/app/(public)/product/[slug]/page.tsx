@@ -4,6 +4,8 @@ import { getProductBySlug } from "@/lib/repositories/products";
 import { getGuestSessionId } from "@/lib/guest/cookie";
 import { getFreeResultById } from "@/lib/repositories/free-results";
 import { getProfileById } from "@/lib/repositories/profiles";
+import { isPaidReportLiveEnabled } from "@/lib/ai/config";
+import { isKnownPaidFortuneProductSlug } from "@/lib/report/paid-report-kind";
 
 export async function generateMetadata({
   params,
@@ -49,11 +51,23 @@ export default async function ProductPage({
       ? tarotReadingId
       : null;
 
+  const paidLiveEnabled = isPaidReportLiveEnabled();
+  const purchaseBlocked =
+    product.productType === "fortune" &&
+    isKnownPaidFortuneProductSlug(product.slug) &&
+    !paidLiveEnabled;
+
   return (
     <ProductDetail
       product={product}
       linkedFreeResultId={linkedResultId}
       linkedTarotReadingId={linkedTarotReadingId}
+      purchaseBlocked={purchaseBlocked}
+      purchaseBlockedMessage={
+        purchaseBlocked
+          ? "현재 최종 점검 중입니다. 유료 리포트 판매는 잠시 후 오픈됩니다."
+          : null
+      }
     />
   );
 }

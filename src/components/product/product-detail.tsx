@@ -15,10 +15,14 @@ export function ProductDetail({
   product,
   linkedFreeResultId,
   linkedTarotReadingId,
+  purchaseBlocked = false,
+  purchaseBlockedMessage = null,
 }: {
   product: Product;
   linkedFreeResultId?: string | null;
   linkedTarotReadingId?: string | null;
+  purchaseBlocked?: boolean;
+  purchaseBlockedMessage?: string | null;
 }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -48,6 +52,13 @@ export function ProductDetail({
 
   async function onPurchase() {
     setError("");
+    if (purchaseBlocked) {
+      setError(
+        purchaseBlockedMessage ??
+          "현재 최종 점검 중입니다. 유료 리포트 판매는 잠시 후 오픈됩니다."
+      );
+      return;
+    }
     if (!linkedFreeResultId) {
       setError(
         "무료 사주 결과가 연결되지 않았습니다. 사주 결과에서 상품을 선택해 주세요."
@@ -133,7 +144,12 @@ export function ProductDetail({
           </p>
         </MysticPanel>
 
-        {linkedFreeResultId ? (
+        {purchaseBlocked ? (
+          <p className="mt-6 border border-[var(--border-gold)]/40 bg-[var(--bg-card)]/80 px-4 py-3 text-sm text-[var(--text-secondary)]">
+            {purchaseBlockedMessage ??
+              "현재 최종 점검 중입니다. 유료 리포트 판매는 잠시 후 오픈됩니다."}
+          </p>
+        ) : linkedFreeResultId ? (
           <div className="mt-6 space-y-2">
             <Label htmlFor="depositor">입금자명</Label>
             <Input
@@ -167,9 +183,13 @@ export function ProductDetail({
             <Button
               size="full"
               onClick={() => void onPurchase()}
-              disabled={loading || !linkedFreeResultId}
+              disabled={loading || purchaseBlocked || !linkedFreeResultId}
             >
-              {loading ? "주문 준비 중..." : "계좌이체로 구매하기"}
+              {purchaseBlocked
+                ? "판매 준비 중"
+                : loading
+                  ? "주문 준비 중..."
+                  : "계좌이체로 구매하기"}
             </Button>
           </div>
         </div>

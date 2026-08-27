@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+﻿import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   createFreeFortune,
   resetMockFreeFlowState,
@@ -49,6 +49,7 @@ describe("PHASE 6.5 paid report blocker fix (mock)", () => {
       productId: MOCK_PRODUCT_IDS.money,
       sourceResultId: free.freeResultId,
       paymentMethod: "TOSS",
+      internalQaCheckout: true,
     });
     await confirmTossPaymentForOwner({
       guestSessionId: guest,

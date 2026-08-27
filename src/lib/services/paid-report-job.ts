@@ -5,10 +5,13 @@ import {
   assertPaidGeminiConfigured,
   estimateAiCostUsd,
   getAiModelPaid,
-  resolveAiProviderForPaid,
+  resolvePaidProvider,
+  type PaidGenerationActor,
+  type AiProviderName,
 } from "@/lib/ai/config";
 import { buildGenerationKey } from "@/lib/ai/generation-key";
 import { AiEngineError } from "@/lib/ai/errors";
+import { MockFortuneInterpreter } from "@/lib/ai/interpreters/mock-interpreter";
 import {
   createAiGeneration,
   getAiGenerationByKey,
@@ -34,6 +37,17 @@ import { notifyPaidReportFailed } from "@/lib/notifications";
 import type { FortuneChart } from "@/lib/fortune-engine/types";
 import { trackEvent } from "@/lib/repositories/analytics";
 import type { Json } from "@/types/database.types";
+import {
+  INTERPRETATION_VERSION_CONSULTING,
+  REPORT_RENDER_VERSION_CONSULTING,
+} from "@/lib/report/paid-report-versions";
+import { isKnownPaidFortuneProductSlug } from "@/lib/report/paid-report-kind";
+import { consultingArtifactUrls } from "@/lib/report/generate-paid-report-pdf";
+import {
+  shouldNotifyPaidReportFailure,
+  shouldTrackPaidReportFailureAnalytics,
+} from "@/lib/services/paid-report-failure-policy";
+import { stampServerPaidReportMetadata } from "@/lib/services/paid-report-metadata";
 
 export type PaidReportJobResult = {
   reportId: string | null;
@@ -69,13 +83,20 @@ function isPayableOrder(order: {
 /**
  * Start paid report after order is PAID in DB.
  * Never call this based on client paymentSuccess flags alone.
+ *
+ * actor defaults to "customer" — never silent mock for customers.
+ * QA/admin/test must pass actor explicitly to use mock.
  */
 export async function startPaidReportJob(input: {
   orderId: string;
   runGeneration?: boolean;
   triggerOnly?: boolean;
   forceRetry?: boolean;
+  /** Default: customer (production-safe). Use qa|admin|test for mock E2E. */
+  actor?: PaidGenerationActor;
+  requestedProvider?: AiProviderName | null;
 }): Promise<PaidReportJobResult> {
+  const actor: PaidGenerationActor = input.actor ?? "customer";
   const order = await getOrderById(input.orderId);
   if (!order) {
     throw new FreeFlowError("NOT_FOUND", "주문을 찾을 수 없습니다.", 404);
@@ -127,35 +148,102 @@ export async function startPaidReportJob(input: {
     return { reportId: report.id, status: report.generation_status };
   }
 
+  // --- Defense in depth: customer never gets mock / never generates while live off ---
+  let provider: AiProviderName;
   try {
-    assertPaidGeminiConfigured();
+    provider = resolvePaidProvider({
+      actor,
+      requestedProvider: input.requestedProvider,
+    });
   } catch (error) {
     const code =
-      error instanceof Error && error.message === "PAID_AI_NOT_CONFIGURED"
-        ? "PAID_AI_NOT_CONFIGURED"
-        : "CONFIGURATION_ERROR";
+      error instanceof Error ? error.message : "PAID_GENERATION_BLOCKED";
+    const known =
+      code === "PAID_REPORT_LIVE_DISABLED" ||
+      code === "CUSTOMER_MOCK_PROVIDER_FORBIDDEN" ||
+      code === "PAID_AI_NOT_CONFIGURED";
+    const errorCode = known ? code : "CONFIGURATION_ERROR";
+    const safeMessage =
+      errorCode === "PAID_REPORT_LIVE_DISABLED"
+        ? "유료 리포트는 최종 점검 중이라 아직 생성되지 않습니다. 결제는 정상 확인되었습니다."
+        : errorCode === "CUSTOMER_MOCK_PROVIDER_FORBIDDEN"
+          ? "고객 경로에서는 Mock 리포트를 생성할 수 없습니다."
+          : "유료 리포트 생성이 설정되지 않아 준비할 수 없습니다. 결제는 정상 확인되었습니다.";
+
     await updateReport(report.id, {
       generation_status: "FAILED",
-      error_code: code,
-      error_message:
-        "유료 AI 키가 설정되지 않아 리포트를 생성할 수 없습니다. 관리는 GEMINI_API_KEY_PAID를 설정하세요.",
+      error_code: errorCode,
+      error_message: safeMessage,
     });
     await updateOrder(order.id, { status: "PAID" });
-    try {
-      await notifyPaidReportFailed({
-        orderNo: order.order_no,
-        productName: order.product_name_snapshot ?? product.name,
-        amount: order.amount,
-        errorCode: code,
-      });
-    } catch {
-      /* best-effort */
+    if (shouldNotifyPaidReportFailure(errorCode)) {
+      try {
+        await notifyPaidReportFailed({
+          orderNo: order.order_no,
+          productName: order.product_name_snapshot ?? product.name,
+          amount: order.amount,
+          errorCode,
+        });
+      } catch {
+        /* best-effort */
+      }
+    }
+    if (shouldTrackPaidReportFailureAnalytics(errorCode)) {
+      try {
+        await trackEvent({
+          sessionId: order.guest_session_id ?? order.id,
+          eventName: "paid_report_failed",
+          productId: order.product_id,
+          metadata: { orderId: order.id, reportId: report.id, code: errorCode },
+        });
+      } catch {
+        /* best-effort */
+      }
     }
     return { reportId: report.id, status: "FAILED" };
   }
 
+  if (actor === "customer" && provider === "mock") {
+    await updateReport(report.id, {
+      generation_status: "FAILED",
+      error_code: "CUSTOMER_MOCK_PROVIDER_FORBIDDEN",
+      error_message: "고객 경로에서는 Mock 리포트를 생성할 수 없습니다.",
+    });
+    await updateOrder(order.id, { status: "PAID" });
+    return { reportId: report.id, status: "FAILED" };
+  }
+
+  if (provider === "gemini") {
+    try {
+      assertPaidGeminiConfigured();
+    } catch (error) {
+      const code =
+        error instanceof Error && error.message === "PAID_AI_NOT_CONFIGURED"
+          ? "PAID_AI_NOT_CONFIGURED"
+          : "CONFIGURATION_ERROR";
+      await updateReport(report.id, {
+        generation_status: "FAILED",
+        error_code: code,
+        error_message:
+          "유료 AI 키가 설정되지 않아 리포트를 생성할 수 없습니다. 관리자는 GEMINI_API_KEY_PAID를 설정하세요.",
+      });
+      await updateOrder(order.id, { status: "PAID" });
+      try {
+        await notifyPaidReportFailed({
+          orderNo: order.order_no,
+          productName: order.product_name_snapshot ?? product.name,
+          amount: order.amount,
+          errorCode: code,
+        });
+      } catch {
+        /* best-effort */
+      }
+      return { reportId: report.id, status: "FAILED" };
+    }
+  }
+
   const attemptCount = (report.attempt_count ?? 0) + 1;
-  const provider = resolveAiProviderForPaid();
+  const generationMode = provider === "mock" ? "mock" : "live";
   const model = getAiModelPaid(provider);
   const promptVersionId =
     product.promptVersionId ?? "22222222-2222-2222-2222-222222222201";
@@ -247,7 +335,7 @@ export async function startPaidReportJob(input: {
   try {
     await trackEvent({
       sessionId: order.guest_session_id ?? order.id,
-      eventName: isPaidTarot ? "paid_report_start" : "paid_report_start",
+      eventName: "paid_report_started",
       productId: order.product_id,
       metadata: {
         orderId: order.id,
@@ -303,6 +391,8 @@ export async function startPaidReportJob(input: {
         /* best-effort */
       }
     } else {
+      const paidInterpreter =
+        provider === "mock" ? new MockFortuneInterpreter() : undefined;
       const generated = await generatePaidInterpretation(
         chart,
         {
@@ -325,11 +415,24 @@ export async function startPaidReportJob(input: {
             maritalStatus: profile.marital_status ?? undefined,
             hasChildren: profile.has_children ?? null,
           },
+          interpreter: paidInterpreter,
         }
       );
       const { meta: m, ...body } = generated;
       resultBody = body as unknown as Record<string, unknown>;
       meta = m;
+
+      if (
+        product.productType === "fortune" &&
+        isKnownPaidFortuneProductSlug(product.slug)
+      ) {
+        resultBody = stampServerPaidReportMetadata({
+          body: resultBody,
+          generationMode,
+          interpretationVersion: INTERPRETATION_VERSION_CONSULTING,
+          reportRenderVersion: REPORT_RENDER_VERSION_CONSULTING,
+        });
+      }
     }
 
     const estimatedCost = estimateAiCostUsd({
@@ -337,6 +440,13 @@ export async function startPaidReportJob(input: {
       inputTokens: meta.usage?.inputTokens,
       outputTokens: meta.usage?.outputTokens,
     });
+
+    const artifactUrls =
+      !isPaidTarot &&
+      product.productType === "fortune" &&
+      isKnownPaidFortuneProductSlug(product.slug)
+        ? consultingArtifactUrls(report.id)
+        : null;
 
     await updateReport(report.id, {
       generation_status: "COMPLETED",
@@ -351,6 +461,8 @@ export async function startPaidReportJob(input: {
       total_tokens: meta.usage?.totalTokens ?? null,
       provider_request_id: meta.providerRequestId ?? null,
       estimated_ai_cost_usd: estimatedCost,
+      html_url: artifactUrls?.htmlUrl ?? null,
+      pdf_url: artifactUrls?.pdfUrl ?? null,
     });
 
     await updateOrder(order.id, { status: "COMPLETED" });
@@ -420,15 +532,30 @@ export async function startPaidReportJob(input: {
       }
     }
 
-    try {
-      await notifyPaidReportFailed({
-        orderNo: order.order_no,
-        productName: order.product_name_snapshot ?? product.name,
-        amount: order.amount,
-        errorCode: code,
-      });
-    } catch {
-      /* best-effort alert */
+    if (shouldNotifyPaidReportFailure(code)) {
+      try {
+        await notifyPaidReportFailed({
+          orderNo: order.order_no,
+          productName: order.product_name_snapshot ?? product.name,
+          amount: order.amount,
+          errorCode: code,
+        });
+      } catch {
+        /* best-effort alert */
+      }
+    }
+
+    if (shouldTrackPaidReportFailureAnalytics(code)) {
+      try {
+        await trackEvent({
+          sessionId: order.guest_session_id ?? order.id,
+          eventName: "paid_report_failed",
+          productId: order.product_id,
+          metadata: { orderId: order.id, reportId: report.id, code },
+        });
+      } catch {
+        /* best-effort */
+      }
     }
 
     return { reportId: report.id, status: "FAILED" };
@@ -461,6 +588,7 @@ export async function adminRetryPaidReportGeneration(input: {
     orderId: order.id,
     runGeneration: true,
     forceRetry: true,
+    actor: "admin",
   });
 }
 
@@ -487,9 +615,11 @@ export async function retryPaidReportGeneration(input: {
 
   await normalizePaidOrderStatus(order);
 
+  // Customer retry — never mock; live gate applies
   return startPaidReportJob({
     orderId: order.id,
     runGeneration: true,
     forceRetry: true,
+    actor: "customer",
   });
 }

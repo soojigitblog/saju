@@ -4,10 +4,13 @@ import { getPaidReportForOwner } from "@/lib/services/get-paid-report";
 import { FreeFlowError } from "@/lib/services/free-flow-errors";
 import { getProfileById } from "@/lib/repositories/profiles";
 import { PaidReportView } from "@/components/report/paid-report-view";
+import { PaidConsultingReportView } from "@/components/report/paid-consulting-report-view";
 import { PaidTarotReportView } from "@/components/report/paid-tarot-report-view";
 import { MysticPage } from "@/components/mystic/celestial-background";
 import { Button } from "@/components/ui/button";
 import { mockPaidReport } from "@/lib/mock-data";
+import { isConsultingReportRenderVersion } from "@/lib/report/paid-report-versions";
+import { deriveReportGenerationMode } from "@/lib/services/paid-report-metadata";
 import type { PaidReport } from "@/types";
 import type { PaidFortuneReport } from "@/lib/ai/schemas/paid-report";
 import type { PaidCrossReading } from "@/lib/ai/schemas/paid-cross-reading";
@@ -127,6 +130,16 @@ type PageModel =
   | { kind: "demo"; report: PaidReport }
   | { kind: "view"; report: PaidReport }
   | {
+      kind: "consulting";
+      reportId: string;
+      orderNo: string;
+      productName: string;
+      nickname: string;
+      headline: string;
+      summary: string;
+      accessToken?: string | null;
+    }
+  | {
       kind: "paid_tarot";
       reading: PaidCrossReading;
       nickname: string;
@@ -159,6 +172,18 @@ async function loadPage(input: {
     });
 
     if (report.generation_status !== "COMPLETED" || !report.result_json) {
+      if (
+        report.generation_status === "FAILED" &&
+        report.error_code === "PAID_REPORT_LIVE_DISABLED"
+      ) {
+        return {
+          kind: "message",
+          title: "리포트 준비 중",
+          body: "결제는 확인되었으며, 리포트 생성 준비 중입니다. 오픈 후 이 페이지에서 확인하실 수 있습니다.",
+          href: "/my-results",
+          label: "내 결과 보기",
+        };
+      }
       return {
         kind: "message",
         title:
@@ -167,7 +192,7 @@ async function loadPage(input: {
             : "리포트를 준비하고 있습니다",
         body:
           report.generation_status === "FAILED"
-            ? "결제는 완료되었습니다. 결제 완료 화면에서 다시 생성을 시도해 주세요."
+            ? "결제는 확인되었습니다. 잠시 후 다시 시도해 주세요."
             : "잠시 후 다시 확인해 주세요.",
         href: "/my-results",
         label: "내 결과 보기",
@@ -175,7 +200,12 @@ async function loadPage(input: {
     }
 
     const profile = await getProfileById(order.profile_id);
-    const raw = report.result_json as { reportKind?: string };
+    const raw = report.result_json as {
+      reportKind?: string;
+      reportRenderVersion?: string;
+      title?: string;
+      executiveSummary?: string;
+    };
     if (raw?.reportKind === "paid_tarot") {
       return {
         kind: "paid_tarot",
@@ -186,6 +216,30 @@ async function loadPage(input: {
         orderNo: order.order_no,
       };
     }
+
+    if (isConsultingReportRenderVersion(raw?.reportRenderVersion)) {
+      const generationMode = deriveReportGenerationMode(report);
+      if (generationMode === "mock") {
+        return {
+          kind: "message",
+          title: "리포트를 확인할 수 없습니다",
+          body: "이 결과는 아직 고객에게 제공되지 않습니다.",
+          href: "/my-results",
+          label: "내 결과",
+        };
+      }
+      return {
+        kind: "consulting",
+        reportId: report.id,
+        orderNo: order.order_no,
+        productName: order.product_name_snapshot ?? "유료 리포트",
+        nickname: profile?.nickname ?? "고객",
+        headline: raw.title ?? "나만의 사용설명서",
+        summary: raw.executiveSummary ?? "",
+        accessToken: input.access ?? null,
+      };
+    }
+
     return {
       kind: "view",
       report: mapToPaidReportView({
@@ -238,6 +292,20 @@ export default async function ReportPage({
 
   if (model.kind === "demo" || model.kind === "view") {
     return <PaidReportView report={model.report} />;
+  }
+
+  if (model.kind === "consulting") {
+    return (
+      <PaidConsultingReportView
+        reportId={model.reportId}
+        orderNo={model.orderNo}
+        productName={model.productName}
+        nickname={model.nickname}
+        headline={model.headline}
+        summary={model.summary}
+        accessToken={model.accessToken}
+      />
+    );
   }
 
   if (model.kind === "paid_tarot") {

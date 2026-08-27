@@ -5,6 +5,7 @@ import {
   toOrderPublicDTO,
 } from "@/lib/repositories/orders";
 import { getReportByOrderId } from "@/lib/repositories/reports";
+import { deriveReportGenerationMode } from "@/lib/services/paid-report-metadata";
 
 export const dynamic = "force-dynamic";
 
@@ -24,7 +25,11 @@ export async function GET() {
       return {
         order: toOrderPublicDTO(order),
         report: report
-          ? { id: report.id, generationStatus: report.generation_status }
+          ? {
+              id: report.id,
+              generationStatus: report.generation_status,
+              errorCode: report.error_code,
+            }
           : null,
         paymentUrl:
           order.payment_method === "BANK_TRANSFER" &&
@@ -32,11 +37,11 @@ export async function GET() {
             ? `/payment/bank/${order.id}`
             : null,
         reportUrl:
-          report && report.generation_status === "COMPLETED"
+          report &&
+          report.generation_status === "COMPLETED" &&
+          deriveReportGenerationMode(report) === "live"
             ? `/report/${report.id}`
-            : order.status === "COMPLETED" && report
-              ? `/report/${report.id}`
-              : null,
+            : null,
       };
     })
   );

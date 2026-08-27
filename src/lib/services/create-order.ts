@@ -18,6 +18,12 @@ import {
   getBankTransferPublicAccount,
   isBankTransferAccountConfigured,
 } from "@/lib/bank/account-public";
+import {
+  isInternalQaCheckoutExecutionAllowed,
+  isAdminQaSeedExecutionAllowed,
+  isPaidReportLiveEnabled,
+} from "@/lib/ai/config";
+import { isKnownPaidFortuneProductSlug } from "@/lib/report/paid-report-kind";
 
 export type CreateOrderResult = {
   order: OrderPublicDTO;
@@ -45,6 +51,16 @@ export async function createOrderForGuest(input: {
   depositorName?: string;
   paymentMethod?: "BANK_TRANSFER" | "TOSS";
   analyticsSessionId?: string;
+  /**
+   * Ignored unless isInternalQaCheckoutExecutionAllowed() — never set from /api/orders.
+   * Customer spoofing this flag has no effect.
+   */
+  internalQaCheckout?: boolean;
+  /**
+   * Admin seed only — set only after assertAdminRequest + isAdminQaSeedExecutionAllowed().
+   * NEVER accepted from /api/orders customer body.
+   */
+  adminAuthenticatedCheckout?: boolean;
 }): Promise<CreateOrderResult> {
   assertPaymentMutationRateLimit({
     bucket: "order_create",
@@ -115,6 +131,22 @@ export async function createOrderForGuest(input: {
   }
   // product_type tarot_paid is purchasable (Paid Saju×Tarot)
 
+  // Pre-live: block customer checkout. QA only via test gate or admin-authenticated seed.
+  const isPaidFortune =
+    product.productType === "fortune" &&
+    isKnownPaidFortuneProductSlug(product.slug);
+  const qaCheckoutPermitted =
+    (input.internalQaCheckout === true &&
+      isInternalQaCheckoutExecutionAllowed()) ||
+    (input.adminAuthenticatedCheckout === true &&
+      isAdminQaSeedExecutionAllowed());
+  if (isPaidFortune && !isPaidReportLiveEnabled() && !qaCheckoutPermitted) {
+    throw new FreeFlowError(
+      "PAID_REPORT_LIVE_DISABLED",
+      "현재 최종 점검 중입니다. 유료 리포트 판매는 잠시 후 오픈됩니다.",
+      503
+    );
+  }
   const free = await getFreeResultById(input.sourceResultId);
   if (!free || free.generation_status !== "COMPLETED") {
     throw new FreeFlowError("NOT_FOUND", "사주 결과를 찾을 수 없습니다.", 404);

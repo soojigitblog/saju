@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+﻿import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   estimateAiCostUsd,
   getGeminiApiKeyForTier,
@@ -103,6 +103,7 @@ describe("PHASE 6.6 paid report guard (mock)", () => {
       productId: MOCK_PRODUCT_IDS.money,
       sourceResultId: free.freeResultId,
       paymentMethod: "TOSS",
+      internalQaCheckout: true,
     });
     await confirmTossPaymentForOwner({
       guestSessionId: guest,
@@ -158,6 +159,7 @@ describe("PHASE 6.6 paid report guard (mock)", () => {
       productId: MOCK_PRODUCT_IDS.money,
       sourceResultId: free.freeResultId,
       paymentMethod: "TOSS",
+      internalQaCheckout: true,
     });
 
     const result = await startPaidReportJob({

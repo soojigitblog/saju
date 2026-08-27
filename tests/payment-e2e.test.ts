@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+﻿import { beforeEach, describe, expect, it } from "vitest";
 import {
   createFreeFortune,
   resetMockFreeFlowState,
@@ -33,6 +33,8 @@ describe("PHASE 6 payment E2E (mock)", () => {
     resetMockFreeFlowState();
     process.env.AI_PROVIDER = "mock";
     process.env.PAYMENT_PROVIDER = "mock";
+    process.env.ALLOW_PAID_QA_CHECKOUT = "1";
+    process.env.PAID_REPORT_LIVE_ENABLED = "false";
     delete process.env.TOSS_SECRET_KEY;
   });
 
@@ -48,6 +50,7 @@ describe("PHASE 6 payment E2E (mock)", () => {
       productId: MOCK_PRODUCT_IDS.total,
       sourceResultId: free.freeResultId,
       paymentMethod: "TOSS",
+      internalQaCheckout: true,
     });
 
     expect(created.order.amount).toBe(12900);
@@ -92,12 +95,14 @@ describe("PHASE 6 payment E2E (mock)", () => {
       productId: MOCK_PRODUCT_IDS.money,
       sourceResultId: free.freeResultId,
       paymentMethod: "TOSS",
+      internalQaCheckout: true,
     });
     const b = await createOrderForGuest({
       guestSessionId: guest,
       productId: MOCK_PRODUCT_IDS.money,
       sourceResultId: free.freeResultId,
       paymentMethod: "TOSS",
+      internalQaCheckout: true,
     });
     expect(a.order.id).toBe(b.order.id);
     expect(b.reused).toBe(true);
@@ -112,6 +117,7 @@ describe("PHASE 6 payment E2E (mock)", () => {
       productId: MOCK_PRODUCT_IDS.total,
       sourceResultId: free.freeResultId,
       paymentMethod: "TOSS",
+      internalQaCheckout: true,
     });
 
     await expect(
@@ -137,6 +143,7 @@ describe("PHASE 6 payment E2E (mock)", () => {
       productId: MOCK_PRODUCT_IDS.total,
       sourceResultId: free.freeResultId,
       paymentMethod: "TOSS",
+      internalQaCheckout: true,
     });
 
     await expect(
@@ -157,6 +164,7 @@ describe("PHASE 6 payment E2E (mock)", () => {
       productId: MOCK_PRODUCT_IDS.career,
       sourceResultId: free.freeResultId,
       paymentMethod: "TOSS",
+      internalQaCheckout: true,
     });
     const paymentKey = `mock_pk_idem_${created.order.orderNo}`;
 
@@ -190,6 +198,7 @@ describe("PHASE 6 payment E2E (mock)", () => {
           productId: product.id,
           sourceResultId: free.freeResultId,
           paymentMethod: "TOSS",
+      internalQaCheckout: true,
         })
       ).rejects.toMatchObject({ code: "PRODUCT_NOT_AVAILABLE" });
     } finally {
@@ -205,6 +214,7 @@ describe("PHASE 6 payment E2E (mock)", () => {
       productId: MOCK_PRODUCT_IDS.total,
       sourceResultId: free.freeResultId,
       paymentMethod: "TOSS",
+      internalQaCheckout: true,
     });
 
     await expect(
@@ -230,6 +240,7 @@ describe("PHASE 6 payment E2E (mock)", () => {
       productId: MOCK_PRODUCT_IDS.total,
       sourceResultId: free.freeResultId,
       paymentMethod: "TOSS",
+      internalQaCheckout: true,
     });
     await confirmTossPaymentForOwner({
       guestSessionId: owner,
@@ -264,6 +275,7 @@ describe("PHASE 6 payment E2E (mock)", () => {
       productId: MOCK_PRODUCT_IDS.total,
       sourceResultId: free.freeResultId,
       paymentMethod: "TOSS",
+      internalQaCheckout: true,
     });
     expect(created.order.amount).toBe(12900);
   });

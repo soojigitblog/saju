@@ -21,6 +21,7 @@ import {
 import { v5BaseCss, v5FontsHead } from "@/lib/report/v5/css";
 import { coverTitleForProduct, KNOWN_PARTICLE_ERRORS } from "@/lib/report/v5/tokens";
 import { findInternalCustomerTerms } from "@/lib/report/paid-report-pdf-v5";
+import { resolvePaidReportKindFromProductSlug } from "@/lib/report/paid-report-kind";
 
 const BANNED_FRAMEWORK_LABELS = [
   "Core Discovery",
@@ -591,14 +592,7 @@ export function buildPaidReportPdfHtmlConsulting(input: {
   /** Live Gemini: skip mock consulting enrich overlay. */
   live?: boolean;
 }): string {
-  const slug = input.productSlug;
-  const kind: "money" | "career" | "love" | "total" = /money/i.test(slug)
-    ? "money"
-    : /career|job/i.test(slug)
-      ? "career"
-      : /love/i.test(slug)
-        ? "love"
-        : "total";
+  const kind = resolvePaidReportKindFromProductSlug(input.productSlug);
 
   const pack = buildConsultingPack(kind, input.report, { live: input.live });
   const body =

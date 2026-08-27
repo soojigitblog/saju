@@ -17,6 +17,15 @@ export type AdminAuthResult = {
 export async function assertAdminRequest(
   request: Request
 ): Promise<AdminAuthResult> {
+  const result = await tryAdminRequest(request);
+  if (result) return result;
+  throw new FreeFlowError("FORBIDDEN", "관리자만 가능합니다.", 403);
+}
+
+/** Non-throwing admin check — used when route supports customer OR admin. */
+export async function tryAdminRequest(
+  request: Request
+): Promise<AdminAuthResult | null> {
   const sessionAdmin = await getCurrentAdminUser();
   if (sessionAdmin) {
     return { user: sessionAdmin, via: "session" };
@@ -32,24 +41,29 @@ export async function assertAdminRequest(
     };
   }
 
-  throw new FreeFlowError("FORBIDDEN", "관리자만 가능합니다.", 403);
+  return null;
 }
 
 function allowLegacyManualToken(request: Request): boolean {
-  const testOrBypass =
-    process.env.NODE_ENV === "test" ||
-    (getDataMode() === "mock" && process.env.ADMIN_MANUAL_BYPASS === "1");
-
-  if (!testOrBypass) return false;
-
-  if (getDataMode() === "mock" && process.env.ADMIN_MANUAL_BYPASS === "1") {
-    return true;
-  }
-
   const token = request.headers.get("x-admin-manual-token");
-  return Boolean(
-    process.env.ADMIN_MANUAL_TOKEN && token === process.env.ADMIN_MANUAL_TOKEN
-  );
+  // Bypass must still send the admin header so customer requests stay customer.
+  if (!token) return false;
+
+  const appEnv = (process.env.APP_ENV ?? "").toLowerCase();
+  const preliveDev =
+    process.env.ADMIN_MANUAL_BYPASS === "1" &&
+    (appEnv === "development" || appEnv === "local" || appEnv === "test");
+  const mockBypass =
+    getDataMode() === "mock" && process.env.ADMIN_MANUAL_BYPASS === "1";
+  const testEnv = process.env.NODE_ENV === "test";
+
+  if (!testEnv && !mockBypass && !preliveDev) return false;
+
+  if (process.env.ADMIN_MANUAL_TOKEN) {
+    return token === process.env.ADMIN_MANUAL_TOKEN;
+  }
+  // Bypass without a configured token: any non-empty x-admin-manual-token works.
+  return mockBypass || preliveDev || testEnv;
 }
 
 /** @deprecated Use assertAdminRequest — kept for call-site migration. */

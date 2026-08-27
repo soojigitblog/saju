@@ -1,4 +1,4 @@
-import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
+﻿import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 import {
   createFreeFortune,
   resetMockFreeFlowState,
@@ -64,6 +64,7 @@ describe("PHASE 6.3 real bank transfer activation", () => {
       sourceResultId: free.freeResultId,
       depositorName: depositor,
       paymentMethod: "BANK_TRANSFER",
+      internalQaCheckout: true,
     });
     return { guest, created };
   }
@@ -140,6 +141,7 @@ describe("PHASE 6.3 real bank transfer activation", () => {
       productId: MOCK_PRODUCT_IDS.love,
       sourceResultId: freeB.freeResultId,
       depositorName: "게스트B",
+      internalQaCheckout: true,
     });
 
     const listA = await listOrdersForGuestSession(a.guest);
@@ -201,6 +203,7 @@ describe("PHASE 6.3 real bank transfer activation", () => {
         productId: MOCK_PRODUCT_IDS.love,
         sourceResultId: free.freeResultId,
         depositorName: "미설정",
+      internalQaCheckout: true,
       })
     ).rejects.toMatchObject({ code: "BANK_ACCOUNT_NOT_CONFIGURED" });
     process.env.BANK_TRANSFER_ACCOUNT_NUMBER = "123-456789-01234";

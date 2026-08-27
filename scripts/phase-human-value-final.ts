@@ -10,8 +10,8 @@ import { buildFortuneAiContext } from "../src/lib/ai/context";
 import { buildInterpretationContextV2 } from "../src/lib/ai/interpretation-context-v2";
 import { buildMockPaidResult } from "../src/lib/ai/interpreters/mock-content";
 import { enrichConsultingGrade } from "../src/lib/ai/interpreters/mock-consulting-grade";
+import { generatePaidReportPdf } from "../src/lib/report/generate-paid-report-pdf";
 import {
-  buildPaidReportPdfHtmlConsulting,
   findConsultingGarbledText,
   snapshotFields,
 } from "../src/lib/report/paid-report-pdf-consulting";
@@ -87,14 +87,14 @@ async function main() {
       buildMockPaidResult(ctx, job.name, { productSlug: job.slug, chart })
     );
     const pack = buildConsultingPack(job.kind, raw);
-    const html = buildPaidReportPdfHtmlConsulting({
+    const html = generatePaidReportPdf({
       nickname: "수지",
       productName: job.name,
       productSlug: job.slug,
       report: raw,
-      ctx,
-      v2,
-    });
+      chart,
+      live: false,
+    }).html;
     const htmlPath = path.join(OUT, `${job.stem}.html`);
     const pdfPath = path.join(OUT, `${job.stem}.pdf`);
     fs.writeFileSync(htmlPath, html, "utf8");

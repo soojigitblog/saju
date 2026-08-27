@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+﻿import { beforeEach, describe, expect, it } from "vitest";
 import {
   createFreeFortune,
   resetMockFreeFlowState,
@@ -71,6 +71,7 @@ describe("PHASE 6.2 bank transfer E2E (mock)", () => {
       sourceResultId: free.freeResultId,
       depositorName: depositor,
       paymentMethod: "BANK_TRANSFER",
+      internalQaCheckout: true,
     });
     return { guest, free, created };
   }
@@ -217,6 +218,7 @@ describe("PHASE 6.2 bank transfer E2E (mock)", () => {
       productId: MOCK_PRODUCT_IDS.total,
       sourceResultId: free2.freeResultId,
       depositorName: "동일인",
+      internalQaCheckout: true,
     });
 
     const result = await processInboundBankTransaction(
