@@ -24,6 +24,7 @@ export type ConsultingDiscovery = {
   cost?: string;
   shareCandidate?: string;
   evidenceEasy?: string;
+  evidenceSources: string[];
 };
 
 export type ConsultingPack = {
@@ -73,6 +74,7 @@ function discoveryFromSection(
     cost: cleanCustomerText(s.shadowSide ?? s.riskSide ?? ""),
     shareCandidate: cleanCustomerText(s.shareableLine ?? ""),
     evidenceEasy: cleanCustomerText(s.evidenceExplanation?.[0] ?? ""),
+    evidenceSources: [...(s.evidence ?? [])],
   };
 }
 
@@ -107,15 +109,28 @@ function basePack(
     actions: report.actionItems ?? [],
     crossDomain: report.crossDomainLinks ?? [],
     patternChains: report.patternChains ?? [],
-    portrait: (report.finalSummary.portraitNarrative ?? []).map(cleanCustomerText),
+    portrait: (report.finalSummary.portraitNarrative ?? [])
+      .map(cleanCustomerText)
+      .filter(
+        (p) =>
+          p &&
+          !/리포트의\s*핵심|이\s*재물\s*리포트|일\s*리포트|연애\s*리포트|focused\s*report/i.test(
+            p
+          )
+      ),
     closing: cleanCustomerText(report.finalSummary.closingLine),
     signature: cleanCustomerText(report.signatureStatement),
     level3Count: countLevel3(report),
   };
 }
 
-export function buildMoneyConsultingPack(raw: PaidFortuneReport): ConsultingPack {
-  const report = enrichConsultingGrade({ ...raw, reportKind: "money" });
+export function buildMoneyConsultingPack(
+  raw: PaidFortuneReport,
+  opts?: { live?: boolean }
+): ConsultingPack {
+  const report = opts?.live
+    ? { ...raw, reportKind: "money" as const }
+    : enrichConsultingGrade({ ...raw, reportKind: "money" });
   const discoveries = pickDiscoveries(report, [
     { key: "money_v4_structure", id: "m-size", q: "큰돈과 작은돈에서 왜 행동이 달라질까?" },
     { key: "money_v4_earn_spend", id: "m-earn", q: "벌 때와 쓸 때 무엇이 먼저 보일까?" },
@@ -127,8 +142,13 @@ export function buildMoneyConsultingPack(raw: PaidFortuneReport): ConsultingPack
   return basePack("money", report, discoveries);
 }
 
-export function buildCareerConsultingPack(raw: PaidFortuneReport): ConsultingPack {
-  const report = enrichConsultingGrade({ ...raw, reportKind: "career" });
+export function buildCareerConsultingPack(
+  raw: PaidFortuneReport,
+  opts?: { live?: boolean }
+): ConsultingPack {
+  const report = opts?.live
+    ? { ...raw, reportKind: "career" as const }
+    : enrichConsultingGrade({ ...raw, reportKind: "career" });
   const discoveries = pickDiscoveries(report, [
     { key: "career_strength_work", id: "c-env", q: "어떤 환경에서 강점이 살아날까?" },
     { key: "career_character", id: "c-start", q: "일을 시작할 때 무엇이 있어야 움직일까?" },
@@ -140,8 +160,13 @@ export function buildCareerConsultingPack(raw: PaidFortuneReport): ConsultingPac
   return basePack("career", report, discoveries);
 }
 
-export function buildLoveConsultingPack(raw: PaidFortuneReport): ConsultingPack {
-  const report = enrichConsultingGrade({ ...raw, reportKind: "love" });
+export function buildLoveConsultingPack(
+  raw: PaidFortuneReport,
+  opts?: { live?: boolean }
+): ConsultingPack {
+  const report = opts?.live
+    ? { ...raw, reportKind: "love" as const }
+    : enrichConsultingGrade({ ...raw, reportKind: "love" });
   const discoveries = pickDiscoveries(report, [
     { key: "love_before", id: "l-before", q: "호감과 확신은 같은 속도로 움직일까?" },
     { key: "love_after", id: "l-after", q: "확신이 생기면 무엇이 달라질까?" },
@@ -153,8 +178,13 @@ export function buildLoveConsultingPack(raw: PaidFortuneReport): ConsultingPack 
   return basePack("love", report, discoveries);
 }
 
-export function buildTotalConsultingPack(raw: PaidFortuneReport): ConsultingPack {
-  const report = enrichConsultingGrade({ ...raw, reportKind: "total" });
+export function buildTotalConsultingPack(
+  raw: PaidFortuneReport,
+  opts?: { live?: boolean }
+): ConsultingPack {
+  const report = opts?.live
+    ? { ...raw, reportKind: "total" as const }
+    : enrichConsultingGrade({ ...raw, reportKind: "total" });
   const discoveries = pickDiscoveries(report, [
     { key: "total_v4_decision", id: "t-decide", q: "나는 왜 어떤 날은 빠르고 어떤 날은 느릴까?" },
     { key: "total_v4_relationship", id: "t-rel", q: "처음의 나와 가까워진 뒤의 나는 왜 다를까?" },
@@ -170,16 +200,17 @@ export function buildTotalConsultingPack(raw: PaidFortuneReport): ConsultingPack
 
 export function buildConsultingPack(
   kind: "money" | "career" | "love" | "total",
-  report: PaidFortuneReport
+  report: PaidFortuneReport,
+  opts?: { live?: boolean }
 ): ConsultingPack {
   switch (kind) {
     case "money":
-      return buildMoneyConsultingPack(report);
+      return buildMoneyConsultingPack(report, opts);
     case "career":
-      return buildCareerConsultingPack(report);
+      return buildCareerConsultingPack(report, opts);
     case "love":
-      return buildLoveConsultingPack(report);
+      return buildLoveConsultingPack(report, opts);
     case "total":
-      return buildTotalConsultingPack(report);
+      return buildTotalConsultingPack(report, opts);
   }
 }

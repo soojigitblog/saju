@@ -100,8 +100,14 @@ export function sanitizeEditorialCopy(text: string): string {
     .replace(/년간\s*십성\s*축은/g, "년간에 나타난 십성은")
     .replace(/년간\s*십성\s*축/g, "년간에 나타난 십성")
     .replace(/강점-그림자\s*축/g, "강점이 과해질 때의 모습")
+    .replace(/일간\s*축과/g, "일간과")
+    .replace(/일주\s*축이/g, "일주가")
+    .replace(/일간과\s*일주이/g, "일간과 일주가")
     .replace(/일간\s*축/g, "일간")
     .replace(/일주\s*축/g, "일주")
+    .replace(/빨라지는가입니다/g, "빨라지는지가 중요합니다")
+    .replace(/같은\s*엔진으로\s*작동/g, "같은 원리에서 이어질")
+    .replace(/엔진으로\s*작동/g, "원리에서 이어질")
     .replace(/년주\s*축/g, "년주")
     .replace(/음양\s*축/g, "음양")
     .replace(/Evidence\s*Axis/gi, "근거")
@@ -176,8 +182,40 @@ export function sanitizeEditorialCopy(text: string): string {
     .replace(/대가·산출/g, "대가·결과")
     .replace(/첫\s*산출물/g, "첫 결과물")
     .replace(/구성의 관계은/g, "구성의 관계는")
+    .replace(/오행\s*구성의\s*관계이/g, "오행 구성의 관계는")
+    .replace(/힘이\s*셈/g, "힘이 새는 쪽")
+    .replace(/일주과/g, "일주와")
+    .replace(/분포을/g, "분포를")
+    .replace(/\btonight\b/gi, "오늘 밤")
+    .replace(/스트레스\s*엔진/g, "스트레스가 반복되는 시작점")
+    .replace(/크로스\s*도메인\s*오해/g, "상황이 바뀌면서 생기는 대표적인 오해")
+    .replace(/반대로\s*반대로,/g, "반대로,")
+    .replace(/이\s*재물\s*리포트의\s*핵심은[^.。]*[。.]?/g, "")
+    .replace(/일\s*리포트의\s*핵심은[^.。]*[。.]?/g, "")
+    .replace(/연애\s*리포트의\s*핵심은[^.。]*[。.]?/g, "")
+    .replace(/이\s*리포트의\s*핵심[^.。]*[。.]?/g, "")
     .replace(/\s{2,}/g, " ")
     .trim();
+}
+
+/** Consulting PDF evidence: easy conclusion first, jargon in footnote only. */
+export function consultingEvidenceConclusion(text: string): string {
+  const t = sanitizeEditorialCopy(text);
+  const split = t.match(/(?:보면|때|에서는|지점에서|영역입니다)[,，]?\s*(.+)/);
+  if (split && split[1]!.length >= 16) return split[1]!.trim();
+  return t.replace(/^[甲乙丙丁戊己庚辛壬癸][가-힣()（）]{0,12}\s*일간[^,，。]*[,，]\s*/, "");
+}
+
+export function consultingEvidenceFootnote(text: string): string {
+  const t = sanitizeEditorialCopy(text);
+  const bits: string[] = [];
+  const dm = t.match(/[甲乙丙丁戊己庚辛壬癸](?:\([^)]+\))?[가-힣]{0,4}\s*일간/);
+  if (dm) bits.push(dm[0]!.replace(/\s+/g, " "));
+  if (/십성/.test(t)) bits.push("십성 분포");
+  if (/오행/.test(t)) bits.push("오행 구성");
+  if (/일주/.test(t) && !bits.includes("일주")) bits.push("일주");
+  if (/월간/.test(t)) bits.push("월간");
+  return bits.length ? `근거 · ${bits.slice(0, 3).join(" / ")}` : "";
 }
 
 /** Remove leading connectors when a label like "반대로" is already prefixed. */

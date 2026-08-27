@@ -8,48 +8,59 @@ import { consultingDiscoveryPromptBlock } from "@/lib/ai/prompts/consulting-disc
 
 function moneyOutline(): string {
   return [
-    "상품: 재물 사용설명서 (6,900). 무료 긴 버전 금지. 90% 이상 돈 장면.",
-    "PAGE2 profileDashboard 5항 + profileScales(규칙 기반 low/mid/high, 임의 점수 금지).",
-    "필수 section key 10개:",
-    "money_p01_profile — MONEY PROFILE 한눈 요약",
-    "money_p02_criteria — 돈을 움직이는 기준",
-    "money_p03_earn — 버는 방식 강점",
-    "money_p04_leak — 돈이 새는 진짜 이유",
-    "money_p05_shake — 돈 앞에서 흔들리는 순간",
-    "money_p06_work — 일·부업과 돈",
-    "money_p07_people — 사람과 돈",
-    "money_p08_mistake — 반복 실수",
-    "money_p09_style — 맞는 관리 방식",
-    "money_p10_manual — 재물 사용설명서 (WHEN/DO/WHY)",
-    "각 section: narrativeBridge(앞 장 연결), behaviorScenes(헐 나인데 moment), paradoxNote≥2개 리포트 전체",
-    "includeWhyBox는 3–5개 chapter만 true. WHY=명리→쉬운말→생활 3단.",
-    "scopeNotes는 report 말미 1회. section 본문에 대운·세운 반복 금지.",
-    "actionItems ≥5 with when/what/why/how",
+    "상품: 나의 돈 사용설명서 (6,900). 무료 긴 버전 금지. 90% 이상 돈 장면.",
+    "profileDashboard ≥5 + fiveElementsSnapshot(FORTUNE DATA 숫자 그대로).",
+    "필수 section key 6개 (정확히 이 key만):",
+    "money_v4_structure — 큰돈/작은돈 구조",
+    "money_v4_earn_spend — 벌 때와 쓸 때",
+    "money_v4_blindspot — 결정 지연·사각",
+    "money_v4_work — 수입 구조",
+    "money_v4_people — 사람과 돈",
+    "money_v4_playbook — 돈 사용설명서",
+    "각 section: coreInsight, behaviorScenes, evidenceExplanation(고유), evidence,",
+    "  discoveryLevel(주요≥3), whyDeeper, reactionChain(TRIGGER→…→RESULT),",
+    "  selfInterpretation, outsideInterpretation, selfMisread, counterPattern",
+    "actionItems ≥5 with when/what/why/how (임의 일수 ‘사흘’ 등 금지, 시간 비특정)",
+    "scopeNotes는 report 말미 1회. 대운·세운·용신·신강신약 창작 HARD FAIL.",
   ].join("\n");
 }
 
 function totalOutline(): string {
   return [
-    "상품: 사주 사용설명서 (12,900). 17개 약한 chapter 금지. 10 PART narrative.",
-    "profileDashboard 8항 + blueprint + lifeScenes 6–10(이런 장면 spread)",
-    "필수 section key 10개: total_p01_structure … total_p10_playbook",
-    "contradictions ≥3 with result field. strengthShadows ≥3 with balancePoint.",
-    "includeWhyBox 5–8개. paradox/contradiction ≥4.",
-    "narrativeBridge로 PART 연결. scopeNotes 말미 1회.",
-    "actionItems ≥8 WHEN/DO/WHY/HOW",
+    "상품: 나의 사주 사용설명서 (12,900). 약한 chapter 나열 금지.",
+    "profileDashboard ≥6 + fiveElementsSnapshot.",
+    "필수 section key 9개:",
+    "total_v4_decision, total_v4_relationship, total_v4_work, total_v4_money_link,",
+    "total_v4_love, total_v4_stress, total_v4_paradox, total_v4_shadow, total_v4_playbook",
+    "contradictions ≥4 with result. strengthShadows ≥3 with balancePoint.",
+    "crossDomainLinks ≥4. patternChains ≥3.",
+    "주요 Discovery: discoveryLevel 3, whyDeeper, reactionChain, self/outside/selfMisread",
+    "actionItems ≥8 WHEN/DO/WHY/HOW. scopeNotes 말미 1회.",
   ].join("\n");
 }
 
 function careerOutline(): string {
   return [
-    "직장·이직 FOCUS — career_* 10 keys, 환경·마찰·인정 중심. 직업명 나열 금지.",
-    "각 section: coreInsight, behaviorScenes, evidenceExplanation(고유), evidence",
+    "상품: 나의 일 사용설명서 (6,900). 직업명 나열 금지. 환경·마찰·인정 중심.",
+    "필수 section key 10개:",
+    "career_character, career_strength_work, career_org_friction, career_conflict,",
+    "career_overload, career_recognition, career_path_type, career_change_signal,",
+    "career_check, career_closing",
+    "각 section: coreInsight, behaviorScenes, evidenceExplanation(고유), evidence,",
+    "  주요 항목은 discoveryLevel 3 + whyDeeper + reactionChain + misread 필드",
+    "actionItems ≥5 with when/what/why/how",
   ].join("\n");
 }
 
 function loveOutline(): string {
   return [
-    "연애 FOCUS — love_* 10 keys, 행동·거리·갈등 중심. ‘따뜻한 사람’ 금지.",
+    "상품: 나의 연애 사용설명서 (6,900). ‘따뜻한 사람’ 금지. 행동·거리·갈등 중심.",
+    "필수 section key 10개:",
+    "love_attraction, love_before, love_after, love_expression, love_needs,",
+    "love_fight, love_breaking, love_distance, love_fit, love_closing",
+    "주요 Discovery(love_before/after/needs/fight): Level3 + chain + misread",
+    "strengthShadows에 overuse(위험/그림자) 포함 — Snapshot 주의 조건용",
+    "actionItems ≥5 with when/what/why/how",
   ].join("\n");
 }
 
@@ -76,6 +87,8 @@ const QUALITY_RULES = [
   "Korean: ‘정체은/구조은/관계은/스트레스은/정리은’ 등 조사 오류 HARD FAIL.",
   "Schema fields: coreInsight, behaviorScenes[], evidenceExplanation[], actionItems[{domain,what,why,how}],",
   "profileDashboard, fiveElementsSnapshot(FORTUNE DATA 숫자 그대로), finalSummary(strengths/cautions/changeHabits?/keepHabits?/closingLine)",
+  "fiveElementsSnapshot.label은 반드시 木/火/土/金/水 (각 1글자, 영문 Wood 등 금지).",
+  "discoveryLevel은 정수 1|2|3만 (문자열/레벨명 금지).",
 ].join("\n");
 
 export function buildPaidUserPrompt(input: {
@@ -97,7 +110,7 @@ export function buildPaidUserPrompt(input: {
     QUALITY_RULES,
     consultingDiscoveryPromptBlock(),
     "reportKind는 상품 kind와 맞출 것. monthlyOutlook은 넣지 말 것.",
-    "NOTE: Live Gemini Acceptance는 Human Value Gate 통과 전 실행하지 않음.",
+    "NOTE: Human Value Gate PASSED — Live Gemini Acceptance 허용. Mock enrich 금지.",
   ];
 
   if (input.productInstruction?.trim()) {

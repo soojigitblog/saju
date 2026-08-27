@@ -31,6 +31,7 @@ import {
   validatePaidSemantics,
 } from "@/lib/ai/validators/semantic-validator";
 import { withValidationRetry } from "@/lib/ai/interpreters/with-validation-retry";
+import { coercePaidReportRaw } from "@/lib/ai/interpreters/coerce-paid-report";
 import type {
   FreeInterpretationOutput,
   PaidInterpretationOutput,
@@ -151,11 +152,13 @@ export class ProviderFortuneInterpreter implements FortuneInterpreter {
         maxOutputTokens: getPaidReportMaxOutputTokens(),
       });
 
-      let data = generated.data;
+      let data = coercePaidReportRaw(generated.data);
+      let parsed;
       try {
-        data = paidFortuneReportStrictSchema.parse({
-          ...data,
-          disclaimer: data.disclaimer || USER_FACING_DISCLAIMER,
+        parsed = paidFortuneReportStrictSchema.parse({
+          ...(data as object),
+          disclaimer:
+            (data as { disclaimer?: string })?.disclaimer || USER_FACING_DISCLAIMER,
         });
       } catch (error) {
         throw new AiEngineError(
@@ -169,7 +172,7 @@ export class ProviderFortuneInterpreter implements FortuneInterpreter {
         );
       }
 
-      validatePaidSemantics(data, ctx, { productSlug: args.product.slug });
+      validatePaidSemantics(parsed, ctx, { productSlug: args.product.slug });
 
       const generationKey = buildGenerationKey({
         calculationHash: args.chart.engine.calculationHash,
@@ -181,7 +184,7 @@ export class ProviderFortuneInterpreter implements FortuneInterpreter {
       });
 
       return {
-        ...data,
+        ...parsed,
         meta: {
           schemaVersion: AI_SCHEMA_VERSION,
           engineVersion: FORTUNE_RELEASE_MANIFEST.engineVersion,

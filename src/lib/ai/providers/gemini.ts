@@ -5,6 +5,7 @@ import { z } from "zod";
 import { getAiMaxRetries, getAiTimeoutMs, getGeminiApiKeyForTier, type AiBillingTier } from "@/lib/ai/config";
 import { AiEngineError } from "@/lib/ai/errors";
 import { zodToGeminiJsonSchema } from "@/lib/ai/schemas/gemini-schema-adapter";
+import { coercePaidReportRaw } from "@/lib/ai/interpreters/coerce-paid-report";
 import type {
   AIProvider,
   AIProviderGenerateOptions,
@@ -173,7 +174,18 @@ export class GeminiProvider implements AIProvider {
           );
         }
 
-        const data = options.schema.parse(json) as z.infer<T>;
+        // Live Gemini often drifts on label length / discoveryLevel types.
+        const coerced = coercePaidReportRaw(json);
+        let data: z.infer<T>;
+        try {
+          data = options.schema.parse(coerced) as z.infer<T>;
+        } catch (error) {
+          throw new AiEngineError(
+            "SCHEMA_VALIDATION_FAILED",
+            "Gemini structured output failed Zod validation",
+            { retryable: true, cause: error }
+          );
+        }
         const usageMeta = response.usageMetadata;
 
         return {

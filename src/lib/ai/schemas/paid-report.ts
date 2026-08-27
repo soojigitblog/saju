@@ -175,7 +175,20 @@ export const paidSectionSchema = z.object({
   /** Paradox / reversal insight for this chapter (optional). */
   paradoxNote: z.string().min(1).max(220).optional(),
   // --- Consulting-grade optional depth (PHASE consulting) ---
-  discoveryLevel: z.union([z.literal(1), z.literal(2), z.literal(3)]).optional(),
+  discoveryLevel: z.preprocess((v) => {
+    if (v === undefined || v === null || v === "") return undefined;
+    if (v === 1 || v === 2 || v === 3) return v;
+    if (typeof v === "string") {
+      const n = Number(v.trim());
+      if (n === 1 || n === 2 || n === 3) return n;
+      return undefined;
+    }
+    if (typeof v === "number" && Number.isFinite(v)) {
+      const n = Math.round(v);
+      if (n === 1 || n === 2 || n === 3) return n;
+    }
+    return undefined;
+  }, z.union([z.literal(1), z.literal(2), z.literal(3)]).optional()),
   reactionChain: z
     .array(
       z.object({

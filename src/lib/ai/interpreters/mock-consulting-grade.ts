@@ -177,10 +177,10 @@ function moneyEnrich(report: PaidFortuneReport): PaidFortuneReport {
   const actionItems: PaidActionItem[] = [
     {
       domain: "money",
-      when: "결정을 사흘 이상 미루고 있다면",
-      what: "정보를 더 찾기 전에 결정 기준 3개만 적습니다",
+      when: "결정을 계속 미루며 정보만 더 찾고 있다면",
+      what: "정보를 더 찾기 전에 ‘이 결정을 끝낼 기준’을 먼저 정해보세요",
       why: "정보 부족보다 종료 기준이 없을 때 확인이 길어지기 쉽습니다",
-      how: "‘금액 한도 / 필요 이유 / 오늘 결정해도 되는 조건’ 세 줄",
+      how: "금액 한도 / 필요 이유 / 결정 기한처럼 2~3개만 적어도 충분합니다",
     },
     {
       domain: "money",
@@ -206,9 +206,9 @@ function moneyEnrich(report: PaidFortuneReport): PaidFortuneReport {
     {
       domain: "money",
       when: "한 달 뒤 장부가 허무하게 느껴질 때",
-      what: "큰돈 목록이 아니라 반복 5개를 먼저 봅니다",
+      what: "큰돈 목록보다 반복되는 지출부터 확인해보세요",
       why: "강점(큰 손해 차단)이 소액 시야를 가릴 수 있습니다",
-      how: "구독·배달·이동·간식·소액이체만 표시",
+      how: "구독·배달·이동·간식·소액이체처럼 자주 도는 항목만 먼저 표시",
     },
   ];
 
@@ -578,7 +578,7 @@ function loveEnrich(report: PaidFortuneReport): PaidFortuneReport {
       when: "갈등 중 말이 줄면",
       what: "침묵이 동의가 아님을 짧게 표시합니다",
       why: "상대는 이미 마음이 떠났다고 오해하기 쉬움",
-      how: "‘정리한 뒤  tonight에 이야기하자’",
+      how: "‘정리한 뒤 오늘 밤에 이야기하자’",
     },
     {
       domain: "relationship",
@@ -590,9 +590,9 @@ function loveEnrich(report: PaidFortuneReport): PaidFortuneReport {
     {
       domain: "relationship",
       when: "말과 행동이 어긋난 장면이 보이면",
-      what: "바로 추궁보다 패턴 기록을 짧게 합니다",
-      why: "일관성 확인이 이 사람의 확신 재료임",
-      how: "날짜·장면·느낀 점 세 줄",
+      what: "바로 추궁하기보다 패턴을 짧게 기록해보세요",
+      why: "일관성 확인이 이 사람의 확신 재료이기 때문입니다",
+      how: "날짜·장면·느낀 점 정도만 메모해도 충분합니다",
     },
   ];
 
@@ -607,6 +607,11 @@ function loveEnrich(report: PaidFortuneReport): PaidFortuneReport {
       "좋아함보다 신뢰가 먼저 쌓여야 마음이 편해질 수 있다.",
       "침묵은 동의가 아니라 정리 중일 수 있다.",
     ],
+    finalSummary: {
+      ...report.finalSummary,
+      closingLine:
+        "연애에서 중요한 건 마음의 크기보다, 언제 속도를 늦추고 언제 갑자기 빨라지는지입니다.",
+    },
   };
 }
 
@@ -659,7 +664,7 @@ function totalEnrich(report: PaidFortuneReport): PaidFortuneReport {
       ],
       selfInterpretation: "나는 일을 제대로 하려는 중",
       outsideInterpretation: "팀은 속도·위임이 느리다고 느낄 수 있음",
-      selfMisread: "‘일 중독’이 아니라 설명되지 않는 구조에서 힘이 셈",
+      selfMisread: "‘일 중독’이 아니라 설명되지 않는 구조에서 힘이 새는 쪽에 가까움",
     },
     total_v4_money_link: {
       discoveryLevel: 3,
@@ -707,7 +712,7 @@ function totalEnrich(report: PaidFortuneReport): PaidFortuneReport {
       ],
       selfInterpretation: "나는 정리하면 괜찮아질 것 같음",
       outsideInterpretation: "주변은 연락이 끊긴다고 느낄 수 있음",
-      selfMisread: "‘멘탈이 약하다’가 아니라 미완료 누적이 스트레스 엔진일 수 있음",
+      selfMisread: "‘멘탈이 약하다’가 아니라 미완료가 길어질수록 스트레스가 반복되는 시작점일 수 있음",
     },
     total_v4_paradox: {
       discoveryLevel: 3,
@@ -759,7 +764,7 @@ function totalEnrich(report: PaidFortuneReport): PaidFortuneReport {
       upside: "가벼운 말로 상처 줄 위험이 적음",
       downside: "호감이 전달되지 않음",
       whenStronger: "관계가 미정의일 때",
-      result: "크로스 도메인 오해의 전형",
+      result: "상황이 바뀌면서 생기는 대표적인 오해",
       evidence: byKey("total_v4_love").evidence,
     },
     {
@@ -805,9 +810,9 @@ function totalEnrich(report: PaidFortuneReport): PaidFortuneReport {
     {
       domain: "self",
       when: "결정을 미루고 있다면",
-      what: "정보 추가보다 확정 기준 3개를 적습니다",
+      what: "정보를 더 모으기 전에 ‘확정 기준’을 먼저 정해보세요",
       why: "수집과 확정의 속도가 다른 구조이기 때문",
-      how: "기준·기한·포기 조건",
+      how: "기준·기한·포기 조건처럼 2~3개만 적어도 됩니다",
     },
     {
       domain: "work",
@@ -819,9 +824,9 @@ function totalEnrich(report: PaidFortuneReport): PaidFortuneReport {
     {
       domain: "money",
       when: "큰 결정을 미루는 동안",
-      what: "소액 반복 5개를 먼저 표시합니다",
+      what: "큰 항목보다 반복되는 지출부터 확인해보세요",
       why: "손해 차단 강점이 소액 시야를 가릴 수 있음",
-      how: "주간 반복만 하이라이트",
+      how: "주간 반복 항목만 먼저 하이라이트",
     },
     {
       domain: "relationship",
@@ -840,9 +845,9 @@ function totalEnrich(report: PaidFortuneReport): PaidFortuneReport {
     {
       domain: "self",
       when: "정리가 끝나지 않아 스트레스면",
-      what: "정리 범위를 오늘 1개로 끊습니다",
-      why: "미완료 누적이 스트레스 엔진",
-      how: "타이머 25분 + 종료",
+      what: "정리 범위를 오늘 하나로 끊어보세요",
+      why: "미완료가 길어질수록 더 정리하려다 회복이 미뤄지기 쉽기 때문입니다",
+      how: "짧은 시간만 정하고 마치는 방식도 예시가 됩니다",
     },
     {
       domain: "work",
@@ -889,7 +894,7 @@ function totalEnrich(report: PaidFortuneReport): PaidFortuneReport {
         from: "스트레스",
         to: "돈",
         bridge:
-          "끝나지 않은 일을 붙잡는 회복 방식이 장부 정리 미룸과 같은 엔진으로 작동할 수 있습니다.",
+          "끝나지 않은 일을 붙잡는 회복 방식이 장부 정리 미룸과 비슷한 원리에서 이어질 수 있습니다.",
       },
     ],
     patternChains: [

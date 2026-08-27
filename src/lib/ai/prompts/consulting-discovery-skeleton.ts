@@ -1,6 +1,7 @@
 /**
  * Consulting-grade Discovery prompt skeleton.
- * Live Gemini must NOT be called until Human Value Gate passes.
+ * Human Value Gate PASSED — Live Gemini Acceptance allowed.
+ * Do not overlay mock enrich on live outputs.
  */
 
 export const CONSULTING_DISCOVERY_SKELETON = `

@@ -9,11 +9,17 @@ import {
 } from "@/lib/ai/interpreters/mock-consulting-grade";
 import {
   buildPaidReportPdfHtmlConsulting,
+  findConsultingFrameworkLabels,
+  findConsultingGarbledText,
   findConsultingGenericAdvice,
+  findConsultingGenericCoaching,
+  findConsultingHardKoreanErrors,
   findConsultingParticleErrors,
   findInternalCustomerTerms,
+  snapshotFields,
 } from "@/lib/report/paid-report-pdf-consulting";
 import { buildConsultingPack } from "@/lib/report/v5/consulting-value-pack";
+import { validateEvidenceMappings } from "@/lib/report/v5/consulting-evidence";
 
 const chart = fortuneEngine.calculate({
   gender: "female",
@@ -77,7 +83,7 @@ describe("CONSULTING-GRADE paid product", () => {
     expect(r.actionItems.length).toBeGreaterThanOrEqual(6);
   });
 
-  it("consulting HTML bans generic advice and internal jargon", () => {
+  it("consulting HTML bans generic advice, framework labels, and hard Korean", () => {
     for (const [slug, name] of [
       ["2026-money", "나의 돈 사용설명서"],
       ["2026-career", "나의 일 사용설명서"],
@@ -85,42 +91,100 @@ describe("CONSULTING-GRADE paid product", () => {
       ["2026-total", "나의 사주 사용설명서"],
     ] as const) {
       const html = htmlFor(slug, name);
+      const text = html.replace(/<[^>]+>/g, " ");
       expect(findConsultingGenericAdvice(html)).toEqual([]);
       expect(findConsultingParticleErrors(html)).toEqual([]);
       expect(findInternalCustomerTerms(html)).toEqual([]);
-      expect(html).toMatch(/WHEN/);
-      expect(html).toMatch(/BECAUSE/);
-      expect((html.match(/class="ev-block"/g) ?? []).length).toBeLessThanOrEqual(
-        /total/i.test(slug) ? 4 : 3
-      );
+      expect(findConsultingFrameworkLabels(html)).toEqual([]);
+      expect(findConsultingHardKoreanErrors(text)).toEqual([]);
+      expect(html).toMatch(/이럴 때/);
+      expect(html).toMatch(/왜 이게 맞냐면/);
+      expect(html).not.toMatch(/\bWHEN\b|\bBECAUSE\b|\bTRIGGER\b/);
+      expect((html.match(/class="ev-block"/g) ?? []).length).toBeLessThanOrEqual(3);
     }
   });
 
-  it("Focus stays ~7 pages and Total ~11 pages", () => {
-    expect(
-      (htmlFor("2026-money", "나의 돈 사용설명서").match(/class="page /g) ?? []).length
-    ).toBe(7);
-    expect(
-      (htmlFor("2026-career", "나의 일 사용설명서").match(/class="page /g) ?? []).length
-    ).toBe(7);
-    expect(
-      (htmlFor("2026-love", "나의 연애 사용설명서").match(/class="page /g) ?? []).length
-    ).toBe(7);
-    expect(
-      (htmlFor("2026-total", "나의 사주 사용설명서").match(/class="page /g) ?? []).length
-    ).toBe(11);
+  it("Focus stays at least 7 pages; playbook split avoids single-page overflow", () => {
+    for (const [slug, name] of [
+      ["2026-money", "나의 돈 사용설명서"],
+      ["2026-career", "나의 일 사용설명서"],
+      ["2026-love", "나의 연애 사용설명서"],
+    ] as const) {
+      const html = htmlFor(slug, name);
+      const pages = (html.match(/class="page /g) ?? []).length;
+      expect(pages).toBeGreaterThanOrEqual(8);
+      expect(html).toContain("page-playbook");
+      expect(html).toContain("page-final");
+    }
   });
 
-  it("consulting pack exposes Level3 narratives and chains", () => {
-    const money = buildConsultingPack(
-      "money",
-      buildMockPaidResult(ctx, "나의 돈 사용설명서", {
-        productSlug: "2026-money",
-        chart,
-      })
+  it("Total allows extra playbook pages for no-clipping render", () => {
+    const html = htmlFor("2026-total", "나의 사주 사용설명서");
+    expect((html.match(/class="page /g) ?? []).length).toBeGreaterThanOrEqual(13);
+    expect(html).toContain("page-playbook");
+    expect(html).toContain("page-final");
+  });
+
+  it("snapshot mapping separates career and love fields", () => {
+    const career = buildConsultingPack(
+      "career",
+      enrichConsultingGrade(
+        buildMockPaidResult(ctx, "나의 일 사용설명서", { productSlug: "2026-career", chart })
+      )
     );
-    expect(money.level3Count).toBeGreaterThanOrEqual(4);
-    expect(money.discoveries.some((d) => d.chain.length >= 4)).toBe(true);
-    expect(money.discoveries.some((d) => d.selfMisread)).toBe(true);
+    const love = buildConsultingPack(
+      "love",
+      enrichConsultingGrade(
+        buildMockPaidResult(ctx, "나의 연애 사용설명서", { productSlug: "2026-love", chart })
+      )
+    );
+    const c = snapshotFields(career, "career");
+    const l = snapshotFields(love, "love");
+    expect(c.strength.label).toBe("잘 맞는 구조");
+    expect(c.caution.label).toBe("지치는 구조");
+    expect(c.misread).toContain("상사");
+    expect(l.strength.label).toMatch(/확신 전|끌림/);
+    expect(l.caution.label).not.toBe("확신 후");
+    expect(l.caution.value).toBe("관찰 기간이 길어짐");
+    expect(l.misread).toContain("마음");
+    expect(l.caution.value).not.toBe(l.misread);
+    expect(l.strength.value).not.toBe(l.caution.value);
+  });
+
+  it("playbook capstone replaces continuation artifact heading", () => {
+    const html = htmlFor("2026-career", "나의 일 사용설명서");
+    expect(html).toContain("page-playbook-capstone");
+    expect(html).toContain("마지막으로 기억할 두 가지");
+    expect(html).not.toContain(">이어서<");
+  });
+
+  it("total signature uses stacked vertical flow columns", () => {
+    const html = htmlFor("2026-total", "나의 사주 사용설명서");
+    expect(html).toContain("sig-vertical-stack");
+    expect(html).not.toContain("grid-template-columns:repeat(3,1fr)");
+  });
+
+  it("premium pass: specific v2 evidence footer and action example split", () => {
+    const html = htmlFor("2026-money", "나의 돈 사용설명서");
+    expect(html).toContain("premium-snapshot");
+    expect(html).toContain("사주에서 확인한 부분");
+    expect(html).toContain("작은 예시");
+    expect(html).toMatch(new RegExp(`${ctx.dayMaster.stem}|${ctx.dayMaster.hangul}`));
+    const pack = buildConsultingPack(
+      "money",
+      buildMockPaidResult(ctx, "나의 돈 사용설명서", { productSlug: "2026-money", chart })
+    );
+    const mapped = validateEvidenceMappings(
+      pack.discoveries.map((d) => ({ id: d.id, evidenceSources: d.evidenceSources })),
+      v2
+    );
+    expect(mapped.rows.length).toBeGreaterThan(0);
+    expect(mapped.rows.some((r) => r.evidenceId.startsWith("ev_"))).toBe(true);
+  });
+
+  it("total premium signature vertical visual", () => {
+    const html = htmlFor("2026-total", "나의 사주 사용설명서");
+    expect(html).toContain("sig-vertical-stage");
+    expect(html).toContain("sig-flow-col");
   });
 });
