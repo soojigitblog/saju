@@ -49,3 +49,6 @@ next-env.d.ts
 # Hana bank Playwright session (never commit)
 .bank-session/
 .playwright-hana/
+
+# Keep committed authenticity evidence under artifacts/; ignore local scratch elsewhere
+

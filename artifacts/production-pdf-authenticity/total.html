@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<title>나의 사주 사용설명서 — 運의結</title>
+<style>
+@font-face{
+  font-family:"Noto Serif KR Local";
+  src:url("file:///D:/수지개발/사주/assets/fonts/NotoSerifKR-Regular.otf") format("opentype");
+  font-weight:400;font-style:normal;font-display:block;
+}
+@font-face{
+  font-family:"Noto Serif KR Local";
+  src:url("file:///D:/수지개발/사주/assets/fonts/NotoSerifKR-Bold.otf") format("opentype");
+  font-weight:600 700;font-style:normal;font-display:block;
+}
+@font-face{
+  font-family:"Noto Sans KR Local";
+  src:url("file:///D:/수지개발/사주/assets/fonts/NotoSansKR-Regular.otf") format("opentype");
+  font-weight:400;font-style:normal;font-display:block;
+}
+@font-face{
+  font-family:"Noto Sans KR Local";
+  src:url("file:///D:/수지개발/사주/assets/fonts/NotoSansKR-Bold.otf") format("opentype");
+  font-weight:600 700;font-style:normal;font-display:block;
+}</style>
+<style>
+@page{size:A4;margin:0}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{
+  width:210mm;margin:0;padding:0;
+  background:#f7f2e8;
+  color:#1c2230;
+  -webkit-print-color-adjust:exact;
+  print-color-adjust:exact;
+  font-family:"Noto Sans KR Local",sans-serif;
+}
+.page{
+  width:210mm;height:297mm;
+  padding:14mm 16mm 16mm;
+  page-break-after:always;break-after:page;
+  overflow:hidden;position:relative;
+  background:#faf7f1;
+}
+.page.paper{background:#fffdf8}
+.page.tint{background:linear-gradient(180deg,#f7f2e8 0%,#faf7f1 100%)}
+.page.cover{
+  background:linear-gradient(160deg,#0a1628 0%,#132238 52%,#1a2d48 100%);
+  color:#f7f2e8;padding:0;
+}
+.page:last-child{page-break-after:auto}
+.serif{font-family:"Noto Serif KR Local",serif}
+.sans{font-family:"Noto Sans KR Local",sans-serif}
+
+.brand-mark{font-family:"Noto Serif KR Local",serif;font-size:11pt;letter-spacing:0.08em;color:#c4a85a}
+.kicker{font-size:8.5pt;letter-spacing:0.04em;color:#a8893d;margin-bottom:6px}
+.part-title{font-family:"Noto Serif KR Local",serif;font-size:19pt;line-height:1.35;font-weight:600;color:#0a1628;margin-bottom:8px}
+.section-title{font-family:"Noto Serif KR Local",serif;font-size:13.5pt;line-height:1.4;font-weight:600;color:#0a1628;margin:10px 0 6px}
+.lead{font-size:11pt;line-height:1.65;font-weight:600;color:#1c2230;margin:6px 0 10px}
+.body{font-size:10.3pt;line-height:1.68;color:#2c3340;margin:5px 0}
+.caption{font-size:8.4pt;line-height:1.5;color:#6e675c;margin:4px 0}
+.gold{color:#a8893d}
+.rule{height:1px;margin:10px 0;background:linear-gradient(90deg,transparent,rgba(168,137,61,0.35),transparent)}
+.rule-soft{height:1px;background:#ebe4d8;margin:8px 0}
+.block{margin:10px 0 14px}
+
+.pull{
+  font-family:"Noto Serif KR Local",serif;font-size:12.5pt;line-height:1.5;color:#0a1628;
+  border-left:2.5px solid #a8893d;padding:2px 0 2px 12px;margin:10px 0;
+}
+.footer{
+  position:absolute;bottom:9mm;left:16mm;right:16mm;
+  display:flex;justify-content:space-between;align-items:center;
+  font-size:7pt;color:#8a8276;
+}
+.footer .pn{font-variant-numeric:tabular-nums}
+
+.cover-stage{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:28mm 18mm}
+.cover-ornament{width:48px;height:1px;background:rgba(168,137,61,0.35);margin:18px 0}
+.cover-stage h1{font-family:"Noto Serif KR Local",serif;font-size:34pt;line-height:1.28;font-weight:700;color:#f7f2e8;margin:8px 0}
+.cover-stage .en{font-size:8.5pt;color:#8f8778;letter-spacing:0.06em;margin-top:36px;text-transform:uppercase;white-space:nowrap}
+.cover-stage .sub{display:none}
+
+.sig{font-family:"Noto Serif KR Local",serif;font-size:15pt;line-height:1.5;color:#0a1628;margin:8px 0 14px}
+.dash-grid{display:grid;gap:0}
+.dash-row{display:grid;grid-template-columns:6.5rem 1fr;gap:8px;padding:7px 0;border-bottom:1px solid #ebe4d8;font-size:10.2pt}
+.dash-row .l{color:#6e675c}.dash-row .v{color:#1c2230}
+.scale{display:flex;align-items:center;gap:10px;margin:7px 0;font-size:9.8pt}
+.scale .bar{flex:1;height:4px;background:#ebe4d8;overflow:hidden}
+.scale .bar i{display:block;height:100%;background:linear-gradient(90deg,#a8893d,#c4a85a)}
+
+.saju-map{margin:14px 0 16px}
+.pillar-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.pillar{text-align:center;padding:16px 6px 14px;background:#fffdf8;border-bottom:2px solid rgba(168,137,61,0.35)}
+.pillar .pl{font-size:8pt;color:#a8893d;letter-spacing:0.08em;margin-bottom:8px}
+.pillar .gan{font-family:"Noto Serif KR Local",serif;font-size:24pt;line-height:1.1;color:#0a1628}
+.pillar .zhi{font-family:"Noto Serif KR Local",serif;font-size:18pt;color:#1c2230;margin-top:4px}
+.pillar .meta{font-size:8pt;color:#6e675c;margin-top:8px;line-height:1.4}
+.pillar.missing{opacity:0.55}
+.legend{display:flex;gap:14px;flex-wrap:wrap;margin:8px 0 12px;font-size:8.5pt;color:#6e675c}
+.fe-strip{display:flex;gap:8px;align-items:flex-end;height:72px;margin:14px 0 10px}
+.fe-item{flex:1;text-align:center}
+.fe-item .b{width:100%;background:linear-gradient(180deg,#c4a85a,#a8893d);border-radius:1px 1px 0 0}
+.fe-item .t{font-size:9pt;color:#a8893d;margin-top:4px}
+.fe-item .n{font-size:8pt;color:#8a8276}
+.signal{margin:10px 0;padding-left:12px;border-left:2px solid #ddd4c4}
+.signal .h{font-family:"Noto Serif KR Local",serif;font-size:11.5pt;color:#0a1628;margin-bottom:3px}
+.signal .w{font-size:9.5pt;color:#2c3340;line-height:1.55}
+
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:8px}
+.col-h{font-family:"Noto Serif KR Local",serif;font-size:11.5pt;color:#a8893d;margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid #ebe4d8}
+.tl{margin-top:6px}
+.tl-step{display:grid;grid-template-columns:1.8rem 1fr;gap:8px;padding:6px 0;border-bottom:1px solid #ebe4d8}
+.tl-step:last-child{border:none}
+.tl-n{font-family:"Noto Serif KR Local",serif;font-size:12pt;color:#a8893d}
+.tl-label{font-size:10pt;font-weight:600;color:#0a1628}
+.tl-body{font-size:9.5pt;color:#2c3340;margin-top:2px;line-height:1.5}
+
+.contra{margin:8px 0;padding-bottom:8px;border-bottom:1px solid #ebe4d8}
+.contra-poles{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;font-family:"Noto Serif KR Local",serif;font-size:11.5pt;color:#0a1628;margin-bottom:4px}
+.contra-poles .sep{color:#a8893d}
+.shadow{display:grid;grid-template-columns:2.6rem 1fr;gap:6px;margin:10px 0}
+.shadow .num{font-family:"Noto Serif KR Local",serif;font-size:16pt;color:#c4a85a;line-height:1}
+.shadow h3{font-family:"Noto Serif KR Local",serif;font-size:11.5pt;color:#0a1628;margin-bottom:3px}
+.shadow-compare{margin-top:8px;border:1px solid #ebe4d8}
+.shadow-head{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;padding:8px 10px;background:rgba(168,137,61,0.06);border-bottom:1px solid #ebe4d8;font-size:7.5pt;color:#a8893d;letter-spacing:0.04em}
+.shadow-head span{padding:0 4px}
+.shadow-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;border-bottom:1px solid #ebe4d8}
+.shadow-row:last-child{border-bottom:none}
+.shadow-row .sc{padding:10px;border-right:1px solid #ebe4d8}
+.shadow-row .sc:last-child{border-right:none}
+.shadow-row .lab{font-size:7.5pt;color:#a8893d;margin-bottom:4px}
+.shadow-row .val{font-size:9.5pt;line-height:1.5;color:#1c2230}
+.page[data-shot="shadow"] .shadow-compare{margin-top:18px}
+.page[data-shot="shadow"] .part-title{margin-bottom:6px}
+.page[data-shot="shadow"] .shadow-head{padding:12px 14px;font-size:8.5pt}
+.page[data-shot="shadow"] .shadow-row .sc{padding:16px 14px;min-height:5.5rem}
+.page[data-shot="shadow"] .shadow-row .lab{font-size:8pt;margin-bottom:6px}
+.page[data-shot="shadow"] .shadow-row .val{font-size:11pt;line-height:1.6}
+.pair-compare{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:14px;align-items:stretch;min-height:68%}
+.pair-compare .insight{margin:0;padding:16px 16px 18px;border:1px solid #ebe4d8;border-bottom:1px solid #ebe4d8;background:#fffdf8;height:100%}
+.pair-compare .insight .q{font-size:13.5pt;margin-bottom:10px;line-height:1.4}
+.pair-compare .insight .ans{font-size:11.2pt;line-height:1.7}
+.pair-compare .insight .scene{font-size:10.2pt;line-height:1.6;margin:8px 0}
+.page[data-layout="pair-compare"] .part-title{margin-bottom:6px}
+.page[data-layout="strength-shadow"] .shadow-compare{margin-top:22px}
+.page[data-layout="strength-shadow"] .part-title{margin-bottom:8px}
+.page[data-layout="strength-shadow"] .shadow-head{padding:14px 16px;font-size:9pt}
+.page[data-layout="strength-shadow"] .shadow-row .sc{padding:18px 16px;min-height:6.2rem}
+.page[data-layout="strength-shadow"] .shadow-row .lab{font-size:8.5pt;margin-bottom:8px}
+.page[data-layout="strength-shadow"] .shadow-row .val{font-size:11.5pt;line-height:1.65}
+
+.play{margin:8px 0;padding:0 0 0 12px;border-left:2px solid rgba(168,137,61,0.35)}
+.play .n{font-size:7.5pt;color:#a8893d;margin-bottom:2px}
+.portrait{font-family:"Noto Serif KR Local",serif;font-size:10.8pt;line-height:1.7;color:#2c3340;margin:6px 0}
+.closing{font-family:"Noto Serif KR Local",serif;font-size:12pt;line-height:1.5;color:#0a1628;margin-top:10px}
+.why{margin-top:8px;padding-top:6px;border-top:1px solid #ebe4d8}
+.why .t{font-size:8pt;color:#a8893d;margin-bottom:3px}
+.pattern{margin:7px 0;padding:6px 0;border-bottom:1px solid #ebe4d8}
+.pattern h3{font-family:"Noto Serif KR Local",serif;font-size:11pt;color:#0a1628;margin-bottom:3px}
+
+/* Signature insight maps — informational, not decoration */
+.imap{margin:10px 0 12px;border:1px solid #ebe4d8;background:#fffdf8}
+.imap-head{padding:8px 12px;border-bottom:1px solid #ebe4d8;font-size:8pt;color:#a8893d;letter-spacing:0.04em}
+.imap-grid{display:grid;grid-template-columns:1fr 1fr;gap:0}
+.imap-cell{padding:10px 12px;border-right:1px solid #ebe4d8;border-bottom:1px solid #ebe4d8}
+.imap-cell:nth-child(2n){border-right:none}
+.imap-cell .lab{font-size:8pt;color:#a8893d;margin-bottom:4px}
+.imap-cell .val{font-size:9.8pt;line-height:1.45;color:#1c2230}
+.imap-row{display:grid;grid-template-columns:5.5rem 1fr;gap:8px;padding:8px 12px;border-bottom:1px solid #ebe4d8;font-size:9.8pt}
+.imap-row:last-child{border:none}
+.imap-row .lab{color:#a8893d;font-weight:600}
+.tempo{display:flex;align-items:stretch;gap:0;margin:10px 0}
+.tempo-step{flex:1;text-align:center;padding:8px 4px;border-right:1px solid #ebe4d8;background:#fffdf8}
+.tempo-step:last-child{border:none}
+.tempo-step .n{font-size:7.5pt;color:#a8893d;margin-bottom:4px}
+.tempo-step .t{font-family:"Noto Serif KR Local",serif;font-size:10pt;color:#0a1628;line-height:1.3}
+.tempo-step .d{font-size:8pt;color:#6e675c;margin-top:4px;line-height:1.35}
+.env-map{display:grid;grid-template-columns:1fr 1fr;gap:0;margin:10px 0;border:1px solid #ebe4d8}
+.env-side{padding:12px}
+.env-side.good{background:rgba(168,137,61,0.06);border-right:1px solid #ebe4d8}
+.env-side.hard{background:#fffdf8}
+.env-side .h{font-family:"Noto Serif KR Local",serif;font-size:11pt;color:#0a1628;margin-bottom:6px}
+.callout{margin:10px 0 0;padding:8px 12px;border-left:2px solid rgba(168,137,61,0.35);background:rgba(168,137,61,0.05)}
+.callout .t{font-size:7.5pt;color:#a8893d;letter-spacing:0.04em;margin-bottom:3px}
+.callout .body{font-size:9.5pt;line-height:1.5;margin:0}
+.ev-block{margin:10px 0 8px;padding:10px 12px;border:1px solid #ebe4d8;background:#fffdf8}
+.ev-kicker{font-size:7.5pt;color:#a8893d;letter-spacing:0.04em;margin-bottom:6px}
+.ev-signal,.ev-plain,.ev-link{font-size:9.5pt;line-height:1.5;color:#2c3340;margin:4px 0}
+.ev-block .lab{display:inline-block;min-width:7.2rem;color:#a8893d;font-weight:600;margin-right:6px}
+
+/* P3.5 easy-value — reuse palette, denser insight units */
+.insight{margin:8px 0 10px;padding-bottom:8px;border-bottom:1px solid #ebe4d8}
+.insight .q{font-family:"Noto Serif KR Local",serif;font-size:12pt;color:#0a1628;margin-bottom:4px;line-height:1.4}
+.insight .ans{font-size:10.5pt;line-height:1.6;font-weight:600;color:#1c2230;margin:4px 0 6px}
+.insight .scene{font-size:9.8pt;line-height:1.55;color:#2c3340;margin:3px 0;padding-left:10px;border-left:1.5px solid #ebe4d8}
+.insight .counter{font-size:9.3pt;line-height:1.5;color:#6e675c;margin:5px 0;padding:6px 10px;background:rgba(168,137,61,0.05)}
+.insight .why{font-size:9.3pt;line-height:1.5;color:#2c3340;margin:5px 0}
+.insight .why .lab,.insight .counter .lab{color:#a8893d;font-weight:600;margin-right:4px}
+.moment{font-family:"Noto Serif KR Local",serif;font-size:11pt;line-height:1.45;color:#0a1628;margin:6px 0;padding-left:10px;border-left:2px solid #a8893d}
+.moment-list .moment{margin:5px 0}
+.oi-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:8px 0;padding-bottom:8px;border-bottom:1px solid #ebe4d8}
+.oi-row .lab{font-size:7.5pt;color:#a8893d;margin-bottom:3px}
+.oi-row .val{font-size:9.8pt;line-height:1.5;color:#1c2230}
+.glossary{margin-top:8px;padding:8px 10px;border:1px solid #ebe4d8;background:#fffdf8}
+.gloss-row{display:grid;grid-template-columns:4.2rem 1fr;gap:8px;padding:3px 0;font-size:8.5pt;line-height:1.4}
+.gloss-row .t{color:#a8893d;font-weight:600}.gloss-row .d{color:#2c3340}
+.scope-block{margin-top:8px}.scope-tech{opacity:0.85;font-size:7.8pt!important}
+
+/* Consulting-grade depth blocks */
+.chain{margin:8px 0 10px;padding:8px 0}
+.chain-step{display:grid;grid-template-columns:5.2rem 1fr;gap:8px;padding:5px 0;border-bottom:1px solid #ebe4d8;font-size:9.6pt;line-height:1.45}
+.chain-step:last-child{border-bottom:none}
+.chain-step .lab{color:#a8893d;font-weight:600;font-size:7.5pt;letter-spacing:0.03em}
+.misread{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:8px 0}
+.misread .box{padding:8px 10px;border:1px solid #ebe4d8;background:#fffdf8}
+.misread .box .lab{font-size:7.5pt;color:#a8893d;margin-bottom:4px}
+.misread .box .val{font-size:9.6pt;line-height:1.5;color:#1c2230}
+.self-mis{margin:8px 0;padding:8px 10px;border-left:2px solid rgba(168,137,61,0.35);background:rgba(168,137,61,0.05)}
+.self-mis .lab{font-size:7.5pt;color:#a8893d;margin-bottom:3px}
+.self-mis .val{font-size:9.6pt;line-height:1.5}
+.xd-row{margin:8px 0;padding-bottom:8px;border-bottom:1px solid #ebe4d8}
+.xd-row .pair{font-size:8pt;color:#a8893d;margin-bottom:3px}
+.xd-row .bridge{font-size:10pt;line-height:1.55;color:#1c2230}
+.pchain{margin:10px 0;padding:8px 0;border-bottom:1px solid #ebe4d8}
+.pchain .t{font-family:"Noto Serif KR Local",serif;font-size:11.5pt;color:#0a1628;margin-bottom:6px}
+.pchain .steps{font-size:9.8pt;line-height:1.55;color:#2c3340}
+.action-card{margin:8px 0;padding:8px 0 8px 12px;border-left:2px solid rgba(168,137,61,0.35)}
+.action-card .when,.action-card .do,.action-card .because{font-size:9.5pt;line-height:1.5;margin:2px 0}
+.action-card .k{color:#a8893d;font-weight:600;margin-right:4px}
+.disc-narrative{font-size:10.4pt;line-height:1.65;color:#2c3340;margin:6px 0 8px}
+
+.chain-flow{font-size:13px;line-height:1.65;color:var(--ink-soft);margin:10px 0 0;padding:10px 12px;background:rgba(0,0,0,.03);border-radius:6px}
+.action-lead{font-size:11px;font-weight:600;letter-spacing:.04em;color:var(--ink-muted);margin:0 0 2px}
+.action-when,.action-do,.action-why{margin:0 0 10px;font-size:13px;line-height:1.6}
+.action-do{font-weight:500}
+.action-example{margin:4px 0 10px;padding:8px 10px;background:rgba(0,0,0,.04);border-left:2px solid var(--ink-muted);border-radius:4px}
+.action-example .ex-lab{font-size:10px;font-weight:600;color:var(--ink-muted);margin:0 0 3px;letter-spacing:.04em}
+.action-example .ex-body{margin:0;font-size:11px;line-height:1.55;color:var(--ink-soft)}
+.ev-footnote{font-size:10px;color:var(--ink-muted);margin:2px 0 0;line-height:1.5}
+.ev-footnote-kicker{font-size:10px;font-weight:600;color:var(--ink-muted);margin:6px 0 2px}
+.cover-tag{font-size:13px;color:var(--ink-soft);margin-top:8px}
+.others-block{margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid rgba(0,0,0,.06)}
+.others-block:last-child{border-bottom:none}
+.premium-snapshot-page .premium-snapshot{display:flex;flex-direction:column;gap:10px;height:calc(100% - 28px)}
+.snap-hero{padding:14px 16px;background:linear-gradient(135deg,rgba(0,0,0,.04),rgba(0,0,0,.02));border-radius:8px;border:1px solid rgba(0,0,0,.06)}
+.snap-kicker{font-size:10px;letter-spacing:.08em;color:var(--ink-muted);margin:0 0 6px}
+.snap-sig{margin:0;font-size:17px;line-height:1.55}
+.snap-section-lab{font-size:11px;font-weight:600;color:var(--ink-muted);margin:4px 0 6px;letter-spacing:.04em}
+.snap-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.snap-card{padding:8px 10px;background:#fff;border:1px solid rgba(0,0,0,.07);border-radius:6px}
+.snap-lab{font-size:10px;color:var(--ink-muted);margin:0 0 3px}
+.snap-val{font-size:12px;line-height:1.45;margin:0;font-weight:500}
+.snap-connector{display:flex;flex-direction:column;align-items:center;gap:2px;margin:2px 0}
+.snap-line{width:1px;height:10px;background:rgba(0,0,0,.12)}
+.snap-arrow{font-size:12px;color:var(--ink-muted);line-height:1}
+.snap-duo{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.snap-panel{padding:10px 12px;border-radius:6px;border:1px solid rgba(0,0,0,.07)}
+.snap-panel.good{background:rgba(46,125,50,.06)}
+.snap-panel.warn{background:rgba(198,40,40,.05)}
+.snap-panel-lab{font-size:10px;font-weight:600;margin:0 0 4px;color:var(--ink-muted)}
+.snap-panel-title{font-size:11px;font-weight:600;margin:0 0 3px}
+.snap-panel-val{font-size:12px;line-height:1.45;margin:0}
+.snap-misread-val{font-size:12px;line-height:1.5;margin:0}
+.snap-misread-val .muted{color:var(--ink-muted)}
+.snap-highlights{margin-top:2px}
+.snap-highlight{display:flex;gap:8px;align-items:flex-start;margin-bottom:6px}
+.snap-num{flex:0 0 18px;height:18px;border-radius:50%;background:var(--ink);color:#fff;font-size:10px;display:flex;align-items:center;justify-content:center;font-weight:600}
+.snap-highlight p{margin:0;font-size:12px;line-height:1.45}
+.signature-visual .sig-vertical-stage{display:flex;flex-direction:column;gap:14px;margin-top:10px;flex:1}
+.signature-visual .page-body.safe-bottom{display:flex;flex-direction:column}
+.sig-flow-col{display:flex;flex-direction:column;align-items:stretch;gap:0;flex:1;min-height:0}
+.page-playbook-capstone .page-body.safe-bottom{display:flex;flex-direction:column}
+.page-playbook-capstone .part-title{margin-bottom:14px}
+.page-playbook-capstone .playbook-actions-capstone{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:stretch}
+.page-playbook-capstone .action-card{padding:16px 18px;border:1px solid rgba(0,0,0,.09);border-radius:10px;background:rgba(255,255,255,.72);border-bottom:none;display:flex;flex-direction:column;gap:4px;min-height:0}
+.page-playbook-capstone .action-lead{margin-top:6px}
+.page-playbook-capstone .action-lead:first-child{margin-top:0}
+.page-playbook-capstone .action-do{font-size:13.5px;line-height:1.62;margin-bottom:8px}
+.page-playbook-capstone .action-example{flex:1;margin:6px 0 10px;padding:10px 12px;background:rgba(0,0,0,.035)}
+.page-playbook-capstone .action-why{margin-bottom:0}
+.page-playbook .playbook-actions{display:flex;flex-direction:column;gap:8px}
+.page-playbook .action-card{padding-bottom:8px;border-bottom:1px solid rgba(0,0,0,.06)}
+.page-playbook .action-card:last-child{border-bottom:none;padding-bottom:0}
+.page[data-layout="playbook-capstone"] .footer{margin-top:auto}
+.signature-visual .sig-node{padding:14px 16px;border-radius:8px;border:1px solid rgba(0,0,0,.08);text-align:center;flex:1;display:flex;flex-direction:column;justify-content:center}
+.signature-visual .sig-node-val{font-size:13.5px;line-height:1.55}
+.signature-visual .sig-flow-arrow{padding:6px 0}
+.page-body.safe-bottom{padding-bottom:20mm;box-sizing:border-box}
+.sig-strength{background:rgba(46,125,50,.08)}
+.sig-over{background:rgba(198,40,40,.06)}
+.sig-balance{background:rgba(25,118,210,.06)}
+.sig-node-lab{font-size:10px;font-weight:600;color:var(--ink-muted);margin:0 0 6px;letter-spacing:.04em}
+.sig-node-val{font-size:13px;line-height:1.5;margin:0;font-weight:500}
+.sig-flow-arrow{text-align:center;font-size:16px;color:var(--ink-muted);line-height:1}
+.page-final .portrait{margin:4px 0}
+.page-final .glossary,.page-final .scope-block{margin-top:8px}
+</style>
+</head>
+<body class="sans">
+<div class="page cover sans" data-shot="cover" data-layout="cover">
+  <div class="cover-stage">
+    <p class="brand-mark">運의結</p>
+    <div class="cover-ornament"></div>
+    <h1 class="serif">수지님의<br/>사주 사용설명서</h1>
+    <p class="cover-tag">나라는 사람, 이렇게 움직입니다</p>
+  </div>
+  <div class="footer sans"><span>運의結</span><span class="pn">1 / 14</span></div>
+</div>
+<div class="page paper sans" data-shot="core-portrait" data-layout="editorial-feature">
+  <div class="page-body safe-bottom"><p class="kicker">한 줄로 보는 나</p>
+  <p class="sig serif">한 문장으로는 ‘확인하는 사람’처럼 보일 수 있지만, 실제로는 판단·관계·일·돈·연애에서 서로 다른 속도가 공존하는 사람에 더 가깝습니다.</p>
+  <div class="dash-grid"><div class="dash-row"><span class="l">판단</span><span class="v">수집과 확정의 속도가 다름</span></div><div class="dash-row"><span class="l">관계</span><span class="v">처음의 조율과 가까워진 뒤의 경계가 다름</span></div><div class="dash-row"><span class="l">일</span><span class="v">완료 조건이 보여야 강점이 선명해짐</span></div><div class="dash-row"><span class="l">돈</span><span class="v">설명 가능한 흐름에서 안정감이 생김</span></div><div class="dash-row"><span class="l">사랑</span><span class="v">확신 전과 후의 속도 차이</span></div><div class="dash-row"><span class="l">스트레스</span><span class="v">정리가 끝나지 않을수록 누적됨</span></div></div>
+  <p class="moment">판단이 느린 게 아니라, 수집과 확정의 속도가 서로 다를 수 있다.</p><p class="moment">처음의 나와 가까워진 뒤의 내가 꽤 다르게 보일 수 있다.</p></div>
+  <div class="footer sans"><span>運의結</span><span class="pn">2 / 14</span></div>
+</div>
+<div class="page tint sans" data-shot="saju-map" data-layout="saju-map">
+  <div class="page-body safe-bottom"><p class="kicker">나의 사주 지도</p>
+  <h2 class="part-title serif">四柱</h2>
+  <p class="caption">日干 庚 (경)</p>
+  <div class="legend"><span>天干 · 위</span><span>地支 · 아래</span><span>五行 / 十星 · 하단</span></div>
+  <div class="saju-map"><div class="pillar-row"><div class="pillar"><p class="pl">年柱</p><p class="gan">경</p><p class="zhi">오</p><p class="meta">五行 <br/>十星 일간 · 정관</p></div><div class="pillar"><p class="pl">月柱</p><p class="gan">신</p><p class="zhi">사</p><p class="meta">五行 <br/>十星 겁재 · 편관</p></div><div class="pillar"><p class="pl">日柱</p><p class="gan">경</p><p class="zhi">진</p><p class="meta">五行 <br/>十星 일간 · 편인</p></div><div class="pillar"><p class="pl">時柱</p><p class="gan">신</p><p class="zhi">사</p><p class="meta">五行 <br/>十星 겁재 · 편관</p></div></div></div>
+  <p class="kicker">五行 Snapshot</p>
+  <div class="fe-strip"><div class="fe-item"><div class="b" style="height:0px"></div><div class="t">木</div><div class="n">0</div></div><div class="fe-item"><div class="b" style="height:36px"></div><div class="t">火</div><div class="n">3</div></div><div class="fe-item"><div class="b" style="height:12px"></div><div class="t">土</div><div class="n">1</div></div><div class="fe-item"><div class="b" style="height:48px"></div><div class="t">金</div><div class="n">4</div></div><div class="fe-item"><div class="b" style="height:0px"></div><div class="t">水</div><div class="n">0</div></div></div>
+  <p class="caption" style="margin-top:10px">아래 본문은 이 지도를 바탕으로, 일·돈·관계에서 반복되는 장면을 풀어 씁니다.</p></div>
+  <div class="footer sans"><span>運의結</span><span class="pn">3 / 14</span></div>
+</div>
+<div class="page paper sans" data-shot="what-drives" data-layout="insight">
+  <div class="page-body safe-bottom"><p class="kicker">왜 이렇게 움직일까</p>
+  <h2 class="part-title serif">행동이 생기는 이유</h2>
+  <div class="insight" data-insight="t-decide" data-level="2">
+  <p class="q">나는 왜 어떤 날은 빠르고 어떤 날은 느릴까?</p>
+  <p class="disc-narrative">판단은 단순 신중형이 아니라, 수집 단계와 확정 단계의 속도가 다른 구조로 보는 편이 더 정확합니다.</p>
+  
+  
+  
+  <p class="counter"><span class="lab">반대로</span>이미 기준이 충분한 영역에서는 생각보다 빠르게 결론을 내릴 수도 있습니다.</p>
+  <p class="moment">판단이 느린 게 아니라, 수집과 확정의 속도가 서로 다를 수 있다.</p>
+  <div class="ev-block">
+  <p class="ev-kicker">사주에서는 왜 이렇게 볼까요?</p>
+  <p class="ev-plain">일간, 월간에 나타난 십성, 오행 구성의 관계는 함께 작동해 판단 속도를 두 박자로 만듭니다.</p>
+  <p class="ev-footnote-kicker">사주에서 확인한 부분</p><p class="ev-footnote">월간 겁재 · 金 기운이 상대적으로 두드러짐</p>
+</div>
+</div></div>
+  <div class="footer sans"><span>運의結</span><span class="pn">4 / 14</span></div>
+</div>
+<div class="page tint sans" data-shot="how-change" data-layout="insight">
+  <div class="page-body safe-bottom"><p class="kicker">상황이 바뀌면</p>
+  <h2 class="part-title serif">같은 나도 장면에 따라 달라 보이는 이유</h2>
+  <div class="insight" data-insight="t-work" data-level="2">
+  <p class="q">일에서 내 강점은 어디서 선명해질까?</p>
+  <p class="disc-narrative">일에서의 강점은 열정 과시보다, 완성도와 끝까지 결과를 맞추는 힘에서 더 선명하게 드러납니다.</p>
+  
+  
+  
+  <p class="counter"><span class="lab">반대로</span>목표가 선명하면 평소보다 훨씬 과감하게 밀어붙일 수 있습니다.</p>
+  <p class="moment">능력보다 환경이 먼저 맞아야 강점이 제대로 작동한다.</p>
+  
+</div></div>
+  <div class="footer sans"><span>運의結</span><span class="pn">5 / 14</span></div>
+</div>
+<div class="page paper sans" data-shot="how-others" data-layout="insight">
+  <div class="page-body safe-bottom"><p class="kicker">타인의 시선</p>
+  <h2 class="part-title serif">상대가 나를 다르게 읽는 지점</h2>
+  </div>
+  <div class="footer sans"><span>運의結</span><span class="pn">6 / 14</span></div>
+</div>
+<div class="page tint sans" data-shot="cross-domain" data-layout="insight">
+  <div class="page-body safe-bottom"><p class="kicker">영역이 겹칠 때</p>
+  <h2 class="part-title serif">한쪽에서 통하는 방식이 다른 쪽에서는</h2>
+  </div>
+  <div class="footer sans"><span>運의結</span><span class="pn">7 / 14</span></div>
+</div>
+<div class="page paper sans" data-shot="contradictions" data-layout="contradiction">
+  <div class="page-body safe-bottom"><p class="kicker">겉과 속</p>
+  <h2 class="part-title serif">서로 충돌하는 두 힘</h2>
+  <div class="contra"><div class="contra-poles serif"><span>겉으로는 조율</span><span class="sep">↔</span><span>속으로는 내부 확정</span></div><p class="body">자리에서는 듣고 맞추는 듯 보여도, 결론은 혼자 정리한 뒤 공유하는 식으로 나타날 수 있습니다.</p><p class="caption">빛나는 면 · 충동 합의를 줄입니다.</p><p class="caption">그림자 · 상대는 이미 결론이 끝난 뒤 통보받는 느낌을 받을 수 있습니다.</p><p class="caption">헷갈리는 지점 · 년간·월간에 나타난 십성이 외부 조율과 내부 기준 정리를 동시에 밀기 때문입니다.</p></div><div class="contra"><div class="contra-poles serif"><span>정확도를 지키려는 힘</span><span class="sep">↔</span><span>결정을 늦추는 그림자</span></div><p class="body">중요한 일에서는 번복을 줄이지만, 정보가 늘어날수록 결론 종료 시점도 함께 늦어질 수 있습니다.</p><p class="caption">빛나는 면 · 실수를 줄입니다.</p><p class="caption">그림자 · 결정 지연이 기본값이 될 수 있습니다.</p><p class="caption">헷갈리는 지점 · 金 우세와 월간에 나타난 십성이 기준 정리를 앞세우기 때문입니다.</p></div></div>
+  <div class="footer sans"><span>運의結</span><span class="pn">8 / 14</span></div>
+</div>
+<div class="page tint sans" data-shot="pattern-chains" data-layout="insight">
+  <div class="page-body safe-bottom"><p class="kicker">반복 패턴</p>
+  <h2 class="part-title serif">한눈에 기억할 순서</h2>
+  </div>
+  <div class="footer sans"><span>運의結</span><span class="pn">9 / 14</span></div>
+</div>
+<div class="page paper signature-visual sans" data-shot="shadow" data-layout="strength-shadow">
+  <div class="page-body safe-bottom"><p class="kicker">강점과 그림자</p>
+  <h2 class="part-title serif">과해지는 구간을 알면 균형이 생깁니다</h2>
+  <div class="sig-vertical-stage sig-vertical-stack"><div class="sig-flow-col">
+  <div class="sig-node sig-strength"><p class="sig-node-lab">강점</p><p class="sig-node-val">끝까지 확인하는 힘</p></div>
+  <div class="sig-flow-arrow">↓</div>
+  <div class="sig-node sig-over"><p class="sig-node-lab">과해질 때</p><p class="sig-node-val">모든 단계를 직접 쥐고 가려는 경향</p></div>
+  <div class="sig-flow-arrow">↓</div>
+  <div class="sig-node sig-balance"><p class="sig-node-lab">균형</p><p class="sig-node-val">최종 확인만 본인이 맡고 중간 단계는 체크포인트로 분리합니다.</p></div>
+</div><div class="sig-flow-col">
+  <div class="sig-node sig-strength"><p class="sig-node-lab">강점</p><p class="sig-node-val">범위를 분명히 하는 힘</p></div>
+  <div class="sig-flow-arrow">↓</div>
+  <div class="sig-node sig-over"><p class="sig-node-lab">과해질 때</p><p class="sig-node-val">유연성보다 선 긋기가 먼저 보이는 순간</p></div>
+  <div class="sig-flow-arrow">↓</div>
+  <div class="sig-node sig-balance"><p class="sig-node-lab">균형</p><p class="sig-node-val">거절보다 범위 제안 문장을 먼저 준비합니다.</p></div>
+</div><div class="sig-flow-col">
+  <div class="sig-node sig-strength"><p class="sig-node-lab">강점</p><p class="sig-node-val">책임을 끝까지 가져가는 힘</p></div>
+  <div class="sig-flow-arrow">↓</div>
+  <div class="sig-node sig-over"><p class="sig-node-lab">과해질 때</p><p class="sig-node-val">도움을 늦게 요청하는 방식</p></div>
+  <div class="sig-flow-arrow">↓</div>
+  <div class="sig-node sig-balance"><p class="sig-node-lab">균형</p><p class="sig-node-val">도움 요청 기준을 사전에 정해 둡니다.</p></div>
+</div></div></div>
+  <div class="footer sans"><span>運의結</span><span class="pn">10 / 14</span></div>
+</div>
+<div class="page tint page-playbook sans" data-shot="playbook" data-layout="playbook">
+  <div class="page-body safe-bottom"><p class="kicker">다음에 쓸 문장</p>
+  <h2 class="part-title serif">다음 선택에서 쓸 문장</h2>
+  <div class="playbook-actions"><div class="action-card">
+  
+  <p class="action-lead">이렇게 해보세요</p>
+  <p class="action-do">완료 조건 먼저 확인</p>
+  <div class="action-example"><p class="ex-lab">작은 예시</p><p class="ex-body">한 문장 되묻기</p></div>
+  <p class="action-lead">왜 이게 맞냐면</p>
+  <p class="action-why">모호한 수정 방지</p>
+</div><div class="action-card">
+  
+  <p class="action-lead">이렇게 해보세요</p>
+  <p class="action-do">반복 지출만 합산</p>
+  <div class="action-example"><p class="ex-lab">작은 예시</p><p class="ex-body">주 1회 15분</p></div>
+  <p class="action-lead">왜 이게 맞냐면</p>
+  <p class="action-why">소액 사각 보완</p>
+</div><div class="action-card">
+  
+  <p class="action-lead">이렇게 해보세요</p>
+  <p class="action-do">결론 초안 공유</p>
+  <div class="action-example"><p class="ex-lab">작은 예시</p><p class="ex-body">하루 안 3줄</p></div>
+  <p class="action-lead">왜 이게 맞냐면</p>
+  <p class="action-why">속 결론 오해 방지</p>
+</div></div></div>
+  <div class="footer sans"><span>運의結</span><span class="pn">11 / 14</span></div>
+</div>
+<div class="page tint page-playbook sans" data-shot="playbook-continued" data-layout="playbook">
+  <div class="page-body safe-bottom"><p class="kicker">다음에 쓸 문장</p>
+  <h2 class="part-title serif">장면이 바뀌어도 쓸 문장</h2>
+  <div class="playbook-actions"><div class="action-card">
+  
+  <p class="action-lead">이렇게 해보세요</p>
+  <p class="action-do">정리 종료 시각 설정</p>
+  <div class="action-example"><p class="ex-lab">작은 예시</p><p class="ex-body">달력에 시간 입력</p></div>
+  <p class="action-lead">왜 이게 맞냐면</p>
+  <p class="action-why">회피성 정리 방지</p>
+</div><div class="action-card">
+  
+  <p class="action-lead">이렇게 해보세요</p>
+  <p class="action-do">중간에 확인할 부분만 위임</p>
+  <div class="action-example"><p class="ex-lab">작은 예시</p><p class="ex-body">중간 단계 분리</p></div>
+  <p class="action-lead">왜 이게 맞냐면</p>
+  <p class="action-why">과부하 감소</p>
+</div><div class="action-card">
+  
+  <p class="action-lead">이렇게 해보세요</p>
+  <p class="action-do">정산 문장 선공유</p>
+  <div class="action-example"><p class="ex-lab">작은 예시</p><p class="ex-body">금액·범위 한 문장</p></div>
+  <p class="action-lead">왜 이게 맞냐면</p>
+  <p class="action-why">관계 비용 스트레스 완화</p>
+</div></div></div>
+  <div class="footer sans"><span>運의結</span><span class="pn">12 / 14</span></div>
+</div>
+<div class="page tint page-playbook page-playbook-capstone sans" data-shot="playbook-capstone" data-layout="playbook-capstone">
+  <div class="page-body safe-bottom"><p class="kicker">다음에 쓸 문장</p>
+  <h2 class="part-title serif">마지막으로 기억할 두 가지</h2>
+  <div class="playbook-actions playbook-actions-capstone"><div class="action-card">
+  
+  <p class="action-lead">이렇게 해보세요</p>
+  <p class="action-do">불편함 조기 공유</p>
+  <div class="action-example"><p class="ex-lab">작은 예시</p><p class="ex-body">핵심 2줄</p></div>
+  <p class="action-lead">왜 이게 맞냐면</p>
+  <p class="action-why">거리 누적 방지</p>
+</div><div class="action-card">
+  
+  <p class="action-lead">이렇게 해보세요</p>
+  <p class="action-do">도움 요청 기준 세팅</p>
+  <div class="action-example"><p class="ex-lab">작은 예시</p><p class="ex-body">3개 조건 메모</p></div>
+  <p class="action-lead">왜 이게 맞냐면</p>
+  <p class="action-why">책임 과잉 방지</p>
+</div></div></div>
+  <div class="footer sans"><span>運의結</span><span class="pn">13 / 14</span></div>
+</div>
+<div class="page tint page-final sans" data-shot="operating-manual" data-layout="final-portrait">
+  <div class="page-body safe-bottom"><p class="kicker">마무리</p>
+  <h2 class="part-title serif">기억해 두면 좋은 문장</h2>
+  <p class="portrait">이 사람을 한 문장으로만 설명하면 결국 놓치는 것이 생깁니다.</p><p class="portrait">판단에서는 수집과 확정의 속도가 다르고, 관계에서는 처음의 조율과 가까워진 뒤의 경계가 다르며, 일과 돈에서는 구조가 선명할수록 강점이 살아납니다.</p><p class="portrait">연애와 스트레스까지 포함해 보면, 같은 ‘확인’도 전부 같은 의미가 아니라 상황마다 서로 다른 이유로 시작된다는 점이 핵심입니다.</p>
+  <p class="closing serif">운의결 한 줄 — 나를 잘 쓰는 법은 모든 걸 더 확인하는 것이 아니라, 무엇을 어디까지 확인할지 설계하는 데 있습니다.</p>
+  <div class="glossary">
+  <p class="kicker">사주 용어, 이것만 알면 돼요</p>
+  <div class="gloss-row"><span class="t">일간</span><span class="d">내 사주의 중심이 되는 기운</span></div><div class="gloss-row"><span class="t">오행</span><span class="d">목·화·토·금·수 다섯 기운의 구성</span></div><div class="gloss-row"><span class="t">십성</span><span class="d">사람·일·돈을 대하는 방식을 조금 더 세분해서 보는 기준</span></div><div class="gloss-row"><span class="t">겁재</span><span class="d">내 기준과 독립성이 어떻게 작동하는지 볼 때 참고하는 요소</span></div><div class="gloss-row"><span class="t">일주</span><span class="d">가까운 관계에서 드러나는 반응 패턴</span></div><div class="gloss-row"><span class="t">월주</span><span class="d">사회·직장 같은 바깥 환경과 맞닿는 패턴</span></div>
+</div>
+  <div class="scope-block">
+  <p class="caption">이 리포트는 태어난 순간의 사주 구조를 중심으로 분석합니다. 특정 연도·월의 길흉이나 미래 시기를 맞히는 내용은 포함하지 않습니다.</p>
+  <p class="caption scope-tech">기술 범위: 출생 명식(四柱)·오행 분포·일간 기준 십성·기둥의 천간·지지와 본기. 대운·세운·월운·용신·신강/신약·합충형파해의 확정 해석은 포함하지 않습니다.</p>
+</div></div>
+  <div class="footer sans"><span>運의結</span><span class="pn">14 / 14</span></div>
+</div>
+</body>
+</html>

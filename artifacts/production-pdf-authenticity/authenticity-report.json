@@ -1,0 +1,187 @@
+{
+  "httpRoute": "REAL DEV SERVER",
+  "baseUrl": "http://localhost:3847",
+  "syntheticPdf": "NO",
+  "per": {
+    "money": {
+      "httpStatus": 200,
+      "bytes": 410708,
+      "pages": 9,
+      "expectedPages": 9,
+      "pagesMatch": "PASS",
+      "titleText": "PASS",
+      "productContent": "PASS",
+      "leakHits": [],
+      "rawTextLength": 4152,
+      "perPageChars": [
+        29,
+        310,
+        346,
+        416,
+        293,
+        489,
+        319,
+        217,
+        398
+      ],
+      "pagesHaveText": "PASS",
+      "renderer": "consulting-pdf-v1",
+      "pdfEntry": "generatePaidReportPdf",
+      "accessActor": "admin",
+      "version": {
+        "interpretationVersion": "consulting-v1",
+        "reportRenderVersion": "consulting-pdf-v1",
+        "generationMode": "mock"
+      },
+      "visual": "PASS",
+      "visualBlank": 0,
+      "spotImages": [
+        "D:\\수지개발\\사주\\tmp\\quality-review\\production-pdf-authenticity\\money-page-2.png",
+        "D:\\수지개발\\사주\\tmp\\quality-review\\production-pdf-authenticity\\money-page-3.png",
+        "D:\\수지개발\\사주\\tmp\\quality-review\\production-pdf-authenticity\\money-page-8.png",
+        "D:\\수지개발\\사주\\tmp\\quality-review\\production-pdf-authenticity\\money-page-9.png"
+      ],
+      "sizeNote": "PASS (multi-page Chromium PDF)",
+      "overall": "PASS"
+    },
+    "career": {
+      "httpStatus": 200,
+      "bytes": 405022,
+      "pages": 9,
+      "expectedPages": 9,
+      "pagesMatch": "PASS",
+      "titleText": "PASS",
+      "productContent": "PASS",
+      "leakHits": [],
+      "rawTextLength": 4051,
+      "perPageChars": [
+        29,
+        294,
+        349,
+        361,
+        357,
+        497,
+        276,
+        198,
+        376
+      ],
+      "pagesHaveText": "PASS",
+      "renderer": "consulting-pdf-v1",
+      "pdfEntry": "generatePaidReportPdf",
+      "accessActor": "admin",
+      "version": {
+        "interpretationVersion": "consulting-v1",
+        "reportRenderVersion": "consulting-pdf-v1",
+        "generationMode": "mock"
+      },
+      "visual": "PASS",
+      "visualBlank": 0,
+      "spotImages": [
+        "D:\\수지개발\\사주\\tmp\\quality-review\\production-pdf-authenticity\\career-page-2.png",
+        "D:\\수지개발\\사주\\tmp\\quality-review\\production-pdf-authenticity\\career-page-3.png",
+        "D:\\수지개발\\사주\\tmp\\quality-review\\production-pdf-authenticity\\career-page-8.png",
+        "D:\\수지개발\\사주\\tmp\\quality-review\\production-pdf-authenticity\\career-page-9.png"
+      ],
+      "sizeNote": "PASS (multi-page Chromium PDF)",
+      "overall": "PASS"
+    },
+    "love": {
+      "httpStatus": 200,
+      "bytes": 401574,
+      "pages": 9,
+      "expectedPages": 9,
+      "pagesMatch": "PASS",
+      "titleText": "PASS",
+      "productContent": "PASS",
+      "leakHits": [],
+      "rawTextLength": 3679,
+      "perPageChars": [
+        30,
+        242,
+        272,
+        326,
+        307,
+        446,
+        264,
+        198,
+        371
+      ],
+      "pagesHaveText": "PASS",
+      "renderer": "consulting-pdf-v1",
+      "pdfEntry": "generatePaidReportPdf",
+      "accessActor": "admin",
+      "version": {
+        "interpretationVersion": "consulting-v1",
+        "reportRenderVersion": "consulting-pdf-v1",
+        "generationMode": "mock"
+      },
+      "visual": "PASS",
+      "visualBlank": 0,
+      "spotImages": [
+        "D:\\수지개발\\사주\\tmp\\quality-review\\production-pdf-authenticity\\love-page-2.png",
+        "D:\\수지개발\\사주\\tmp\\quality-review\\production-pdf-authenticity\\love-page-4.png",
+        "D:\\수지개발\\사주\\tmp\\quality-review\\production-pdf-authenticity\\love-page-8.png",
+        "D:\\수지개발\\사주\\tmp\\quality-review\\production-pdf-authenticity\\love-page-9.png"
+      ],
+      "sizeNote": "PASS (multi-page Chromium PDF)",
+      "overall": "PASS"
+    },
+    "total": {
+      "httpStatus": 200,
+      "bytes": 472153,
+      "pages": 14,
+      "expectedPages": 14,
+      "pagesMatch": "PASS",
+      "titleText": "PASS",
+      "productContent": "PASS",
+      "leakHits": [],
+      "rawTextLength": 5079,
+      "perPageChars": [
+        35,
+        217,
+        145,
+        332,
+        236,
+        302,
+        186,
+        384,
+        147,
+        191,
+        260,
+        272,
+        161,
+        479
+      ],
+      "pagesHaveText": "PASS",
+      "renderer": "consulting-pdf-v1",
+      "pdfEntry": "generatePaidReportPdf",
+      "accessActor": "admin",
+      "version": {
+        "interpretationVersion": "consulting-v1",
+        "reportRenderVersion": "consulting-pdf-v1",
+        "generationMode": "mock"
+      },
+      "visual": "PASS",
+      "visualBlank": 0,
+      "spotImages": [
+        "D:\\수지개발\\사주\\tmp\\quality-review\\production-pdf-authenticity\\total-page-3.png",
+        "D:\\수지개발\\사주\\tmp\\quality-review\\production-pdf-authenticity\\total-page-7.png",
+        "D:\\수지개발\\사주\\tmp\\quality-review\\production-pdf-authenticity\\total-page-10.png",
+        "D:\\수지개발\\사주\\tmp\\quality-review\\production-pdf-authenticity\\total-page-14.png"
+      ],
+      "sizeNote": "PASS (multi-page Chromium PDF)",
+      "overall": "PASS"
+    }
+  },
+  "crossProductContentLeak": 0,
+  "blank": 0,
+  "clipping": 0,
+  "garbled": 0,
+  "customerMockAccess": "DENIED",
+  "adminQaMockAccess": "ALLOWED",
+  "customerLiveDisabled": "PAID_REPORT_LIVE_DISABLED",
+  "paidReportLiveEnabled": "FALSE",
+  "paidGemini": "NOT RUN",
+  "productionPdfAuthenticity": "PASS",
+  "gate": "READY"
+}
