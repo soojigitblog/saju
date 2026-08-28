@@ -19,9 +19,9 @@ import {
   isBankTransferAccountConfigured,
 } from "@/lib/bank/account-public";
 import {
+  isPaidCheckoutEnabled,
   isInternalQaCheckoutExecutionAllowed,
   isAdminQaSeedExecutionAllowed,
-  isPaidReportLiveEnabled,
 } from "@/lib/ai/config";
 import { isKnownPaidFortuneProductSlug } from "@/lib/report/paid-report-kind";
 
@@ -140,9 +140,9 @@ export async function createOrderForGuest(input: {
       isInternalQaCheckoutExecutionAllowed()) ||
     (input.adminAuthenticatedCheckout === true &&
       isAdminQaSeedExecutionAllowed());
-  if (isPaidFortune && !isPaidReportLiveEnabled() && !qaCheckoutPermitted) {
+  if (isPaidFortune && !isPaidCheckoutEnabled() && !qaCheckoutPermitted) {
     throw new FreeFlowError(
-      "PAID_REPORT_LIVE_DISABLED",
+      "PAID_CHECKOUT_DISABLED",
       "현재 최종 점검 중입니다. 유료 리포트 판매는 잠시 후 오픈됩니다.",
       503
     );

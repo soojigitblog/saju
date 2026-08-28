@@ -118,7 +118,7 @@ describe("P5.2 pre-live release hardening", () => {
         paymentMethod: "TOSS",
         internalQaCheckout: true,
       })
-    ).rejects.toMatchObject({ code: "PAID_REPORT_LIVE_DISABLED" });
+    ).rejects.toMatchObject({ code: "PAID_CHECKOUT_DISABLED" });
   });
 
   it("CASE L: internalQaCheckout true without env flag still blocked", async () => {
@@ -133,7 +133,7 @@ describe("P5.2 pre-live release hardening", () => {
         paymentMethod: "TOSS",
         internalQaCheckout: true,
       })
-    ).rejects.toMatchObject({ code: "PAID_REPORT_LIVE_DISABLED" });
+    ).rejects.toMatchObject({ code: "PAID_CHECKOUT_DISABLED" });
   });
 
   it("generationMode spoof in JSON ignored when report.model is mock", () => {
@@ -160,12 +160,13 @@ describe("P5.2 pre-live release hardening", () => {
     expect(stamped.interpretationVersion).toBe(INTERPRETATION_VERSION_CONSULTING);
   });
 
-  it("PAID_REPORT_LIVE_DISABLED is not operational failure / no alert", () => {
+  it("policy wait codes are not operational failure / no alert", () => {
     expect(shouldNotifyPaidReportFailure("PAID_REPORT_LIVE_DISABLED")).toBe(false);
     expect(shouldTrackPaidReportFailureAnalytics("PAID_REPORT_LIVE_DISABLED")).toBe(
       false
     );
-    expect(shouldNotifyPaidReportFailure("PAID_AI_NOT_CONFIGURED")).toBe(true);
+    expect(shouldNotifyPaidReportFailure("PAID_AI_NOT_CONFIGURED")).toBe(false);
+    expect(shouldNotifyPaidReportFailure("WAITING_FOR_AI")).toBe(false);
   });
 
   it("LIVE_DISABLED customer paid does not send Telegram alert", async () => {

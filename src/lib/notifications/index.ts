@@ -173,4 +173,27 @@ export async function notifyPaidReportFailed(input: {
   return notifyAdmins(payload);
 }
 
+export async function notifyPaidOrderConfirmed(input: {
+  orderNo: string;
+  productName: string | null;
+  paidAt: string;
+}): Promise<{ sent: number; skipped: boolean }> {
+  const payload: AdminNotificationPayload = {
+    kind: "PAID_ORDER_CONFIRMED",
+    title: "[운의결 결제 완료]",
+    body: [
+      `상품\n${input.productName?.trim() || "상품"}`,
+      "",
+      `주문번호\n${input.orderNo}`,
+      "",
+      `결제 확인 시각\n${formatAlertDateTime(input.paidAt)}`,
+      "",
+      "리포트 상태:",
+      "AI 생성 대기",
+    ].join("\n"),
+    adminPath: "/admin/report-waiting",
+  };
+  return notifyAdmins(payload);
+}
+
 export type { AdminNotificationKind, AdminNotificationPayload };

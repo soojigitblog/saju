@@ -5,6 +5,8 @@ import {
   assertPaidGeminiConfigured,
   estimateAiCostUsd,
   getAiModelPaid,
+  isPaidReportGenerationEnabled,
+  resolveAiProviderForPaid,
   resolvePaidProvider,
   type PaidGenerationActor,
   type AiProviderName,
@@ -34,6 +36,7 @@ import { resolvePaidTarotContext } from "@/lib/services/resolve-paid-tarot-conte
 import { buildPaidProductInstruction } from "@/lib/ai/prompts/build-paid-prompt";
 import { targetLengthForPaidProduct } from "@/lib/ai/schemas/paid-report";
 import { notifyPaidReportFailed } from "@/lib/notifications";
+import { canAdminTriggerPaidGeneration } from "@/lib/services/paid-report-generation-readiness";
 import type { FortuneChart } from "@/lib/fortune-engine/types";
 import { trackEvent } from "@/lib/repositories/analytics";
 import type { Json } from "@/types/database.types";
@@ -48,6 +51,7 @@ import {
   shouldTrackPaidReportFailureAnalytics,
 } from "@/lib/services/paid-report-failure-policy";
 import { stampServerPaidReportMetadata } from "@/lib/services/paid-report-metadata";
+import { PAID_REPORT_WAITING_ERROR_CODE } from "@/lib/services/paid-report-waiting";
 
 export type PaidReportJobResult = {
   reportId: string | null;
@@ -78,6 +82,19 @@ function isPayableOrder(order: {
     order.status === "COMPLETED" ||
     order.status === "FAILED"
   );
+}
+
+async function markReportWaitingForAi(input: {
+  reportId: string;
+  orderId: string;
+}): Promise<PaidReportJobResult> {
+  await updateReport(input.reportId, {
+    generation_status: "PENDING",
+    error_code: PAID_REPORT_WAITING_ERROR_CODE,
+    error_message: "결제가 확인되었습니다. 리포트를 준비하고 있습니다.",
+  });
+  await updateOrder(input.orderId, { status: "PAID" });
+  return { reportId: input.reportId, status: "PENDING" };
 }
 
 /**
@@ -148,7 +165,25 @@ export async function startPaidReportJob(input: {
     return { reportId: report.id, status: report.generation_status };
   }
 
-  // --- Defense in depth: customer never gets mock / never generates while live off ---
+  if (actor === "customer" && !isPaidReportGenerationEnabled()) {
+    return markReportWaitingForAi({
+      reportId: report.id,
+      orderId: order.id,
+    });
+  }
+
+  if (actor === "admin" && resolveAiProviderForPaid() === "gemini") {
+    try {
+      assertPaidGeminiConfigured();
+    } catch {
+      return markReportWaitingForAi({
+        reportId: report.id,
+        orderId: order.id,
+      });
+    }
+  }
+
+  // --- Defense in depth: customer never gets mock ---
   let provider: AiProviderName;
   try {
     provider = resolvePaidProvider({
@@ -160,11 +195,33 @@ export async function startPaidReportJob(input: {
       error instanceof Error ? error.message : "PAID_GENERATION_BLOCKED";
     const known =
       code === "PAID_REPORT_LIVE_DISABLED" ||
+      code === "PAID_GENERATION_DISABLED" ||
       code === "CUSTOMER_MOCK_PROVIDER_FORBIDDEN" ||
       code === "PAID_AI_NOT_CONFIGURED";
     const errorCode = known ? code : "CONFIGURATION_ERROR";
+
+    if (
+      actor === "customer" &&
+      (errorCode === "PAID_GENERATION_DISABLED" ||
+        errorCode === "PAID_REPORT_LIVE_DISABLED" ||
+        errorCode === "PAID_AI_NOT_CONFIGURED")
+    ) {
+      return markReportWaitingForAi({
+        reportId: report.id,
+        orderId: order.id,
+      });
+    }
+
+    if (actor === "admin" && errorCode === "PAID_AI_NOT_CONFIGURED") {
+      return markReportWaitingForAi({
+        reportId: report.id,
+        orderId: order.id,
+      });
+    }
+
     const safeMessage =
-      errorCode === "PAID_REPORT_LIVE_DISABLED"
+      errorCode === "PAID_REPORT_LIVE_DISABLED" ||
+      errorCode === "PAID_GENERATION_DISABLED"
         ? "유료 리포트는 최종 점검 중이라 아직 생성되지 않습니다. 결제는 정상 확인되었습니다."
         : errorCode === "CUSTOMER_MOCK_PROVIDER_FORBIDDEN"
           ? "고객 경로에서는 Mock 리포트를 생성할 수 없습니다."
@@ -221,6 +278,12 @@ export async function startPaidReportJob(input: {
         error instanceof Error && error.message === "PAID_AI_NOT_CONFIGURED"
           ? "PAID_AI_NOT_CONFIGURED"
           : "CONFIGURATION_ERROR";
+      if (actor === "customer" || actor === "admin") {
+        return markReportWaitingForAi({
+          reportId: report.id,
+          orderId: order.id,
+        });
+      }
       await updateReport(report.id, {
         generation_status: "FAILED",
         error_code: code,
@@ -228,16 +291,6 @@ export async function startPaidReportJob(input: {
           "유료 AI 키가 설정되지 않아 리포트를 생성할 수 없습니다. 관리자는 GEMINI_API_KEY_PAID를 설정하세요.",
       });
       await updateOrder(order.id, { status: "PAID" });
-      try {
-        await notifyPaidReportFailed({
-          orderNo: order.order_no,
-          productName: order.product_name_snapshot ?? product.name,
-          amount: order.amount,
-          errorCode: code,
-        });
-      } catch {
-        /* best-effort */
-      }
       return { reportId: report.id, status: "FAILED" };
     }
   }
@@ -582,6 +635,14 @@ export async function adminRetryPaidReportGeneration(input: {
     return { reportId: report.id, status: "COMPLETED" };
   }
 
+  if (!canAdminTriggerPaidGeneration()) {
+    throw new FreeFlowError(
+      "PAID_AI_NOT_CONFIGURED",
+      "유료 AI 키가 설정되지 않아 생성할 수 없습니다.",
+      409
+    );
+  }
+
   await normalizePaidOrderStatus(order);
 
   return startPaidReportJob({
@@ -605,6 +666,14 @@ export async function retryPaidReportGeneration(input: {
       "ORDER_NOT_PAID",
       "결제가 완료된 주문만 재생성할 수 있습니다.",
       400
+    );
+  }
+
+  if (!isPaidReportGenerationEnabled()) {
+    throw new FreeFlowError(
+      "PAID_GENERATION_DISABLED",
+      "리포트 생성이 아직 활성화되지 않았습니다.",
+      403
     );
   }
 

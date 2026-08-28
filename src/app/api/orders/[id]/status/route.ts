@@ -9,6 +9,10 @@ import {
   bankConnectionUserMessage,
   resolveBankConnectionLabel,
 } from "@/lib/bank/connection-status";
+import {
+  customerReportPhaseLabel,
+  resolveCustomerReportPhase,
+} from "@/lib/ops/customer-report-phase";
 
 export const dynamic = "force-dynamic";
 
@@ -42,6 +46,12 @@ export async function GET(
 
   const report = await getReportByOrderId(order.id);
   const publicOrder = toOrderPublicDTO(order);
+  const customerReportPhase = resolveCustomerReportPhase({
+    orderStatus: order.status,
+    paidAt: order.paid_at,
+    generationStatus: report?.generation_status,
+    errorCode: report?.error_code,
+  });
 
   const isPendingBank =
     order.payment_method === "BANK_TRANSFER" && order.status === "PENDING";
@@ -58,7 +68,12 @@ export async function GET(
   return NextResponse.json({
     order: publicOrder,
     report: report
-      ? { id: report.id, generationStatus: report.generation_status }
+      ? {
+          id: report.id,
+          generationStatus: report.generation_status,
+          customerPhase: customerReportPhase,
+          customerLabel: customerReportPhaseLabel(customerReportPhase),
+        }
       : null,
     bankAccount: isPendingBank ? getBankTransferPublicAccount() : null,
     depositorName: isPendingBank ? order.depositor_name : null,

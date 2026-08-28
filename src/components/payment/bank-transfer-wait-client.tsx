@@ -16,7 +16,12 @@ type StatusPayload = {
     status: string;
     paidAt?: string | null;
   };
-  report: { id: string; generationStatus: string } | null;
+  report: {
+    id: string;
+    generationStatus: string;
+    customerPhase?: string;
+    customerLabel?: string;
+  } | null;
   bankAccount: {
     bankName: string;
     accountNumber: string;
@@ -38,8 +43,12 @@ function hintForStatus(
   reportStatus?: string,
   depositAcked?: boolean,
   bankDisconnected?: boolean,
-  paid?: boolean
+  paid?: boolean,
+  customerLabel?: string
 ): string {
+  if (customerLabel && paid && reportStatus !== "COMPLETED") {
+    return customerLabel;
+  }
   if (status === "PENDING") {
     if (bankDisconnected) {
       return "입금 확인 시스템 연결이 잠시 끊겼습니다. 입금하셨다면 주문은 그대로 유지됩니다.";
@@ -50,19 +59,19 @@ function hintForStatus(
     return "입금을 기다리고 있어요.";
   }
   if (status === "PAID" || (paid && reportStatus !== "COMPLETED")) {
-    return "입금이 확인되었습니다.";
+    return customerLabel ?? "결제 확인됨 · 리포트 준비 중";
   }
   if (status === "GENERATING" || reportStatus === "GENERATING") {
-    return "당신의 사주를 바탕으로 전체 리포트를 만들고 있어요.";
+    return "리포트를 준비하고 있습니다.";
   }
   if (status === "COMPLETED" || reportStatus === "COMPLETED") {
     return "리포트가 준비되었습니다.";
   }
   if (reportStatus === "FAILED" && paid) {
-    return "입금은 정상적으로 확인되었습니다. 리포트를 준비하는 중 문제가 발생했습니다.";
+    return "결제 확인됨 · 리포트 준비 중";
   }
   if (status === "FAILED" && paid) {
-    return "입금은 정상적으로 확인되었습니다. 리포트를 준비하는 중 문제가 발생했습니다.";
+    return "결제 확인됨 · 리포트 준비 중";
   }
   if (status === "EXPIRED") {
     return "입금 기한이 지났습니다. 새로 주문해 주세요.";
@@ -104,7 +113,8 @@ export function BankTransferWaitClient({ orderId }: { orderId: string }) {
           json.report?.generationStatus,
           ack,
           json.bankCheckDisconnected,
-          Boolean(json.order.paidAt)
+          Boolean(json.order.paidAt),
+          json.report?.customerLabel
         )
       );
       if (json.order.status !== "PENDING") {
@@ -309,11 +319,28 @@ export function BankTransferWaitClient({ orderId }: { orderId: string }) {
           ) : null}
           <div>
             <p className="text-xs text-[var(--text-muted)]">주문번호</p>
-            <p className="mt-1 font-mono text-sm">{data?.order.orderNo ?? "—"}</p>
+            <div className="mt-1 flex flex-wrap items-center gap-3">
+              <p className="font-mono text-sm">{data?.order.orderNo ?? "—"}</p>
+              {isPending && data?.order.orderNo ? (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() =>
+                    void copyText(data.order.orderNo, () =>
+                      setCopyFeedback("주문번호를 복사했습니다.")
+                    )
+                  }
+                >
+                  주문번호 복사
+                </Button>
+              ) : null}
+            </div>
           </div>
           {isPending ? (
             <p className="text-xs leading-relaxed text-[var(--text-secondary)]">
-              위 금액을 정확히 입금해 주세요. 입금 확인 후 리포트가 생성됩니다.
+              위 금액을 정확히 입금해 주세요. 입금 확인 후 「내 결과」에서 리포트
+              준비 상태를 확인할 수 있습니다.
             </p>
           ) : null}
         </OrnamentCard>

@@ -173,6 +173,18 @@ async function loadPage(input: {
 
     if (report.generation_status !== "COMPLETED" || !report.result_json) {
       if (
+        report.generation_status === "PENDING" &&
+        report.error_code === "WAITING_FOR_AI"
+      ) {
+        return {
+          kind: "message",
+          title: "결제가 확인되었습니다",
+          body: "리포트를 준비하고 있습니다. 준비가 완료되면 이 페이지에서 확인하실 수 있습니다.",
+          href: "/my-results",
+          label: "내 결과 보기",
+        };
+      }
+      if (
         report.generation_status === "FAILED" &&
         report.error_code === "PAID_REPORT_LIVE_DISABLED"
       ) {

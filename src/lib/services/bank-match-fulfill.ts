@@ -16,6 +16,7 @@ import { startPaidReportJob } from "@/lib/services/paid-report-job";
 import { findBankMatchCandidates } from "@/lib/bank/match-orders";
 import { maskDepositorName } from "@/lib/bank/hana/transaction-normalizer";
 import { trackEvent } from "@/lib/repositories/analytics";
+import { notifyPaidOrderConfirmed } from "@/lib/notifications";
 import type { Json } from "@/types/database.types";
 import { FreeFlowError } from "@/lib/services/free-flow-errors";
 import { assertBankPaidAllowed } from "@/lib/bank/payment-guard";
@@ -183,6 +184,16 @@ export async function fulfillBankMatch(input: {
     orderId: paid.id,
     runGeneration: true,
   });
+
+  try {
+    await notifyPaidOrderConfirmed({
+      orderNo: paid.order_no,
+      productName: paid.product_name_snapshot,
+      paidAt: paid.paid_at ?? paidAt,
+    });
+  } catch {
+    /* best-effort */
+  }
 
   return {
     fingerprint: input.fingerprint,

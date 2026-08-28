@@ -9,6 +9,8 @@ const links = [
   { href: "/admin/dashboard", label: "대시보드" },
   { href: "/admin/bank-deposits", label: "입금 확인" },
   { href: "/admin/orders", label: "주문" },
+  { href: "/admin/runbook", label: "첫 결제 런북" },
+  { href: "/admin/report-waiting", label: "리포트 생성 대기" },
   { href: "/admin/reports", label: "유료 리포트" },
   { href: "/admin/ai-generations", label: "AI 생성 현황" },
   { href: "/admin/feedback", label: "피드백" },

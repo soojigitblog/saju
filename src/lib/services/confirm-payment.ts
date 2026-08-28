@@ -24,6 +24,7 @@ import { createOrderAccessToken } from "@/lib/orders/access-token";
 import { assertPaymentMutationRateLimit } from "@/lib/payments/rate-limit";
 import { startPaidReportJob } from "@/lib/services/paid-report-job";
 import { trackEvent } from "@/lib/repositories/analytics";
+import { notifyPaidOrderConfirmed } from "@/lib/notifications";
 import type { Json } from "@/types/database.types";
 
 export type ConfirmPaymentResult = {
@@ -306,6 +307,16 @@ export async function confirmTossPaymentForOwner(input: {
     orderId: paidOrder.id,
     runGeneration: true,
   });
+
+  try {
+    await notifyPaidOrderConfirmed({
+      orderNo: paidOrder.order_no,
+      productName: paidOrder.product_name_snapshot ?? product.name,
+      paidAt: paidOrder.paid_at ?? paidAt,
+    });
+  } catch {
+    /* best-effort */
+  }
 
   return {
     order: toOrderPublicDTO(paidOrder),

@@ -113,7 +113,9 @@ async function adminSeed(productStem: string): Promise<{
     headers: {
       "content-type": "application/json",
       origin: BASE,
-      "x-admin-manual-token": process.env.ADMIN_MANUAL_TOKEN ?? "smoke",
+      ...(process.env.ADMIN_MANUAL_TOKEN?.trim()
+        ? { "x-admin-manual-token": process.env.ADMIN_MANUAL_TOKEN.trim() }
+        : {}),
     },
     body: JSON.stringify({ productStem }),
   });
@@ -146,8 +148,8 @@ async function fetchConsultingPdf(input: {
     origin: BASE,
   };
   if (input.asAdmin) {
-    headers["x-admin-manual-token"] =
-      process.env.ADMIN_MANUAL_TOKEN ?? "smoke";
+    const token = process.env.ADMIN_MANUAL_TOKEN?.trim();
+    if (token) headers["x-admin-manual-token"] = token;
   }
   if (input.guestSessionId) {
     headers.cookie = `fortune_guest_session=${input.guestSessionId}`;

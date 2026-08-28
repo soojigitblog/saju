@@ -57,6 +57,8 @@ function cleanCustomerText(s: string): string {
 /** Exact-sentence key for global duplicate sweep (body copy only). */
 function exactNorm(s: string): string {
   return cleanCustomerText(s)
+    .replace(/^(수입|지출)\s*:\s*/, "")
+    .replace(/^【(벌|쓸)\s*때】\s*/, "")
     .replace(/\([^)]*\)/g, "")
     .replace(/\s+/g, " ")
     .trim();
@@ -1041,6 +1043,7 @@ function buildMoney(input: {
   reserveDetailLines(reservedDetail, pack);
   const primaryShare = structure?.pullQuote ?? r.shareableInsights?.[0];
   if (primaryShare) reserveRawLines(reservedDetail, [primaryShare]);
+  reserveRawLines(used, [...earn, ...spend]);
 
   const structureEv = evidenceBlock({
     v2: input.v2,

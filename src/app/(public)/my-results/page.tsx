@@ -6,6 +6,10 @@ import { Button } from "@/components/ui/button";
 import { formatKRW } from "@/lib/utils";
 import { MysticPage } from "@/components/mystic/celestial-background";
 import { OrnamentCard, MysticPanel } from "@/components/mystic/ornament-card";
+import {
+  isReportWaitingForAi,
+  PAID_REPORT_WAITING_ERROR_CODE,
+} from "@/lib/services/paid-report-waiting";
 
 type OrderItem = {
   order: {
@@ -30,6 +34,15 @@ function statusLabel(
   reportErrorCode?: string | null
 ): string {
   const paid = Boolean(paidAt);
+  if (
+    paid &&
+    isReportWaitingForAi({
+      generationStatus: reportStatus ?? "",
+      errorCode: reportErrorCode,
+    })
+  ) {
+    return "결제 확인됨 · 리포트 준비 중";
+  }
   if (status === "PENDING") {
     return paymentMethod === "BANK_TRANSFER"
       ? "입금 확인 대기 (운영자 확인 필요)"
@@ -39,6 +52,13 @@ function statusLabel(
     paid &&
     reportStatus === "FAILED" &&
     reportErrorCode === "PAID_REPORT_LIVE_DISABLED"
+  ) {
+    return "결제 확인됨 · 리포트 준비 중";
+  }
+  if (
+    paid &&
+    reportStatus === "FAILED" &&
+    reportErrorCode === PAID_REPORT_WAITING_ERROR_CODE
   ) {
     return "결제 확인됨 · 리포트 준비 중";
   }

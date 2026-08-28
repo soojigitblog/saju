@@ -10,7 +10,8 @@ insert into public.prompt_definitions (id, name, slug) values
   ('11111111-1111-1111-1111-111111111103', '나의 일 사용설명서', 'career'),
   ('11111111-1111-1111-1111-111111111104', '나의 연애 사용설명서', 'love'),
   ('11111111-1111-1111-1111-111111111105', '2027 종합운세 (비활성)', '2027-total'),
-  ('11111111-1111-1111-1111-111111111106', '사주×타로 심층 교차리딩', 'saju-tarot-deep');
+  ('11111111-1111-1111-1111-111111111106', '사주×타로 심층 교차리딩', 'saju-tarot-deep')
+on conflict (id) do update set name = excluded.name;
 
 insert into public.prompt_versions (
   id,
@@ -74,7 +75,8 @@ insert into public.prompt_versions (
   '다음 컨텍스트로 PaidCrossReadingV1을 작성하십시오.\n{{context_json}}',
   '{"type":"object","required":["questionSummary","sajuBaseline","cards","crossConnections","hiddenTension"]}'::jsonb,
   'ACTIVE'
-);
+)
+on conflict (id) do nothing;
 
 insert into public.products (
   id,
@@ -187,4 +189,16 @@ insert into public.products (
   20,
   'ACTIVE',
   6
-);
+)
+on conflict (id) do update set
+  name = excluded.name,
+  short_description = excluded.short_description,
+  description = excluded.description,
+  regular_price = excluded.regular_price,
+  sale_price = excluded.sale_price,
+  product_type = excluded.product_type,
+  prompt_version_id = excluded.prompt_version_id,
+  template_id = excluded.template_id,
+  free_ratio = excluded.free_ratio,
+  status = excluded.status,
+  sort_order = excluded.sort_order;

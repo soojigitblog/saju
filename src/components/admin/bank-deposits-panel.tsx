@@ -3,6 +3,7 @@
 import { useCallback, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { formatKRW } from "@/lib/utils";
+import { isQaDryRunDepositor } from "@/lib/ops/qa-dry-run-order";
 
 export type PendingOrderRow = {
   id: string;
@@ -25,6 +26,15 @@ export type FailedPaidOrderRow = {
 function statusLabel(o: PendingOrderRow): string {
   if (o.paymentCheckRequestedAt) return "입금확인 요청";
   return "입금대기";
+}
+
+function QaDryRunBadge({ depositorName }: { depositorName: string | null }) {
+  if (!isQaDryRunDepositor(depositorName)) return null;
+  return (
+    <span className="ml-2 inline-block rounded bg-blue-900/50 px-2 py-0.5 text-xs font-semibold text-blue-200">
+      QA 드라이런
+    </span>
+  );
 }
 
 export function BankDepositsPanel({
@@ -65,7 +75,7 @@ export function BankDepositsPanel({
       setMessage(
         data.already
           ? `${confirmTarget.orderNo} — 이미 확인된 주문입니다.`
-          : `${confirmTarget.orderNo} — 입금 확인 및 리포트 생성을 시작했습니다.`
+          : `${confirmTarget.orderNo} — 입금 확인 완료. 리포트는 준비 대기 상태입니다.`
       );
       setConfirmTarget(null);
       window.location.reload();
@@ -132,6 +142,7 @@ export function BankDepositsPanel({
                 </span>
                 <p className="mt-2 font-medium text-[var(--admin-ink)]">
                   {o.productName ?? "상품"}
+                  <QaDryRunBadge depositorName={o.depositorName} />
                 </p>
                 <p className="mt-1 text-[var(--admin-muted)]">
                   {o.orderNo} · {formatKRW(o.amount)} · 입금자{" "}
@@ -151,7 +162,7 @@ export function BankDepositsPanel({
                 disabled={busy === o.id}
                 onClick={() => setConfirmTarget(o)}
               >
-                입금 확인 및 리포트 생성
+                입금 확인
               </Button>
             </li>
           ))}
@@ -174,6 +185,7 @@ export function BankDepositsPanel({
               <div>
                 <p className="font-medium text-[var(--admin-ink)]">
                   {o.productName ?? "상품"}
+                  <QaDryRunBadge depositorName={o.depositorName} />
                 </p>
                 <p className="mt-1 text-[var(--admin-muted)]">
                   {o.orderNo} · {formatKRW(o.amount)} · 입금자{" "}
@@ -190,7 +202,7 @@ export function BankDepositsPanel({
                 disabled={busy === o.id}
                 onClick={() => setConfirmTarget(o)}
               >
-                입금 확인 및 리포트 생성
+                입금 확인
               </Button>
             </li>
           ))}

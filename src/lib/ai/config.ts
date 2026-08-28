@@ -54,8 +54,9 @@ export function getOpenAiApiKeyForTier(tier: AiBillingTier): string | undefined 
 }
 
 /**
- * Operation/runtime: paid Gemini must use an explicit paid billing key.
- * Never silently reuse free/legacy keys.
+ * Pre-launch cost policy — paid Gemini key intentionally deferred.
+ * Infrastructure recovery (P6.1) does NOT require GEMINI_API_KEY_PAID.
+ * Activation trigger: first real paid customer or explicit user approval.
  */
 export function assertPaidGeminiConfigured(): void {
   const provider = resolveAiProviderForPaid();
@@ -69,13 +70,46 @@ export function assertPaidGeminiConfigured(): void {
 }
 
 /**
- * Pre-live gate: when false, customer paid sales/generation are closed.
- * Does NOT mean "use mock instead of Gemini".
- * Live PASS 후에만 true로 전환 — 자동 활성화 금지.
+ * Pre-live gate (legacy): when true, enables paid checkout AND generation together.
+ * P6.2+: prefer PAID_CHECKOUT_ENABLED + PAID_REPORT_GENERATION_ENABLED.
  */
 export function isPaidReportLiveEnabled(): boolean {
   const raw = process.env.PAID_REPORT_LIVE_ENABLED?.trim().toLowerCase();
   return raw === "true" || raw === "1";
+}
+
+function readEnvBool(name: string, defaultWhenUnset: boolean): boolean {
+  const raw = process.env[name]?.trim().toLowerCase();
+  if (!raw) return defaultWhenUnset;
+  return raw === "true" || raw === "1";
+}
+
+/**
+ * Customer paid checkout (order/payment). Server-side only — never from client body.
+ * Default when unset: true if no legacy PAID_REPORT_LIVE_ENABLED; else follows legacy.
+ */
+export function isPaidCheckoutEnabled(): boolean {
+  const explicit = process.env.PAID_CHECKOUT_ENABLED?.trim();
+  if (explicit !== undefined && explicit !== "") {
+    return readEnvBool("PAID_CHECKOUT_ENABLED", false);
+  }
+  const legacy = process.env.PAID_REPORT_LIVE_ENABLED?.trim();
+  if (legacy !== undefined && legacy !== "") {
+    return isPaidReportLiveEnabled();
+  }
+  return true;
+}
+
+/**
+ * Customer paid AI auto-generation. Server-side only.
+ * Explicit PAID_REPORT_GENERATION_ENABLED wins over legacy PAID_REPORT_LIVE_ENABLED.
+ */
+export function isPaidReportGenerationEnabled(): boolean {
+  const explicit = process.env.PAID_REPORT_GENERATION_ENABLED?.trim();
+  if (explicit !== undefined && explicit !== "") {
+    return readEnvBool("PAID_REPORT_GENERATION_ENABLED", false);
+  }
+  return isPaidReportLiveEnabled();
 }
 
 export type PaidGenerationActor = "customer" | "qa" | "admin" | "test";
@@ -114,13 +148,12 @@ export function isPaidPreliveQaCheckoutAllowed(): boolean {
 /**
  * Customer paid provider — NEVER returns mock.
  *
- * live=false → PAID_REPORT_LIVE_DISABLED
- * live=true + gemini + no key → PAID_AI_NOT_CONFIGURED (via assert)
- * live=true + configured → gemini (or configured non-mock provider)
+ * generation=false → PAID_GENERATION_DISABLED
+ * generation=true + gemini + no key → PAID_AI_NOT_CONFIGURED (via assert)
  */
 export function resolveEffectivePaidProviderForCustomer(): AiProviderName {
-  if (!isPaidReportLiveEnabled()) {
-    throw new Error("PAID_REPORT_LIVE_DISABLED");
+  if (!isPaidReportGenerationEnabled()) {
+    throw new Error("PAID_GENERATION_DISABLED");
   }
   const provider = resolveAiProviderForPaid();
   if (provider === "mock") {
@@ -157,8 +190,23 @@ export function resolvePaidProvider(input: {
     return requested;
   }
 
-  // Default for non-customer actors when live is off: mock (explicit QA path)
-  if (!isPaidReportLiveEnabled()) {
+  // Admin manual generation on real paid orders — never silent mock fallback.
+  if (actor === "admin") {
+    if (
+      process.env.NODE_ENV === "test" &&
+      process.env.AI_PROVIDER_PAID === "mock"
+    ) {
+      return "mock";
+    }
+    const configured = resolveAiProviderForPaid();
+    if (configured === "mock") {
+      throw new Error("CUSTOMER_MOCK_PROVIDER_FORBIDDEN");
+    }
+    return configured;
+  }
+
+  // QA / test — mock path when generation off
+  if (!isPaidReportGenerationEnabled()) {
     assertMockAllowed();
     return "mock";
   }

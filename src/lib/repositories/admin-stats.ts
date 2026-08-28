@@ -4,6 +4,8 @@ import { getDataMode } from "@/lib/repositories/data-mode";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { mockStore } from "@/lib/mock-store";
 import { getUsdToKrwRate } from "@/lib/ai/config";
+import { isPaidReportOperationalFailure } from "@/lib/services/paid-report-failure-policy";
+import { isQaDryRunDepositor } from "@/lib/ops/qa-dry-run-order";
 import type { OrderStatus } from "@/types";
 
 function seoulDayBounds(now = new Date()): { startIso: string; endIso: string } {
@@ -90,7 +92,8 @@ export async function getAdminTodayStats(): Promise<AdminTodayStats> {
         o.paid_at &&
         o.paid_at >= startIso &&
         o.paid_at <= endIso &&
-        ["PAID", "GENERATING", "COMPLETED", "FAILED"].includes(o.status)
+        ["PAID", "GENERATING", "COMPLETED", "FAILED"].includes(o.status) &&
+        !isQaDryRunDepositor(o.depositor_name)
     );
     return {
       visitors: 0,
@@ -108,7 +111,11 @@ export async function getAdminTodayStats(): Promise<AdminTodayStats> {
       aiFailures: 0,
       reportFailures: [...mockStore.reports.values()].filter((r) => {
         const o = mockStore.orders.get(r.order_id);
-        return r.generation_status === "FAILED" && Boolean(o?.paid_at);
+        return (
+          r.generation_status === "FAILED" &&
+          Boolean(o?.paid_at) &&
+          isPaidReportOperationalFailure(r.error_code, r.generation_status)
+        );
       }).length,
       paidAiCostUsd: 0,
       paidAiCostKrw: 0,
@@ -165,12 +172,14 @@ export async function getAdminTodayStats(): Promise<AdminTodayStats> {
 
   const { data: paidRows } = await admin
     .from("orders")
-    .select("amount, status, paid_at")
+    .select("amount, status, paid_at, depositor_name")
     .not("paid_at", "is", null)
     .gte("paid_at", startIso)
     .lte("paid_at", endIso);
 
-  const paidList = paidRows ?? [];
+  const paidList = (paidRows ?? []).filter(
+    (o) => !isQaDryRunDepositor(o.depositor_name)
+  );
   const revenue = paidList.reduce((s, o) => s + (o.amount ?? 0), 0);
 
   const { count: aiFailures } = await admin
@@ -180,11 +189,15 @@ export async function getAdminTodayStats(): Promise<AdminTodayStats> {
     .gte("created_at", startIso)
     .lte("created_at", endIso);
 
-  const { count: reportFailures } = await admin
+  const { data: failedReportRows } = await admin
     .from("reports")
-    .select("id, orders!inner(paid_at)", { count: "exact", head: true })
+    .select("id, error_code, generation_status, orders!inner(paid_at)")
     .eq("generation_status", "FAILED")
     .not("orders.paid_at", "is", null);
+
+  const reportFailures = (failedReportRows ?? []).filter((r) =>
+    isPaidReportOperationalFailure(r.error_code, r.generation_status)
+  ).length;
 
   const { data: paidAiRows } = await admin
     .from("ai_generations")
@@ -214,7 +227,7 @@ export async function getAdminTodayStats(): Promise<AdminTodayStats> {
     paid: paidList.length,
     revenue,
     aiFailures: aiFailures ?? 0,
-    reportFailures: reportFailures ?? 0,
+    reportFailures,
     paidAiCostUsd,
     paidAiCostKrw,
     paidEstimatedMargin,

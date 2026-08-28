@@ -140,7 +140,23 @@ export function ProductDetail({
             ● 계좌이체 (하나은행)
           </p>
           <p className="mt-1 text-xs text-[var(--text-muted)]">
-            카드 결제(Toss)는 준비 중입니다.
+            주문 후 안내되는 계좌로 입금해 주세요. 입금자명은 주문 시 입력한
+            이름과 동일해야 합니다.
+          </p>
+        </MysticPanel>
+
+        <MysticPanel className="mt-4">
+          <p className="text-xs text-[var(--gold-primary)]">결제 후 안내</p>
+          <p className="mt-2 text-sm leading-relaxed text-[var(--text-secondary)]">
+            입금 확인 후 「내 결과」에서 주문 상태를 확인할 수 있습니다. 리포트는
+            준비가 완료되면 같은 화면에서 열람 및 PDF 다운로드가 가능합니다.
+          </p>
+          <p className="mt-2 text-xs text-[var(--text-muted)]">
+            환불·취소는{" "}
+            <a href="/refund" className="underline underline-offset-2">
+              환불정책
+            </a>
+            을 참고해 주세요.
           </p>
         </MysticPanel>
 

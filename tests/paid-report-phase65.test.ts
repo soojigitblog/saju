@@ -34,7 +34,11 @@ describe("PHASE 6.5 paid report blocker fix (mock)", () => {
   beforeEach(() => {
     resetMockFreeFlowState();
     process.env.AI_PROVIDER = "mock";
+    process.env.AI_PROVIDER_FREE = "mock";
+    process.env.AI_PROVIDER_PAID = "mock";
     process.env.PAYMENT_PROVIDER = "mock";
+    process.env.PAID_REPORT_GENERATION_ENABLED = "true";
+    process.env.PAID_CHECKOUT_ENABLED = "true";
     vi.restoreAllMocks();
   });
 
@@ -66,7 +70,7 @@ describe("PHASE 6.5 paid report blocker fix (mock)", () => {
     );
 
     const { orderId } = await seedPaidOrder();
-    await startPaidReportJob({ orderId, runGeneration: true, forceRetry: true });
+    await startPaidReportJob({ orderId, runGeneration: true, forceRetry: true, actor: "test" });
 
     const order = await getOrderById(orderId);
     const report = await getReportByOrderId(orderId);
@@ -110,6 +114,7 @@ describe("PHASE 6.5 paid report blocker fix (mock)", () => {
       orderId,
       runGeneration: true,
       forceRetry: true,
+      actor: "test",
     });
     expect(first.status).toBe("COMPLETED");
 
@@ -117,6 +122,7 @@ describe("PHASE 6.5 paid report blocker fix (mock)", () => {
     const second = await startPaidReportJob({
       orderId,
       runGeneration: true,
+      actor: "test",
     });
     expect(second.status).toBe("COMPLETED");
     expect(spy).not.toHaveBeenCalled();

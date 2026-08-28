@@ -250,3 +250,96 @@ export async function listReportsForAdmin(limit = 80): Promise<
     return b.created_at.localeCompare(a.created_at);
   });
 }
+
+export type AdminWaitingReportRow = {
+  id: string;
+  order_id: string;
+  order_no: string | null;
+  product_name: string | null;
+  generation_status: Report["generation_status"];
+  error_code: string | null;
+  paid_at: string | null;
+  created_at: string;
+};
+
+/** Paid orders waiting for AI generation — PII minimized. */
+export async function listWaitingForAiReports(
+  limit = 50
+): Promise<AdminWaitingReportRow[]> {
+  const isWaiting = (r: {
+    generation_status: string;
+    error_code: string | null;
+    paid_at: string | null;
+  }) =>
+    Boolean(r.paid_at) &&
+    r.generation_status === "PENDING" &&
+    r.error_code === "WAITING_FOR_AI";
+
+  if (getDataMode() === "mock") {
+    return [...mockStore.reports.values()]
+      .map((r) => {
+        const order = mockStore.orders.get(r.order_id);
+        return {
+          id: r.id,
+          order_id: r.order_id,
+          order_no: order?.order_no ?? null,
+          product_name: order?.product_name_snapshot ?? null,
+          generation_status: r.generation_status,
+          error_code: r.error_code,
+          paid_at: order?.paid_at ?? null,
+          created_at: r.created_at,
+        };
+      })
+      .filter(isWaiting)
+      .sort((a, b) => (b.paid_at ?? "").localeCompare(a.paid_at ?? ""))
+      .slice(0, limit);
+  }
+
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("reports")
+    .select(
+      "id, order_id, generation_status, error_code, created_at, orders!inner(order_no, product_name_snapshot, paid_at)"
+    )
+    .eq("generation_status", "PENDING")
+    .eq("error_code", "WAITING_FOR_AI")
+    .not("orders.paid_at", "is", null)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error) throw error;
+
+  type Joined = {
+    id: string;
+    order_id: string;
+    generation_status: Report["generation_status"];
+    error_code: string | null;
+    created_at: string;
+    orders:
+      | {
+          order_no: string;
+          product_name_snapshot: string | null;
+          paid_at: string | null;
+        }
+      | {
+          order_no: string;
+          product_name_snapshot: string | null;
+          paid_at: string | null;
+        }[]
+      | null;
+  };
+
+  return ((data ?? []) as unknown as Joined[]).map((r) => {
+    const ord = Array.isArray(r.orders) ? r.orders[0] : r.orders;
+    return {
+      id: r.id,
+      order_id: r.order_id,
+      order_no: ord?.order_no ?? null,
+      product_name: ord?.product_name_snapshot ?? null,
+      generation_status: r.generation_status,
+      error_code: r.error_code,
+      paid_at: ord?.paid_at ?? null,
+      created_at: r.created_at,
+    };
+  });
+}

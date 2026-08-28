@@ -89,6 +89,8 @@ describe("PHASE 6.6 paid report guard (mock)", () => {
     process.env.AI_PROVIDER_FREE = "mock";
     process.env.AI_PROVIDER_PAID = "mock";
     process.env.PAYMENT_PROVIDER = "mock";
+    process.env.PAID_REPORT_GENERATION_ENABLED = "true";
+    process.env.PAID_CHECKOUT_ENABLED = "true";
     vi.restoreAllMocks();
   });
 
@@ -140,6 +142,7 @@ describe("PHASE 6.6 paid report guard (mock)", () => {
       orderId,
       runGeneration: true,
       forceRetry: true,
+      actor: "test",
     });
     expect(result.status).toBe("FAILED");
     const report = await getReportByOrderId(orderId);
@@ -165,13 +168,19 @@ describe("PHASE 6.6 paid report guard (mock)", () => {
     const result = await startPaidReportJob({
       orderId: created.order.id,
       runGeneration: true,
+      actor: "test",
     });
     expect(result.status).toBe("SKIPPED");
   });
 
   it("records AI cost on successful paid report", async () => {
     const { orderId } = await seedPaidOrder();
-    await startPaidReportJob({ orderId, runGeneration: true, forceRetry: true });
+    await startPaidReportJob({
+      orderId,
+      runGeneration: true,
+      forceRetry: true,
+      actor: "test",
+    });
 
     const report = await getReportByOrderId(orderId);
     expect(report?.generation_status).toBe("COMPLETED");
@@ -194,7 +203,12 @@ describe("PHASE 6.6 paid report guard (mock)", () => {
       .mockResolvedValue({ sent: 0, skipped: true });
 
     const { orderId } = await seedPaidOrder();
-    await startPaidReportJob({ orderId, runGeneration: true, forceRetry: true });
+    await startPaidReportJob({
+      orderId,
+      runGeneration: true,
+      forceRetry: true,
+      actor: "test",
+    });
 
     expect(notifySpy).toHaveBeenCalled();
     const order = await getOrderById(orderId);

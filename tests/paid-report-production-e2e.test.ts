@@ -324,8 +324,8 @@ describe("P5.1 pre-live customer safety", () => {
     const report = await getReportByOrderId(created.order.id);
     expect(order?.paid_at).toBeTruthy();
     expect(order?.status).toBe("PAID");
-    expect(report?.generation_status).toBe("FAILED");
-    expect(report?.error_code).toBe("PAID_REPORT_LIVE_DISABLED");
+    expect(report?.generation_status).toBe("PENDING");
+    expect(report?.error_code).toBe("WAITING_FOR_AI");
     expect(
       (report?.result_json as { generationMode?: string } | null)?.generationMode
     ).not.toBe("mock");
@@ -344,7 +344,7 @@ describe("P5.1 pre-live customer safety", () => {
         sourceResultId: free2.freeResultId,
         paymentMethod: "TOSS",
       })
-    ).rejects.toMatchObject({ code: "PAID_REPORT_LIVE_DISABLED" });
+    ).rejects.toMatchObject({ code: "PAID_CHECKOUT_DISABLED" });
   });
 
   it("CASE I: production customer + provider=mock → CUSTOMER_MOCK_PROVIDER_FORBIDDEN", () => {
@@ -352,7 +352,7 @@ describe("P5.1 pre-live customer safety", () => {
       resolvePaidProvider({ actor: "customer", requestedProvider: "mock" })
     ).toThrow(/CUSTOMER_MOCK_PROVIDER_FORBIDDEN/);
     expect(() => resolveEffectivePaidProviderForCustomer()).toThrow(
-      /PAID_REPORT_LIVE_DISABLED/
+      /PAID_GENERATION_DISABLED/
     );
   });
 
@@ -393,8 +393,9 @@ describe("P5.1 pre-live customer safety", () => {
     expect(adminRetry.status).toBe("COMPLETED");
   });
 
-  it("CASE K: live=true + paid key missing → PAID_AI_NOT_CONFIGURED, no mock", async () => {
+  it("CASE K: live=true + paid key missing → WAITING_FOR_AI, no mock", async () => {
     process.env.PAID_REPORT_LIVE_ENABLED = "true";
+    process.env.PAID_REPORT_GENERATION_ENABLED = "true";
     process.env.AI_PROVIDER_PAID = "gemini";
     process.env.ALLOW_PAID_QA_CHECKOUT = "1";
     delete process.env.GEMINI_API_KEY_PAID;
@@ -428,17 +429,16 @@ describe("P5.1 pre-live customer safety", () => {
     const report = await getReportByOrderId(created.order.id);
     expect(order?.paid_at).toBeTruthy();
     expect(order?.status).toBe("PAID");
-    expect(report?.generation_status).toBe("FAILED");
-    expect(report?.error_code).toBe("PAID_AI_NOT_CONFIGURED");
+    expect(report?.generation_status).toBe("PENDING");
+    expect(report?.error_code).toBe("WAITING_FOR_AI");
 
-    // Customer retry also must not fall back to mock
     const retried = await retryPaidReportGeneration({
       orderId: created.order.id,
       guestSessionId: guest,
     });
-    expect(retried.status).toBe("FAILED");
+    expect(retried.status).toBe("PENDING");
     const after = await getReportByOrderId(created.order.id);
-    expect(after?.error_code).toBe("PAID_AI_NOT_CONFIGURED");
+    expect(after?.error_code).toBe("WAITING_FOR_AI");
   });
 });
 

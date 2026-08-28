@@ -28,6 +28,7 @@
     "test:tarot": "vitest run tests/tarot-engine.test.ts",
     "verify:phase51-env": "node scripts/verify-phase51-env.cjs",
     "verify:prelive-env": "node scripts/verify-prelive-env.cjs",
+    "verify:zero-cost-production-env": "node scripts/verify-zero-cost-production-env.cjs",
     "verify:phase51-db": "node scripts/phase51-live-db.cjs",
     "env:local-from-supabase": "node scripts/write-local-env-from-supabase.cjs",
     "db:types": "supabase gen types typescript --local -o src/types/database.types.ts",

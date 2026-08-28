@@ -9,7 +9,8 @@ export type AdminNotificationKind =
   | "DEPOSIT_CHECK_REQUESTED"
   | "BANK_MATCH_AMBIGUOUS"
   | "BANK_MATCH_FAILED"
-  | "PAID_REPORT_FAILED";
+  | "PAID_REPORT_FAILED"
+  | "PAID_ORDER_CONFIRMED";
 
 export type AdminNotificationPayload = {
   kind: AdminNotificationKind;

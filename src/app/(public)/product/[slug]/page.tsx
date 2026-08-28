@@ -4,7 +4,7 @@ import { getProductBySlug } from "@/lib/repositories/products";
 import { getGuestSessionId } from "@/lib/guest/cookie";
 import { getFreeResultById } from "@/lib/repositories/free-results";
 import { getProfileById } from "@/lib/repositories/profiles";
-import { isPaidReportLiveEnabled } from "@/lib/ai/config";
+import { isPaidCheckoutEnabled } from "@/lib/ai/config";
 import { isKnownPaidFortuneProductSlug } from "@/lib/report/paid-report-kind";
 
 export async function generateMetadata({
@@ -51,11 +51,11 @@ export default async function ProductPage({
       ? tarotReadingId
       : null;
 
-  const paidLiveEnabled = isPaidReportLiveEnabled();
+  const checkoutEnabled = isPaidCheckoutEnabled();
   const purchaseBlocked =
     product.productType === "fortune" &&
     isKnownPaidFortuneProductSlug(product.slug) &&
-    !paidLiveEnabled;
+    !checkoutEnabled;
 
   return (
     <ProductDetail
