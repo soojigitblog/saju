@@ -11,6 +11,7 @@ import {
 } from "@/lib/ai/schemas/paid-report";
 import { validateHookQuality } from "@/lib/ai/validators/hook-quality";
 import { scorePaidReportQuality } from "@/lib/ai/validators/paid-quality";
+import { paidQualityV2Errors } from "@/lib/ai/validators/paid-quality-v2";
 import { AiEngineError } from "@/lib/ai/errors";
 
 export const FORBIDDEN_PREDICTION_PATTERNS: RegExp[] = [
@@ -42,6 +43,12 @@ export const FORBIDDEN_PREDICTION_PATTERNS: RegExp[] = [
   /결혼운\s*(이\s*)?(나쁘|없)/,
   /자식운\s*(이\s*)?없/,
   /성공하기\s*어렵/,
+  /팔자\s*(가|는|도)?\s*(세|사납|나쁘)/,
+  /사주\s*(가|는|도)?\s*(나쁘|나빠|험)/,
+  /배우자\s*복\s*(이\s*)?없/,
+  /부모\s*복\s*(이\s*)?없/,
+  /단명/,
+  /평생\s*(가난|불행)/,
   /~운\s*(이\s*)?없습니다/,
 ];
 
@@ -151,6 +158,16 @@ function hasDuplicateSentences(texts: string[]): boolean {
     seen.add(t);
   }
   return false;
+}
+
+function paidChartIdentityTokens(ctx: FortuneAiContext): string[][] {
+  // Stem + month pillar are stable, customer-facing chart anchors. Element
+  // counts can tie, so they remain a prompt requirement rather than a brittle
+  // hard rejection criterion at runtime.
+  // Readers naturally use either the Chinese stem (庚) or its Korean name
+  // (경금). Both identify the same chart; rejecting the latter causes good
+  // Korean reports to be regenerated for presentation rather than substance.
+  return [[ctx.dayMaster.stem, ctx.dayMaster.hangul], [ctx.pillars.month.ganji]];
 }
 
 export function validateFreeSemantics(
@@ -290,7 +307,7 @@ export function validateFreeSemantics(
 export function validatePaidSemantics(
   result: PaidFortuneReport,
   ctx: FortuneAiContext,
-  options?: { productSlug?: string | null }
+  options?: { productSlug?: string | null; requireConsultingDepth?: boolean }
 ): void {
   const errors: string[] = [];
   const required = requiredSectionKeysForProduct(options?.productSlug);
@@ -301,6 +318,23 @@ export function validatePaidSemantics(
 
   if (!result.signatureStatement?.trim()) {
     errors.push("missing signatureStatement");
+  }
+  const identityTokens = paidChartIdentityTokens(ctx);
+  const primarySection = result.sections[0];
+  const identityText = [
+    result.signatureStatement,
+    primarySection?.coreInsight ?? "",
+    primarySection?.shareableLine ?? "",
+  ].join("\n");
+  const missingIdentityAnchors = identityTokens.filter(
+    (aliases) => !aliases.some((token) => identityText.includes(token))
+  );
+  if (missingIdentityAnchors.length > 0) {
+    errors.push(
+      `paid primary insight is not chart-bound (missing: ${missingIdentityAnchors
+        .map((aliases) => aliases.join("/"))
+        .join(", ")})`
+    );
   }
   if (!result.finalSummary?.closingLine?.trim()) {
     errors.push("missing finalSummary.closingLine");
@@ -438,6 +472,14 @@ export function validatePaidSemantics(
       `quality gate fail score=${quality.score}: ${quality.errors
         .slice(0, 6)
         .join("; ")}`
+    );
+  }
+
+  if (result.reportKind !== "generic") {
+    errors.push(
+      ...paidQualityV2Errors(result, {
+        requireConsultingDepth: options?.requireConsultingDepth,
+      })
     );
   }
 

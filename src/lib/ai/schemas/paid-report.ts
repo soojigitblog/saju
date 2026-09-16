@@ -133,47 +133,47 @@ export const paidSectionKeySchema = z.enum([
 ]);
 
 export const paidSectionSchema = z.object({
-  id: z.string().min(1).max(60).optional(),
+  id: z.string().min(1).max(60).nullable().optional(),
   key: paidSectionKeySchema,
   title: z.string().min(1).max(60),
   /** Question this chapter must answer. */
-  question: z.string().min(1).max(120).optional(),
+  question: z.string().min(1).max(120).nullable().optional(),
   /** One non-generic core insight (not a template slogan). */
   coreInsight: z.string().min(1).max(220),
   /** PHASE P2: explicit interpretation field for downstream editorial/render use. */
-  coreInterpretation: z.string().min(1).max(260).optional(),
+  coreInterpretation: z.string().min(1).max(260).nullable().optional(),
   /** Domain-specific behavior scenes. */
   behaviorScenes: z.array(z.string().min(1).max(220)).min(1).max(5),
-  behaviorPossibilities: z.array(z.string().min(1).max(220)).max(5).optional(),
-  realLifeExamples: z.array(z.string().min(1).max(220)).max(5).optional(),
-  strengthSide: z.string().min(1).max(200).optional(),
-  shadowSide: z.string().min(1).max(200).optional(),
-  riskSide: z.string().min(1).max(200).optional(),
-  counterPattern: z.string().min(1).max(220).optional(),
-  triggerSituation: z.string().min(1).max(200).optional(),
-  triggerConditions: z.array(z.string().min(1).max(160)).max(5).optional(),
-  practicalMeaning: z.string().min(1).max(280).optional(),
-  actionAdvice: z.array(z.string().min(1).max(180)).max(5).optional(),
-  actionOptions: z.array(z.string().min(1).max(180)).max(5).optional(),
+  behaviorPossibilities: z.array(z.string().min(1).max(220)).max(5).nullable().optional(),
+  realLifeExamples: z.array(z.string().min(1).max(220)).max(5).nullable().optional(),
+  strengthSide: z.string().min(1).max(200).nullable().optional(),
+  shadowSide: z.string().min(1).max(200).nullable().optional(),
+  riskSide: z.string().min(1).max(200).nullable().optional(),
+  counterPattern: z.string().min(1).max(220).nullable().optional(),
+  triggerSituation: z.string().min(1).max(200).nullable().optional(),
+  triggerConditions: z.array(z.string().min(1).max(160)).max(5).nullable().optional(),
+  practicalMeaning: z.string().min(1).max(280).nullable().optional(),
+  actionAdvice: z.array(z.string().min(1).max(180)).max(5).nullable().optional(),
+  actionOptions: z.array(z.string().min(1).max(180)).max(5).nullable().optional(),
   /**
    * WHY paragraphs — unique per chapter.
    * Must explain the reading with specific Fortune Data, not boilerplate.
    */
   evidenceExplanation: z.array(z.string().min(1).max(280)).min(1).max(4),
-  takeaway: z.string().min(1).max(160).optional(),
+  takeaway: z.string().min(1).max(160).nullable().optional(),
   /** Evidence keys actually used for THIS chapter only. */
   evidence: z.array(z.string().min(1)).min(1).max(8),
-  evidenceAxisIds: z.array(z.string().min(1).max(40)).max(8).optional(),
-  confidence: z.enum(["low", "medium", "high"]).optional(),
-  shareableLine: z.string().min(1).max(140).optional(),
-  cautions: z.array(z.string().min(1).max(120)).max(4).optional(),
-  pullQuote: z.string().min(1).max(140).optional(),
+  evidenceAxisIds: z.array(z.string().min(1).max(40)).max(8).nullable().optional(),
+  confidence: z.enum(["low", "medium", "high"]).nullable().optional(),
+  shareableLine: z.string().min(1).max(140).nullable().optional(),
+  cautions: z.array(z.string().min(1).max(120)).max(4).nullable().optional(),
+  pullQuote: z.string().min(1).max(140).nullable().optional(),
   /** Connects this chapter to the previous narrative beat. */
-  narrativeBridge: z.string().min(1).max(200).optional(),
+  narrativeBridge: z.string().min(1).max(200).nullable().optional(),
   /** Only chapters with real insight value should set true (WHY budget). */
-  includeWhyBox: z.boolean().optional(),
+  includeWhyBox: z.boolean().nullable().optional(),
   /** Paradox / reversal insight for this chapter (optional). */
-  paradoxNote: z.string().min(1).max(220).optional(),
+  paradoxNote: z.string().min(1).max(220).nullable().optional(),
   // --- Consulting-grade optional depth (PHASE consulting) ---
   discoveryLevel: z.preprocess((v) => {
     if (v === undefined || v === null || v === "") return undefined;
@@ -188,7 +188,7 @@ export const paidSectionSchema = z.object({
       if (n === 1 || n === 2 || n === 3) return n;
     }
     return undefined;
-  }, z.union([z.literal(1), z.literal(2), z.literal(3)]).optional()),
+  }, z.union([z.literal(1), z.literal(2), z.literal(3)]).nullable().optional()),
   reactionChain: z
     .array(
       z.object({
@@ -198,13 +198,13 @@ export const paidSectionSchema = z.object({
     )
     .min(2)
     .max(8)
-    .optional(),
-  selfInterpretation: z.string().min(1).max(220).optional(),
-  outsideInterpretation: z.string().min(1).max(220).optional(),
+    .nullable().optional(),
+  selfInterpretation: z.string().min(1).max(220).nullable().optional(),
+  outsideInterpretation: z.string().min(1).max(220).nullable().optional(),
   /** How the person often misreads this pattern as a personality flaw. */
-  selfMisread: z.string().min(1).max(220).optional(),
+  selfMisread: z.string().min(1).max(220).nullable().optional(),
   /** Level 2–3 causal explanation beyond coreInsight. */
-  whyDeeper: z.string().min(1).max(480).optional(),
+  whyDeeper: z.string().min(1).max(480).nullable().optional(),
 });
 
 /** Cross-domain bridge (Total consulting). */
@@ -226,7 +226,7 @@ export const paidMonthlyOutlookSchema = z.object({
   title: z.string().min(1).max(40),
   summary: z.string().min(1).max(120),
   detail: z.string().min(1).max(600),
-  focus: z.array(z.string().min(1).max(20)).max(4).optional(),
+  focus: z.array(z.string().min(1).max(20)).max(4).nullable().optional(),
 });
 
 export const paidContradictionSchema = z.object({
@@ -237,7 +237,7 @@ export const paidContradictionSchema = z.object({
   downside: z.string().min(1).max(160),
   whenStronger: z.string().min(1).max(160),
   /** Downstream result others may misread. */
-  result: z.string().min(1).max(220).optional(),
+  result: z.string().min(1).max(220).nullable().optional(),
   evidence: z.array(z.string().min(1)).min(1).max(6),
 });
 
@@ -245,7 +245,7 @@ export const paidStrengthShadowSchema = z.object({
   strength: z.string().min(1).max(80),
   overuse: z.string().min(1).max(160),
   problem: z.string().min(1).max(160),
-  balancePoint: z.string().min(1).max(180).optional(),
+  balancePoint: z.string().min(1).max(180).nullable().optional(),
   evidence: z.array(z.string().min(1)).min(1).max(5),
 });
 
@@ -264,7 +264,7 @@ export const paidProfileScaleSchema = z.object({
 
 export const paidActionItemSchema = z.object({
   domain: z.enum(["money", "work", "relationship", "self", "general"]),
-  when: z.string().min(1).max(160).optional(),
+  when: z.string().min(1).max(160).nullable().optional(),
   what: z.string().min(1).max(160),
   why: z.string().min(1).max(160),
   how: z.string().min(1).max(200),
@@ -274,14 +274,14 @@ export const paidFinalSummarySchema = z.object({
   /** Money: 강점2 / 주의2 / 습관2 / 유지2 — Total: flexible */
   strengths: z.array(z.string().min(1).max(140)).min(2).max(3),
   cautions: z.array(z.string().min(1).max(140)).min(2).max(3),
-  changeHabits: z.array(z.string().min(1).max(140)).min(2).max(3).optional(),
-  keepHabits: z.array(z.string().min(1).max(140)).min(2).max(3).optional(),
+  changeHabits: z.array(z.string().min(1).max(140)).min(2).max(3).nullable().optional(),
+  keepHabits: z.array(z.string().min(1).max(140)).min(2).max(3).nullable().optional(),
   closingLine: z.string().min(1).max(180),
   /** V4: Final portrait narrative (3–5 sentences). */
-  portraitNarrative: z.array(z.string().min(1).max(220)).min(2).max(5).optional(),
-  keepItems: z.array(z.string().min(1).max(120)).max(4).optional(),
-  watchItems: z.array(z.string().min(1).max(120)).max(4).optional(),
-  useItems: z.array(z.string().min(1).max(120)).max(4).optional(),
+  portraitNarrative: z.array(z.string().min(1).max(220)).min(2).max(5).nullable().optional(),
+  keepItems: z.array(z.string().min(1).max(120)).max(4).nullable().optional(),
+  watchItems: z.array(z.string().min(1).max(120)).max(4).nullable().optional(),
+  useItems: z.array(z.string().min(1).max(120)).max(4).nullable().optional(),
 });
 
 export const paidBlueprintSchema = z.object({
@@ -295,16 +295,16 @@ export const paidBlueprintSchema = z.object({
 
 export const paidFortuneReportSchema = z.object({
   title: z.string().min(1).max(80),
-  reportVersion: z.enum(["v2", "v3", "v4"]).optional(),
-  interpretationVersion: z.string().min(1).max(24).optional(),
-  reportKind: z.enum(["money", "total", "career", "love", "generic"]).optional(),
+  reportVersion: z.enum(["v2", "v3", "v4"]).nullable().optional(),
+  interpretationVersion: z.string().min(1).max(24).nullable().optional(),
+  reportKind: z.enum(["money", "total", "career", "love", "generic"]).nullable().optional(),
   signatureStatement: z.string().min(1).max(220),
-  freeBridge: z.string().min(1).max(220).optional(),
+  freeBridge: z.string().min(1).max(220).nullable().optional(),
   executiveSummary: z.string().min(1).max(600),
   /** Page-2 dashboard items (money profile or core profile). */
   profileDashboard: z.array(paidProfileItemSchema).min(4).max(10),
   /** Money product: rule-based qualitative scales (no arbitrary scores). */
-  profileScales: z.array(paidProfileScaleSchema).min(3).max(6).optional(),
+  profileScales: z.array(paidProfileScaleSchema).min(3).max(6).nullable().optional(),
   fiveElementsSnapshot: z
     .array(
       z.object({
@@ -316,26 +316,26 @@ export const paidFortuneReportSchema = z.object({
     .length(5),
   keywords: z.array(z.string().min(1).max(20)).min(3).max(8),
   /** Total only: 사주 설계도 3단 설명 */
-  blueprint: paidBlueprintSchema.optional(),
+  blueprint: paidBlueprintSchema.nullable().optional(),
   sections: z.array(paidSectionSchema).min(6).max(14),
-  contradictions: z.array(paidContradictionSchema).max(6).optional(),
-  strengthShadows: z.array(paidStrengthShadowSchema).max(5).optional(),
+  contradictions: z.array(paidContradictionSchema).max(6).nullable().optional(),
+  strengthShadows: z.array(paidStrengthShadowSchema).max(5).nullable().optional(),
   /** Total consulting: domain-to-domain discovery bridges. */
-  crossDomainLinks: z.array(paidCrossDomainLinkSchema).max(8).optional(),
+  crossDomainLinks: z.array(paidCrossDomainLinkSchema).max(8).nullable().optional(),
   /** Total consulting: repeated start→reaction→result chains. */
-  patternChains: z.array(paidPatternChainSchema).max(6).optional(),
+  patternChains: z.array(paidPatternChainSchema).max(6).nullable().optional(),
   /** Total: “이런 장면, 익숙하지 않나요?” spread (6~10). */
-  lifeScenes: z.array(z.string().min(1).max(220)).max(12).optional(),
+  lifeScenes: z.array(z.string().min(1).max(220)).max(12).nullable().optional(),
   actionItems: z.array(paidActionItemSchema).min(5).max(12),
   finalSummary: paidFinalSummarySchema,
-  shareableInsights: z.array(z.string().min(1).max(140)).max(8).optional(),
-  possibleNextQuestions: z.array(z.string().min(1).max(180)).max(8).optional(),
+  shareableInsights: z.array(z.string().min(1).max(140)).max(8).nullable().optional(),
+  possibleNextQuestions: z.array(z.string().min(1).max(180)).max(8).nullable().optional(),
   evidence: z.array(z.string().min(1)).min(1).max(16),
   disclaimer: z.string().min(1),
   /** Engine scope — report 말미 1회만 (대운·세운 등). */
-  scopeNotes: z.string().min(1).max(600).optional(),
+  scopeNotes: z.string().min(1).max(600).nullable().optional(),
   /** Legacy optional — must not invent 대운/세운 destiny. */
-  monthlyOutlook: z.array(paidMonthlyOutlookSchema).length(12).optional(),
+  monthlyOutlook: z.array(paidMonthlyOutlookSchema).length(12).nullable().optional(),
 });
 
 export type PaidFortuneReport = z.infer<typeof paidFortuneReportSchema>;
@@ -349,6 +349,144 @@ export type PaidCrossDomainLink = z.infer<typeof paidCrossDomainLinkSchema>;
 export type PaidPatternChain = z.infer<typeof paidPatternChainSchema>;
 
 export const paidFortuneReportStrictSchema = paidFortuneReportSchema;
+
+/**
+ * Contract used only for a live LLM response. Stored legacy/mock reports may
+ * omit editorial enrichment, but a customer-paid generation must provide it
+ * rather than relying on a best-effort prompt.
+ */
+export const paidFortuneReportLiveAiSchema = paidFortuneReportSchema.extend({
+  reportVersion: z.enum(["v2", "v3", "v4"]),
+  reportKind: paidProductKindSchema,
+  sections: z.array(
+    paidSectionSchema.extend({
+      evidenceAxisIds: z.array(z.string().min(1).max(40)).min(2).max(8),
+      shareableLine: z.string().min(1).max(140),
+      counterPattern: z.string().min(1).max(220),
+      whyDeeper: z.string().min(40).max(480),
+      reactionChain: z.array(z.object({
+        label: z.string().min(1).max(40),
+        text: z.string().min(1).max(160),
+      })).min(4).max(8),
+      selfMisread: z.string().min(12).max(220),
+    })
+  ).min(6).max(14),
+  shareableInsights: z.array(z.string().min(1).max(140)).min(3).max(8),
+  possibleNextQuestions: z.array(z.string().min(1).max(180)).min(3).max(8),
+  scopeNotes: z.string().min(1).max(600),
+});
+
+/** Lean Total response: retain customer value fields, omit unused editorial variants. */
+const paidTotalLiveSectionSchema = z.object({
+  key: paidSectionKeySchema,
+  title: z.string().min(1).max(60),
+  coreInsight: z.string().min(1).max(220),
+  behaviorScenes: z.array(z.string().min(1).max(220)).min(1).max(2),
+  evidenceExplanation: z.array(z.string().min(1).max(280)).min(1).max(2),
+  evidence: z.array(z.string().min(1)).min(1).max(5),
+  evidenceAxisIds: z.array(z.string().min(1).max(40)).min(2).max(4),
+  shareableLine: z.string().min(1).max(140),
+  counterPattern: z.string().min(1).max(220),
+  discoveryLevel: z.union([z.literal(1), z.literal(2), z.literal(3)]).nullable().optional(),
+  whyDeeper: z.string().min(40).max(360).nullable().optional(),
+  reactionChain: z.array(z.object({
+    label: z.string().min(1).max(40),
+    text: z.string().min(1).max(160),
+  })).min(4).max(6).nullable().optional(),
+  selfMisread: z.string().min(12).max(220).nullable().optional(),
+});
+
+/** Live schema with the exact chapter count promised by each paid product. */
+export function paidFortuneReportLiveAiSchemaForProduct(kind: PaidProductKind) {
+  if (kind === "love") {
+    return paidFortuneReportSchema.pick({
+      title: true,
+      reportVersion: true,
+      reportKind: true,
+      signatureStatement: true,
+      executiveSummary: true,
+      profileDashboard: true,
+      fiveElementsSnapshot: true,
+      keywords: true,
+      sections: true,
+      strengthShadows: true,
+      actionItems: true,
+      finalSummary: true,
+      shareableInsights: true,
+      possibleNextQuestions: true,
+      evidence: true,
+      disclaimer: true,
+      scopeNotes: true,
+    }).extend({
+      reportVersion: z.enum(["v2", "v3", "v4"]),
+      reportKind: paidProductKindSchema,
+      sections: z.array(paidTotalLiveSectionSchema).min(10).max(14),
+      strengthShadows: z.array(paidStrengthShadowSchema).min(2).max(5),
+      shareableInsights: z.array(z.string().min(1).max(140)).min(3).max(8),
+      possibleNextQuestions: z.array(z.string().min(1).max(180)).min(3).max(8),
+      scopeNotes: z.string().min(1).max(600),
+    });
+  }
+  if (kind === "total") {
+    // A total report needs five consulting-depth discoveries, not nine copies
+    // of the same reaction template. Keeping supporting chapters editorial
+    // makes the paid result both more readable and timely to fulfill.
+    return paidFortuneReportSchema.pick({
+      title: true,
+      reportVersion: true,
+      reportKind: true,
+      signatureStatement: true,
+      executiveSummary: true,
+      profileDashboard: true,
+      fiveElementsSnapshot: true,
+      keywords: true,
+      blueprint: true,
+      sections: true,
+      contradictions: true,
+      strengthShadows: true,
+      crossDomainLinks: true,
+      patternChains: true,
+      actionItems: true,
+      finalSummary: true,
+      shareableInsights: true,
+      possibleNextQuestions: true,
+      evidence: true,
+      disclaimer: true,
+      scopeNotes: true,
+    }).extend({
+      reportVersion: z.enum(["v2", "v3", "v4"]),
+      reportKind: paidProductKindSchema,
+      sections: z.array(paidTotalLiveSectionSchema).min(9).max(14),
+      shareableInsights: z.array(z.string().min(1).max(140)).min(3).max(8),
+      possibleNextQuestions: z.array(z.string().min(1).max(180)).min(3).max(8),
+      scopeNotes: z.string().min(1).max(600),
+      blueprint: paidBlueprintSchema,
+      contradictions: z.array(paidContradictionSchema).min(2).max(6),
+      strengthShadows: z.array(paidStrengthShadowSchema).min(3).max(5),
+      crossDomainLinks: z.array(paidCrossDomainLinkSchema).min(4).max(8),
+      patternChains: z.array(paidPatternChainSchema).min(3).max(6),
+      finalSummary: paidFinalSummarySchema.extend({
+        portraitNarrative: z.array(z.string().min(1).max(220)).min(2).max(5),
+      }),
+    });
+  }
+  const minSections = kind === "career" || kind === "love" ? 10 : kind === "total" ? 9 : 6;
+  return paidFortuneReportLiveAiSchema.extend({
+    sections: z.array(
+      paidSectionSchema.extend({
+        evidenceAxisIds: z.array(z.string().min(1).max(40)).min(2).max(8),
+        shareableLine: z.string().min(1).max(140),
+        counterPattern: z.string().min(1).max(220),
+        whyDeeper: z.string().min(40).max(480),
+        reactionChain: z.array(z.object({
+          label: z.string().min(1).max(40),
+          text: z.string().min(1).max(160),
+        })).min(4).max(8),
+        selfMisread: z.string().min(12).max(220),
+      })
+    ).min(minSections).max(14),
+  });
+}
 
 export const MONEY_SECTION_KEYS: PaidSectionKey[] = [
   "money_v4_structure",

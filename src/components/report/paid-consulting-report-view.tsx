@@ -16,6 +16,7 @@ export type PaidConsultingReportViewProps = {
   headline: string;
   summary: string;
   accessToken?: string | null;
+  testMode?: boolean;
 };
 
 export function PaidConsultingReportView({
@@ -26,6 +27,7 @@ export function PaidConsultingReportView({
   headline,
   summary,
   accessToken,
+  testMode = false,
 }: PaidConsultingReportViewProps) {
   const accessQuery = accessToken
     ? `?access=${encodeURIComponent(accessToken)}`
@@ -52,6 +54,12 @@ export function PaidConsultingReportView({
         <p className="mt-2 text-xs text-[var(--text-muted)]">
           주문번호 {orderNo}
         </p>
+        {testMode ? (
+          <p className="mt-3 text-xs leading-relaxed text-[var(--text-muted)]">
+            토스 테스트 결제 결과입니다. 본문 품질은 샌드박스용이며 운영 Gemini
+            유료 리포트와 다릅니다.
+          </p>
+        ) : null}
 
         <OrnamentCard density="corners" className="mt-8 p-6">
           <p className="text-xs tracking-[0.2em] text-[var(--gold-primary)]">

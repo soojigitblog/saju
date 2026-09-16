@@ -54,6 +54,7 @@ describe("PHASE 6.2 bank transfer E2E (mock)", () => {
     resetMockFreeFlowState();
     process.env.AI_PROVIDER = "mock";
     process.env.BANK_PROVIDER = "mock";
+    process.env.ALLOW_PAID_QA_CHECKOUT = "1";
     process.env.BANK_TRANSFER_ACCOUNT_NUMBER = "123-456789-01234";
     process.env.BANK_TRANSFER_ACCOUNT_HOLDER = "운의결";
     getMockHanaBankProvider().clear();

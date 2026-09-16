@@ -3,7 +3,7 @@ import "server-only";
 import type { z } from "zod";
 import { zodTextFormat } from "openai/helpers/zod";
 import { getOpenAIClient } from "@/lib/ai/client";
-import { getAiMaxRetries } from "@/lib/ai/config";
+import { getAiMaxRetries, type AiBillingTier } from "@/lib/ai/config";
 import { AiEngineError } from "@/lib/ai/errors";
 import type { StructuredGenerationResult } from "@/lib/ai/types";
 
@@ -28,6 +28,13 @@ function mapOpenAiError(error: unknown): AiEngineError {
   const requestId = anyErr.request_id;
 
   if (status === 429) {
+    if (/insufficient_quota|credit_balance_exhausted|no credits remaining/i.test(message)) {
+      return new AiEngineError("OPENAI_INSUFFICIENT_CREDITS", message, {
+        retryable: false,
+        providerRequestId: requestId,
+        cause: error,
+      });
+    }
     return new AiEngineError("OPENAI_RATE_LIMIT", message, {
       retryable: true,
       providerRequestId: requestId,
@@ -50,7 +57,7 @@ function mapOpenAiError(error: unknown): AiEngineError {
       cause: error,
     });
   }
-  if (/timeout|ETIMEDOUT|AbortError/i.test(message)) {
+  if (/timeout|timed out|ETIMEDOUT|AbortError|connection error|fetch failed|ECONNRESET|ECONNREFUSED/i.test(message)) {
     return new AiEngineError("OPENAI_TIMEOUT", message, {
       retryable: true,
       providerRequestId: requestId,
@@ -71,8 +78,10 @@ export async function generateStructuredResult<T extends z.ZodType>(input: {
   userPrompt: string;
   schema: T;
   schemaName: string;
+  tier?: AiBillingTier;
+  maxOutputTokens?: number;
 }): Promise<StructuredGenerationResult<z.infer<T>>> {
-  const client = getOpenAIClient();
+  const client = getOpenAIClient(input.tier ?? "free");
   const maxRetries = getAiMaxRetries();
   let attempt = 0;
   let lastError: AiEngineError | null = null;
@@ -89,13 +98,17 @@ export async function generateStructuredResult<T extends z.ZodType>(input: {
         text: {
           format: zodTextFormat(input.schema, input.schemaName),
         },
+        ...(input.maxOutputTokens
+          ? { max_output_tokens: input.maxOutputTokens }
+          : {}),
       });
 
       const parsed = response.output_parsed;
       if (parsed == null) {
+        const incompleteReason = response.incomplete_details?.reason;
         throw new AiEngineError(
           "STRUCTURED_PARSE_FAILED",
-          "Structured output missing output_parsed",
+          `Structured output missing output_parsed${incompleteReason ? ` (${incompleteReason})` : ""}`,
           {
             retryable: false,
             providerRequestId: response.id,

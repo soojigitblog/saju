@@ -38,7 +38,7 @@ export function getAIProvider(
     case "gemini":
       return new GeminiProvider(tier);
     case "openai":
-      return new OpenAIProvider();
+      return new OpenAIProvider(tier);
     case "mock":
       throw new AiEngineError(
         "CONFIGURATION_ERROR",

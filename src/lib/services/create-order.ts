@@ -8,9 +8,11 @@ import {
   createGuestOrder,
   findReusablePendingOrder,
   toOrderPublicDTO,
+  updateOrder,
   type OrderPublicDTO,
 } from "@/lib/repositories/orders";
 import { createOrderNo } from "@/lib/orders/order-no";
+import { createOrderAccessToken } from "@/lib/orders/access-token";
 import { assertPaymentMutationRateLimit } from "@/lib/payments/rate-limit";
 import { trackEvent } from "@/lib/repositories/analytics";
 import { normalizeDepositorName } from "@/lib/bank/hana/transaction-normalizer";
@@ -19,10 +21,13 @@ import {
   isBankTransferAccountConfigured,
 } from "@/lib/bank/account-public";
 import {
-  isPaidCheckoutEnabled,
   isInternalQaCheckoutExecutionAllowed,
   isAdminQaSeedExecutionAllowed,
 } from "@/lib/ai/config";
+import {
+  isCustomerPaidCheckoutOpen,
+  isTossCheckoutAllowed,
+} from "@/lib/payments/checkout-policy";
 import { isKnownPaidFortuneProductSlug } from "@/lib/report/paid-report-kind";
 
 export type CreateOrderResult = {
@@ -31,6 +36,8 @@ export type CreateOrderResult = {
   waitUrl: string;
   reused: boolean;
   bankAccount: ReturnType<typeof getBankTransferPublicAccount> | null;
+  /** Raw access token issued once. Never stored; hash only on the order. */
+  accessToken: string | null;
 };
 
 function bankTransferTtlHours(): number {
@@ -40,7 +47,7 @@ function bankTransferTtlHours(): number {
 
 /**
  * Server-only order creation.
- * Default payment method: BANK_TRANSFER (Toss preserved, UI-hidden for now).
+ * Default payment method: BANK_TRANSFER unless the client sends TOSS.
  * Client amount/price is never trusted.
  */
 export async function createOrderForGuest(input: {
@@ -68,17 +75,12 @@ export async function createOrderForGuest(input: {
   });
 
   const paymentMethod = input.paymentMethod ?? "BANK_TRANSFER";
-  if (paymentMethod === "TOSS") {
-    const tossAllowed =
-      process.env.ALLOW_TOSS_CHECKOUT === "1" ||
-      process.env.NODE_ENV === "test";
-    if (!tossAllowed) {
-      throw new FreeFlowError(
-        "PAYMENT_METHOD_UNAVAILABLE",
-        "카드 결제는 준비 중입니다. 계좌이체를 이용해 주세요.",
-        400
-      );
-    }
+  if (paymentMethod === "TOSS" && !isTossCheckoutAllowed()) {
+    throw new FreeFlowError(
+      "PAYMENT_METHOD_UNAVAILABLE",
+      "카드 결제는 준비 중입니다. 계좌이체를 이용해 주세요.",
+      400
+    );
   }
 
   let depositor = "";
@@ -132,15 +134,16 @@ export async function createOrderForGuest(input: {
   // product_type tarot_paid is purchasable (Paid Saju×Tarot)
 
   // Pre-live: block customer checkout. QA only via test gate or admin-authenticated seed.
-  const isPaidFortune =
-    product.productType === "fortune" &&
-    isKnownPaidFortuneProductSlug(product.slug);
+  const isPaidSaleProduct =
+    (product.productType === "fortune" &&
+      isKnownPaidFortuneProductSlug(product.slug)) ||
+    product.productType === "tarot_paid";
   const qaCheckoutPermitted =
     (input.internalQaCheckout === true &&
       isInternalQaCheckoutExecutionAllowed()) ||
     (input.adminAuthenticatedCheckout === true &&
       isAdminQaSeedExecutionAllowed());
-  if (isPaidFortune && !isPaidCheckoutEnabled() && !qaCheckoutPermitted) {
+  if (isPaidSaleProduct && !isCustomerPaidCheckoutOpen() && !qaCheckoutPermitted) {
     throw new FreeFlowError(
       "PAID_CHECKOUT_DISABLED",
       "현재 최종 점검 중입니다. 유료 리포트 판매는 잠시 후 오픈됩니다.",
@@ -170,18 +173,28 @@ export async function createOrderForGuest(input: {
   });
 
   if (reusable && reusable.payment_method === paymentMethod) {
+    let reusedAccessToken: string | null = null;
+    if (paymentMethod === "BANK_TRANSFER" && !reusable.access_token_hash) {
+      const issued = createOrderAccessToken();
+      await updateOrder(reusable.id, { access_token_hash: issued.tokenHash });
+      reusedAccessToken = issued.rawToken;
+    }
     return {
       order: toOrderPublicDTO(reusable),
       checkoutUrl:
         paymentMethod === "BANK_TRANSFER"
           ? `/payment/bank/${reusable.id}`
           : `/checkout/${reusable.id}`,
-      waitUrl: `/payment/bank/${reusable.id}`,
+      waitUrl:
+        paymentMethod === "BANK_TRANSFER"
+          ? `/payment/bank/${reusable.id}`
+          : `/checkout/${reusable.id}`,
       reused: true,
       bankAccount:
         paymentMethod === "BANK_TRANSFER"
           ? getBankTransferPublicAccount()
           : null,
+      accessToken: reusedAccessToken,
     };
   }
 
@@ -191,6 +204,9 @@ export async function createOrderForGuest(input: {
           Date.now() + bankTransferTtlHours() * 60 * 60 * 1000
         ).toISOString()
       : null;
+
+  const bankAccess =
+    paymentMethod === "BANK_TRANSFER" ? createOrderAccessToken() : null;
 
   const order = await createGuestOrder({
     order_no: createOrderNo(),
@@ -207,6 +223,7 @@ export async function createOrderForGuest(input: {
     depositor_name_normalized: depositorNormalized,
     expires_at: expiresAt,
     status: "PENDING",
+    access_token_hash: bankAccess?.tokenHash ?? null,
   });
 
   try {
@@ -234,11 +251,15 @@ export async function createOrderForGuest(input: {
       paymentMethod === "BANK_TRANSFER"
         ? `/payment/bank/${order.id}`
         : `/checkout/${order.id}`,
-    waitUrl: `/payment/bank/${order.id}`,
+    waitUrl:
+      paymentMethod === "BANK_TRANSFER"
+        ? `/payment/bank/${order.id}`
+        : `/checkout/${order.id}`,
     reused: false,
     bankAccount:
       paymentMethod === "BANK_TRANSFER"
         ? getBankTransferPublicAccount()
         : null,
+    accessToken: bankAccess?.rawToken ?? null,
   };
 }

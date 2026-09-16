@@ -1,5 +1,7 @@
 import "server-only";
 
+import { isTossTestSandboxCheckoutAllowed } from "@/lib/payments/toss-sandbox";
+
 /**
  * AI provider / model configuration.
  * Models are never hardcoded at call sites — read from here / env.
@@ -146,13 +148,18 @@ export function isPaidPreliveQaCheckoutAllowed(): boolean {
 }
 
 /**
- * Customer paid provider — NEVER returns mock.
+ * Customer paid provider — NEVER returns mock in production. Toss TEST
+ * sandbox may use mock so checkout can complete its isolated acceptance flow.
  *
- * generation=false → PAID_GENERATION_DISABLED
+ * generation=false → PAID_GENERATION_DISABLED (unless Toss TEST sandbox)
  * generation=true + gemini + no key → PAID_AI_NOT_CONFIGURED (via assert)
  */
 export function resolveEffectivePaidProviderForCustomer(): AiProviderName {
   if (!isPaidReportGenerationEnabled()) {
+    if (isTossTestSandboxCheckoutAllowed()) {
+      assertMockAllowed();
+      return "mock";
+    }
     throw new Error("PAID_GENERATION_DISABLED");
   }
   const provider = resolveAiProviderForPaid();
@@ -407,8 +414,8 @@ export function getAiMaxRetries(): number {
 /** Cap paid report output tokens — prevents runaway generation cost. */
 export function getPaidReportMaxOutputTokens(): number {
   const raw = process.env.PAID_REPORT_MAX_OUTPUT_TOKENS?.trim();
-  const n = raw ? Number(raw) : 12_288;
-  return Number.isFinite(n) && n > 0 ? Math.min(Math.floor(n), 65536) : 12_288;
+  const n = raw ? Number(raw) : 7_000;
+  return Number.isFinite(n) && n > 0 ? Math.min(Math.floor(n), 65536) : 7_000;
 }
 
 /** USD per 1M tokens — override via env for billing updates. */

@@ -108,8 +108,8 @@ export async function fulfillBankMatch(input: {
   }
 
   const paidAt = new Date().toISOString();
-  const { rawToken: _token, tokenHash } = createOrderAccessToken();
-  void _token;
+  const tokenHash =
+    order.access_token_hash ?? createOrderAccessToken().tokenHash;
 
   const { payment, created } = await createPaymentIdempotent({
     order_id: order.id,

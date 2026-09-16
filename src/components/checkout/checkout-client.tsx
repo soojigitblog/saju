@@ -159,6 +159,11 @@ export function CheckoutClient({ checkout }: Props) {
         <p className="mt-2 text-sm text-[var(--text-secondary)]">
           결제를 완료하면 당신의 사주 데이터를 기반으로 개인 리포트가 생성됩니다.
         </p>
+        {checkout.testMode ? (
+          <p className="mt-3 text-xs leading-relaxed text-[var(--text-muted)]">
+            토스 테스트 결제입니다. 테스트 카드로 결제되며 실제 정산 매출이 아닙니다.
+          </p>
+        ) : null}
 
         <OrnamentCard density="corners" className="mt-8 p-5">
           <p className="text-sm text-[var(--text-muted)]">선택 상품</p>

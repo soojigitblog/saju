@@ -20,7 +20,9 @@ function withDepth(
     whyDeeper: string;
   }
 ): PaidSection {
-  return { ...s, ...patch };
+  const hook = (s.shareableLine ?? s.coreInterpretation ?? s.coreInsight ?? "").trim();
+  const whyDeeper = `${hook} ${patch.whyDeeper}`.replace(/\s+/g, " ").trim().slice(0, 480);
+  return { ...s, ...patch, whyDeeper };
 }
 
 function moneyEnrich(report: PaidFortuneReport): PaidFortuneReport {
@@ -30,7 +32,7 @@ function moneyEnrich(report: PaidFortuneReport): PaidFortuneReport {
       return withDepth(s, {
         discoveryLevel: 3,
         whyDeeper:
-          "큰 지출에서는 ‘허용 범위’를 먼저 정하려 하고, 작은 반복에서는 ‘나중에 보면 되겠지’가 쉽게 열립니다. 그래서 큰돈은 막히는데 한 달 뒤 통장에서는 작은 구멍들이 먼저 눈에 띕니다.",
+          `${s.coreInsight} 그래서 겉으로는 한 가지 타입처럼 보여도, 실제 누수는 다른 크기·속도에서 생깁니다.`,
         reactionChain: [
           { label: "TRIGGER", text: "큰 결정과 작은 반복이 같은 주에 섞임" },
           { label: "FIRST", text: "큰 항목부터 허용 범위를 적어 둠" },

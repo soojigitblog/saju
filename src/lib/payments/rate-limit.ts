@@ -5,12 +5,18 @@ import "server-only";
  * Idempotent confirm refreshes should stay under the limit.
  */
 export function assertPaymentMutationRateLimit(input: {
-  bucket: "order_create" | "payment_confirm";
+  bucket: "order_create" | "payment_confirm" | "access_restore";
   guestSessionId: string;
   limit?: number;
   windowMs?: number;
 }): void {
-  const limit = input.limit ?? (input.bucket === "order_create" ? 20 : 60);
+  const limit =
+    input.limit ??
+    (input.bucket === "order_create"
+      ? 20
+      : input.bucket === "access_restore"
+        ? 10
+        : 60);
   const windowMs = input.windowMs ?? 60_000;
   const key = `${input.bucket}:${input.guestSessionId}`;
   const now = Date.now();

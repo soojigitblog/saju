@@ -20,7 +20,7 @@ function sleep(ms: number) {
  */
 export async function withValidationRetry<T>(
   run: () => Promise<T>,
-  options?: { maxRetries?: number }
+  options?: { maxRetries?: number; onRetry?: (error: unknown) => void }
 ): Promise<T> {
   const maxRetries = options?.maxRetries ?? Math.min(1, getAiMaxRetries());
   let attempt = 0;
@@ -36,6 +36,7 @@ export async function withValidationRetry<T>(
       if (!regenerable || attempt >= maxRetries) {
         throw error;
       }
+      options?.onRetry?.(error);
       await sleep(Math.min(400 * 2 ** attempt, 2000));
       attempt += 1;
     }

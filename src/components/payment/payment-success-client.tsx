@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { MysticPage } from "@/components/mystic/celestial-background";
 import { OrnamentCard } from "@/components/mystic/ornament-card";
 import { trackClientEvent } from "@/lib/analytics/client";
+import { saveOrderAccessToken } from "@/lib/orders/client-access-token";
 
 type Phase =
   | "confirming"
@@ -136,14 +137,7 @@ export function PaymentSuccessClient() {
         setReportId(data.reportId ?? null);
 
         if (data.accessToken && data.orderId) {
-          try {
-            sessionStorage.setItem(
-              `order_access:${data.orderId}`,
-              data.accessToken
-            );
-          } catch {
-            /* ignore */
-          }
+          saveOrderAccessToken(data.orderId, data.accessToken);
         }
 
         trackClientEvent({

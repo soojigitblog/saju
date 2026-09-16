@@ -22,6 +22,18 @@ function fiveSnapshot(ctx: FortuneAiContext) {
   ];
 }
 
+function chartElementEvidence(ctx: FortuneAiContext) {
+  const rows = fiveSnapshot(ctx);
+  const dominant = [...rows].sort((a, b) => b.count - a.count)[0]!;
+  const scarce = [...rows].sort((a, b) => a.count - b.count)[0]!;
+  const second = [...rows].sort((a, b) => b.count - a.count)[1]!;
+  return {
+    dominant: `fiveElements.${dominant.key}`,
+    second: `fiveElements.${second.key}`,
+    scarce: `fiveElements.${scarce.key}`,
+  };
+}
+
 function section(
   key: PaidSection["key"],
   input: Omit<PaidSection, "key" | "title" | "coreInsight" | "behaviorScenes" | "evidenceExplanation" | "evidence"> & {
@@ -78,6 +90,7 @@ export function buildMockPaidResultDeep(
   const kind: PaidProductKind =
     /money/i.test(slug) ? "money" : /career|job/i.test(slug) ? "career" : /love/i.test(slug) ? "love" : /total/i.test(slug) ? "total" : "generic";
   const v2 = buildInterpretationContextV2(ctx, options?.chart);
+  const fe = chartElementEvidence(ctx);
   const dm = `${ctx.dayMaster.stem}(${ctx.dayMaster.hangul})`;
   const moneyCard = pickCard(v2, "money-threshold");
   const workCard = pickCard(v2, "work-environment");
@@ -100,11 +113,10 @@ export function buildMockPaidResultDeep(
       section("money_v4_structure", {
         title: "내 돈의 기본 구조",
         question: "돈을 볼 때 가장 먼저 읽히는 축은 무엇인가요?",
-        coreInsight: "이 명식의 재물 해석은 단순 절약형이 아니라, 큰 흐름은 지키고 작은 반복에서 틈이 생길 수 있는 구조로 읽는 쪽이 더 맞습니다.",
+        coreInsight: moneyCard.coreInterpretation,
         behaviorScenes: [
-          "큰 금액은 기준을 먼저 세운 뒤 결론을 내리는 식으로 나타날 수 있습니다.",
-          "반복 결제는 금액이 작을수록 체감보다 늦게 잡힐 수 있습니다.",
-          "정산 문장이 없는 상황에서는 금액보다 찜찜함이 먼저 커질 수 있습니다.",
+          ...(moneyCard.behaviorPossibilities ?? []).slice(0, 2),
+          ...(moneyCard.realLifeExamples ?? []).slice(0, 1),
         ],
         evidenceExplanation: [
           `${dm} 일간과 오행 분포를 함께 보면, 돈 판단의 중심은 즉흥보다 기준 정리에 가깝습니다.`,
@@ -123,7 +135,7 @@ export function buildMockPaidResultDeep(
         confidence: moneyCard.confidence,
         shareableLine: moneyCard.shareableLine,
         includeWhyBox: true,
-        pullQuote: "큰돈은 막는데, 작은 반복은 늦게 보일 수 있다.",
+        pullQuote: moneyCard.shareableLine,
       }),
       section("money_v4_earn_spend", {
         title: "벌기 vs 쓰기",
@@ -138,7 +150,7 @@ export function buildMockPaidResultDeep(
         evidenceExplanation: [
           "월간 십성 축은 ‘어떻게 벌고 관리하는가’를, 오행 관계 축은 ‘어디서 속도가 달라지는가’를 보여줍니다.",
         ],
-        evidence: ["tenGods.month.stem", "fiveElements.metal", "fiveElements.fire"],
+        evidence: ["tenGods.month.stem", fe.dominant, fe.second],
         evidenceAxisIds: ["ten_gods_month", "five_elements", "element_relation"],
         counterPattern: "반대로, 이미 산출 기준이 정해진 수입 구조에서는 의외로 빠르게 결정할 수 있습니다.",
         strengthSide: "정당성이 보이면 오래 버팀",
@@ -159,7 +171,7 @@ export function buildMockPaidResultDeep(
         evidenceExplanation: [
           "년간 십성 축은 책임과 경계의 압력을 보여주고, 오행 희소 축은 무엇이 시야에서 늦게 잡히는지 드러냅니다.",
         ],
-        evidence: ["tenGods.year.stem", "fiveElements.water", "dayMaster"],
+        evidence: ["tenGods.year.stem", fe.scarce, "dayMaster"],
         evidenceAxisIds: ["ten_gods_year", "five_elements", "day_master"],
         counterPattern: "기준이 이미 정리된 반복 항목이라면 오히려 누구보다 안정적으로 관리할 수도 있습니다.",
         strengthSide: "큰 손실을 쉽게 허용하지 않음",
@@ -178,7 +190,7 @@ export function buildMockPaidResultDeep(
         evidenceExplanation: [
           "오행 우세 축과 십성 분포 축을 같이 보면, 일의 강점은 사람 이미지보다 구조 선명도와 더 가깝습니다.",
         ],
-        evidence: ["fiveElements.metal", "tenGods.month.stem", "dayMaster"],
+        evidence: [fe.dominant, "tenGods.month.stem", "dayMaster"],
         evidenceAxisIds: ["five_elements", "ten_god_distribution", "ten_gods_month"],
         behaviorPossibilities: workCard.behaviorPossibilities,
         counterPattern: workCard.counterPattern,
@@ -238,7 +250,7 @@ export function buildMockPaidResultDeep(
       reportVersion: "v4",
       interpretationVersion: "p2-v2",
       reportKind: "money",
-      signatureStatement: "돈을 아끼는 사람이라기보다, 어떤 돈은 철저히 막고 어떤 돈은 뒤늦게 보는 사람에 가깝습니다.",
+      signatureStatement: moneyCard.coreInterpretation.slice(0, 220),
       executiveSummary: "재물 영역을 단일 성격 문장으로 묶지 않고, 수입 구조·지출 속도·정산 경계·사각지대·대응 문장까지 분리해 읽은 focused report입니다.",
       profileDashboard: [
         { label: "돈의 기준", value: "크기와 정당성에 따라 다르게 작동" },
@@ -284,10 +296,10 @@ export function buildMockPaidResultDeep(
       section("career_character", {
         title: "일에서 보이는 기본 캐릭터",
         question: "나는 어떤 방식으로 일을 잡는 편일까요?",
-        coreInsight: "업무 해석의 중심은 성실함 자체보다, 기준을 세우고 완성도를 끝까지 확인하려는 리듬에 있습니다.",
+        coreInsight: workCard.coreInterpretation,
         behaviorScenes: workCard.behaviorPossibilities,
         evidenceExplanation: ["일의 기본 캐릭터는 일간 축, 월간 십성 축, 오행 우세 축이 겹치는 지점에서 읽는 쪽이 안정적입니다."],
-        evidence: ["dayMaster", "tenGods.month.stem", "fiveElements.metal"],
+        evidence: ["dayMaster", "tenGods.month.stem", fe.dominant],
         evidenceAxisIds: ["day_master", "ten_gods_month", "five_elements"],
         counterPattern: workCard.counterPattern,
         strengthSide: workCard.strengthSide,
@@ -303,7 +315,7 @@ export function buildMockPaidResultDeep(
           "성과가 말이 되는 구조에서는 꾸준함이 오래갑니다.",
         ],
         evidenceExplanation: ["오행 우세 축과 십성 분포 축은 ‘무슨 일을 하느냐’보다 ‘어떤 구조에서 살아나는가’를 더 잘 설명합니다."],
-        evidence: ["fiveElements.metal", "fiveElements.earth", "tenGods.month.stem"],
+        evidence: [fe.dominant, fe.second, "tenGods.month.stem"],
         evidenceAxisIds: ["five_elements", "ten_god_distribution", "ten_gods_month"],
         counterPattern: "반대로 범위가 흐린 프로젝트에서는 능력보다 피로가 먼저 드러날 수 있습니다.",
         confidence: "high",
@@ -345,7 +357,7 @@ export function buildMockPaidResultDeep(
           "실수가 나면 속도를 줄이고 더 많이 확인하는 방향으로 반응할 수 있습니다.",
         ],
         evidenceExplanation: ["강점의 그림자는 일간 축과 오행 우세 축이 함께 밀어주는 확인 성향에서 나옵니다."],
-        evidence: ["dayMaster", "fiveElements.metal"],
+        evidence: ["dayMaster", fe.dominant],
         evidenceAxisIds: ["day_master", "five_elements"],
         counterPattern: "완료 기준만 선명하면 오히려 위임과 속도가 동시에 살아날 수 있습니다.",
         confidence: "high",
@@ -359,7 +371,7 @@ export function buildMockPaidResultDeep(
           "같은 팀에서 오래 함께한 사람들이 먼저 실력을 알아보는 경우가 많을 수 있습니다.",
         ],
         evidenceExplanation: ["십성 분포 축은 어떤 모습이 외부에서 성과로 읽히는지 판단할 근거가 됩니다."],
-        evidence: ["tenGods.month.stem", "fiveElements.earth"],
+        evidence: ["tenGods.month.stem", fe.second],
         evidenceAxisIds: ["ten_gods_month", "five_elements"],
         counterPattern: "다만 스스로는 이 강점을 ‘당연히 해야 하는 일’로 과소평가할 수 있습니다.",
         confidence: "medium",
@@ -373,7 +385,7 @@ export function buildMockPaidResultDeep(
           "관계 소모가 핵심인 환경보다는 기준과 결과물이 남는 일이 편할 수 있습니다.",
         ],
         evidenceExplanation: ["오행 우세·희소 축과 일주 축을 같이 보면, 경력에서 무엇이 남아야 만족하는지 드러납니다."],
-        evidence: ["fiveElements.metal", "fiveElements.earth", "pillars.day.branch"],
+        evidence: [fe.dominant, fe.second, "pillars.day.branch"],
         evidenceAxisIds: ["five_elements", "pillar_day"],
         counterPattern: "반대로 기준 없는 변화 자체를 즐겨야 하는 역할은 피로가 누적될 수 있습니다.",
         confidence: "high",
@@ -387,7 +399,7 @@ export function buildMockPaidResultDeep(
           "수정만 많고 배움·축적이 남지 않으면 의욕이 빠질 수 있습니다.",
         ],
         evidenceExplanation: ["수입 구조·일 구조를 함께 보는 축이기 때문에 단순한 이직운 예언보다 실제 불만의 조건을 분리할 수 있습니다."],
-        evidence: ["tenGods.month.stem", "fiveElements.fire", "fiveElements.metal"],
+        evidence: ["tenGods.month.stem", fe.second, fe.dominant],
         evidenceAxisIds: ["ten_gods_month", "five_elements", "element_relation"],
         counterPattern: "같은 업무라도 기준과 보상이 정리되면 다시 오래 버틸 수 있습니다.",
         confidence: "medium",
@@ -415,7 +427,7 @@ export function buildMockPaidResultDeep(
           "이 리포트의 핵심 문장 3개를 기억해두면, 다음 선택에서 기준이 될 수 있습니다.",
         ],
         evidenceExplanation: ["focused work report의 완결성은 진로 불안 마케팅이 아니라, 일하는 방식의 해상도를 높이는 데 있습니다."],
-        evidence: ["dayMaster", "fiveElements.metal", "tenGods.month.stem"],
+        evidence: ["dayMaster", fe.dominant, "tenGods.month.stem"],
         evidenceAxisIds: ["day_master", "five_elements", "ten_gods_month"],
         counterPattern: "다른 상품을 사지 않아도 ‘나는 어떤 방식의 일에서 강한가’라는 질문은 여기서 완결되어야 합니다.",
         confidence: "high",
@@ -428,7 +440,7 @@ export function buildMockPaidResultDeep(
       reportVersion: "v4",
       interpretationVersion: "p2-v2",
       reportKind: "career",
-      signatureStatement: "일에서는 성실함보다, 기준이 보일 때 힘이 붙고 기준이 흐리면 급격히 지치는 구조가 먼저 보입니다.",
+      signatureStatement: workCard.coreInterpretation.slice(0, 220),
       executiveSummary: "직업명을 예언하지 않고, 어떤 환경·보상·책임 구조에서 강점과 과부하가 어떻게 갈리는지에 집중한 focused work report입니다.",
       profileDashboard: [
         { label: "잘 맞는 구조", value: "완료 조건·검수 지점이 보이는 일" },
@@ -482,17 +494,14 @@ export function buildMockPaidResultDeep(
       }),
       section("love_before", {
         title: "확신 전의 거리",
-        coreInsight: "마음이 없어서 느린 것이 아니라, 관계 정의 전에는 스스로 속도를 조절하는 쪽에 가깝습니다.",
-        behaviorScenes: [
-          "분위기는 좋아도 확신 전에는 말을 아끼며 더 관찰할 수 있습니다.",
-          "상대의 반응보다 행동 패턴을 더 오래 볼 수 있습니다.",
-        ],
+        coreInsight: loveCard.coreInterpretation,
+        behaviorScenes: loveCard.behaviorPossibilities,
         evidenceExplanation: ["확신 전의 속도는 일간 축과 일주 축이 같이 설명하는 영역입니다."],
         evidence: ["dayMaster", "pillars.day.branch"],
         evidenceAxisIds: ["day_master", "pillar_day"],
-        counterPattern: "기준이 분명히 충족된 사람에게는 의외로 빠르게 마음이 기울 수 있습니다.",
+        counterPattern: loveCard.counterPattern,
         confidence: "medium",
-        shareableLine: "느린 게 아니라, 확신 없이 앞서가는 걸 못 하는 타입일 수 있다.",
+        shareableLine: loveCard.shareableLine,
       }),
       section("love_after", {
         title: "확신 후의 변화",
@@ -516,7 +525,7 @@ export function buildMockPaidResultDeep(
           "기념일을 말로 축하하기보다 실질적 준비로 보여주려 할 수 있습니다.",
         ],
         evidenceExplanation: ["오행 우세 축은 감정 표현의 화려함보다 어떤 방식으로 실질화되는지를 보여줍니다."],
-        evidence: ["fiveElements.metal", "fiveElements.earth"],
+        evidence: [fe.dominant, fe.second],
         evidenceAxisIds: ["five_elements", "day_master"],
         counterPattern: "상대가 계속 말만 요구하면 표현 부족으로 오해받을 수 있습니다.",
         confidence: "medium",
@@ -572,7 +581,7 @@ export function buildMockPaidResultDeep(
           "회복 중이라도 같은 패턴이 보이면 다시 속도를 줄이고 관찰 모드로 돌아갈 수 있습니다.",
         ],
         evidenceExplanation: ["관계 회복은 오행 관계 축과 일주 축을 함께 볼 때 더 설명이 됩니다."],
-        evidence: ["fiveElements.earth", "pillars.day.branch", "tenGods.day.branch"],
+        evidence: [fe.second, "pillars.day.branch", "tenGods.day.branch"],
         evidenceAxisIds: ["element_relation", "pillar_day", "ten_gods_day"],
         counterPattern: "감정은 남아 있어도 기준이 다시 흔들릴 것 같으면 스스로 속도를 늦출 수 있습니다.",
         confidence: "medium",
@@ -586,7 +595,7 @@ export function buildMockPaidResultDeep(
           "예측 가능한 사람 옆에서 오히려 자기 표현이 느는 방향으로 변할 수 있습니다.",
         ],
         evidenceExplanation: ["focused love report는 인연 예언보다, 어떤 관계 방식이 오래 가는지 답하는 쪽이 더 유효합니다."],
-        evidence: ["dayMaster", "fiveElements.earth", "tenGods.day.branch"],
+        evidence: ["dayMaster", fe.second, "tenGods.day.branch"],
         evidenceAxisIds: ["day_master", "five_elements", "ten_gods_day"],
         counterPattern: "다만 지나치게 무던한 관계는 오히려 마음을 붙잡지 못할 수 있습니다.",
         confidence: "medium",
@@ -613,7 +622,7 @@ export function buildMockPaidResultDeep(
       reportVersion: "v4",
       interpretationVersion: "p2-v2",
       reportKind: "love",
-      signatureStatement: "연애에서는 표현의 크기보다, 확신 전과 후의 속도가 얼마나 다른지가 먼저 보입니다.",
+      signatureStatement: loveCard.coreInterpretation.slice(0, 220),
       executiveSummary: "호감의 시작, 확신 전 거리, 확신 후 챙김, 갈등과 회복 방식까지 단계별로 분리한 focused love report입니다.",
       profileDashboard: [
         { label: "끌림의 기준", value: "말보다 태도와 일관성" },
@@ -661,7 +670,7 @@ export function buildMockPaidResultDeep(
         "결정 후에는 번복보다 세부 수정 쪽으로 움직일 수 있습니다.",
       ],
       evidenceExplanation: ["일간 축, 월간 십성 축, 오행 관계 축이 함께 작동해 판단 속도를 두 박자로 만듭니다."],
-      evidence: ["dayMaster", "tenGods.month.stem", "fiveElements.metal"],
+      evidence: ["dayMaster", "tenGods.month.stem", fe.dominant],
       evidenceAxisIds: ["day_master", "ten_gods_month", "element_relation"],
       counterPattern: "이미 기준이 충분한 영역에서는 생각보다 빠르게 결론을 내릴 수도 있습니다.",
       strengthSide: "충동 합의를 줄임",
@@ -692,7 +701,7 @@ export function buildMockPaidResultDeep(
       coreInsight: "일에서의 강점은 열정 과시보다, 완성도와 끝까지 결과를 맞추는 힘에서 더 선명하게 드러납니다.",
       behaviorScenes: workCard.behaviorPossibilities,
       evidenceExplanation: ["오행 우세 축, 십성 분포 축, 월간 십성 축을 함께 보면 일 만족도의 조건이 분리됩니다."],
-      evidence: ["fiveElements.metal", "tenGods.month.stem", "fiveElements.earth"],
+      evidence: [fe.dominant, "tenGods.month.stem", fe.second],
       evidenceAxisIds: ["five_elements", "ten_god_distribution", "ten_gods_month"],
       counterPattern: workCard.counterPattern,
       confidence: "high",
@@ -705,7 +714,7 @@ export function buildMockPaidResultDeep(
       evidenceExplanation: [
         "돈이 판단·일·관계와 어떻게 연결되는지 보는 축입니다. 금액 길흉이 아니라 설명·검수 가능한 흐름인가를 봅니다.",
       ],
-      evidence: ["dayMaster", "fiveElements.earth", "tenGods.day.stem"],
+      evidence: ["dayMaster", fe.second, "tenGods.day.stem"],
       evidenceAxisIds: ["day_master", "five_elements", "ten_gods_day"],
       counterPattern: moneyCard.counterPattern,
       confidence: "high",
@@ -731,7 +740,7 @@ export function buildMockPaidResultDeep(
         "회복은 기록·정리·우선순위 재배치처럼 구조를 다시 세우는 방식이 될 수 있습니다.",
       ],
       evidenceExplanation: ["월간 십성 축과 강점-그림자 축이 겹치면 회복과 회피가 비슷한 모습으로 섞일 수 있습니다."],
-      evidence: ["tenGods.month.stem", "dayMaster", "fiveElements.earth"],
+      evidence: ["tenGods.month.stem", "dayMaster", fe.second],
       evidenceAxisIds: ["ten_gods_month", "day_master", "five_elements"],
       counterPattern: "정리 기준만 분명하면 오히려 빠르게 회복할 수 있습니다.",
       confidence: "high",
@@ -746,7 +755,7 @@ export function buildMockPaidResultDeep(
         "책임감 있게 맡지만 도움 요청은 뒤로 밀릴 수 있습니다.",
       ],
       evidenceExplanation: ["년간·월간 십성 긴장과 오행 우세 축이 만나면 같은 사람 안에서 속도 차이가 커집니다."],
-      evidence: ["tenGods.year.stem", "tenGods.month.stem", "fiveElements.metal"],
+      evidence: ["tenGods.year.stem", "tenGods.month.stem", fe.dominant],
       evidenceAxisIds: ["ten_gods_year", "ten_gods_month", "five_elements"],
       counterPattern: "기준이 충분히 공유된 관계나 조직에서는 이 모순이 훨씬 약하게 보일 수 있습니다.",
       confidence: "high",
@@ -763,7 +772,7 @@ export function buildMockPaidResultDeep(
         `${shadowC.strength} → ${shadowC.overuse} → ${shadowC.realLifeConsequence}`,
       ],
       evidenceExplanation: ["강점-그림자 해석은 일반 자기계발 조언이 아니라, 실제 증거 축이 반복되는 장면을 묶은 것입니다."],
-      evidence: ["dayMaster", "fiveElements.metal", "tenGods.year.stem"],
+      evidence: ["dayMaster", fe.dominant, "tenGods.year.stem"],
       evidenceAxisIds: ["day_master", "five_elements", "ten_gods_year"],
       counterPattern: "강점을 억누르기보다 체크포인트와 공유 타이밍만 설계해도 그림자는 많이 줄어듭니다.",
       confidence: "high",
@@ -779,7 +788,7 @@ export function buildMockPaidResultDeep(
         "자기관리: 정리 시간이 길어지면 종료 시각을 먼저 정합니다.",
       ],
       evidenceExplanation: ["플레이북은 판단·돈·관계·스트레스 섹션의 반복 장면을 다시 실용 문장으로 정리한 결과입니다."],
-      evidence: ["dayMaster", "tenGods.month.stem", "pillars.day.branch", "fiveElements.metal"],
+      evidence: ["dayMaster", "tenGods.month.stem", "pillars.day.branch", fe.dominant],
       evidenceAxisIds: ["day_master", "ten_gods_month", "pillar_day", "five_elements"],
       counterPattern: "규칙을 많이 둘수록 맞는 타입이 아니라, 자주 나오는 네 장면만 고정할수록 지속되기 쉽습니다.",
       confidence: "high",
@@ -792,7 +801,7 @@ export function buildMockPaidResultDeep(
     reportVersion: "v4",
     interpretationVersion: "p2-v2",
     reportKind: "total",
-    signatureStatement: "한 문장으로는 ‘확인하는 사람’처럼 보일 수 있지만, 실제로는 판단·관계·일·돈·연애에서 서로 다른 속도가 공존하는 사람에 더 가깝습니다.",
+      signatureStatement: `${dm} 일간에서는 판단·관계·일·돈·연애의 속도가 한 문장으로 안 묶입니다. ${moneyCard.shareableLine ?? ""}`.slice(0, 220),
     executiveSummary: "종합 리포트는 한 축의 반복이 아니라, 일간·오행·십성 분포·기둥 차이·오행 관계가 영역마다 어떻게 다르게 작동하는지 연결하는 개인 분석서로 설계했습니다.",
     profileDashboard: [
       { label: "판단", value: "수집과 확정의 속도가 다름" },

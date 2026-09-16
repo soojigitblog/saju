@@ -32,6 +32,50 @@ function dominantElements(ctx: FortuneAiContext): Array<{ key: string; label: st
   return [...map].sort((a, b) => b.n - a.n);
 }
 
+/**
+ * Mock reports are used for local checkout and regression QA. They must model
+ * the same chart-bound specificity required from the paid AI provider, rather
+ * than masking a repeated-template defect with a passing structural test.
+ */
+function bindDeepReportToChart(
+  report: PaidFortuneReport,
+  ctx: FortuneAiContext
+): PaidFortuneReport {
+  const elements = dominantElements(ctx);
+  const dominant = elements[0]!;
+  const scarce = elements[elements.length - 1]!;
+  const identity = `${ctx.dayMaster.stem} 일간 · ${ctx.pillars.month.ganji} 월주 · ${dominant.label} 우세 · ${scarce.label} 희소`;
+  const actionLenses = [
+    `${ctx.dayMaster.stem} 일간에서 ${dominant.label}이 강하고 ${scarce.label}이 비는 순간에는`,
+    `${ctx.pillars.month.ganji} 월주가 드러나는 ${scarce.label} 보완 장면에서는`,
+    `${dominant.label} 우세와 ${ctx.pillars.month.ganji} 월주 반응이 겹칠 때는`,
+  ];
+
+  return {
+    ...report,
+    signatureStatement: `${identity}. ${report.signatureStatement}`.slice(0, 220),
+    sections: report.sections.map((section, index) =>
+      index === 0
+        ? {
+            ...section,
+            coreInsight: `${identity}. ${section.coreInsight}`,
+            coreInterpretation: `${identity}. ${section.coreInterpretation ?? section.coreInsight}`,
+            shareableLine: section.shareableLine
+              ? `${identity}에서는 ${section.shareableLine}`
+              : section.shareableLine,
+            pullQuote: section.pullQuote
+              ? `${identity}에서는 ${section.pullQuote}`
+              : section.pullQuote,
+          }
+        : section
+    ),
+    actionItems: report.actionItems.map((item, index) => ({
+      ...item,
+      what: `${actionLenses[index % actionLenses.length]} ${item.what}`,
+    })),
+  };
+}
+
 function monthTenGod(ctx: FortuneAiContext): string {
   return ctx.tenGods.month.stem || ctx.tenGods.day.stem || "비겁";
 }
@@ -299,7 +343,10 @@ export function buildMockPaidResult(
   };
 
   if (kind === "money" || kind === "total" || kind === "career" || kind === "love") {
-    return buildMockPaidResultDeep(ctx, productName, options);
+    return bindDeepReportToChart(
+      buildMockPaidResultDeep(ctx, productName, options),
+      ctx
+    );
   }
 
   // generic fallback only

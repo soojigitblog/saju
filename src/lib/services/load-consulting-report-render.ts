@@ -13,6 +13,7 @@ import type { Report } from "@/lib/repositories/reports";
 import { isConsultingReportRenderVersion } from "@/lib/report/paid-report-versions";
 import { isKnownPaidFortuneProductSlug } from "@/lib/report/paid-report-kind";
 import { deriveReportGenerationMode } from "@/lib/services/paid-report-metadata";
+import { isTossTestSandboxCheckoutAllowed } from "@/lib/payments/toss-sandbox";
 
 export type ConsultingReportRenderContext = {
   nickname: string;
@@ -64,8 +65,13 @@ export async function loadConsultingReportRenderContext(input: {
 
   const generationMode = deriveReportGenerationMode(input.report);
 
-  // Production customer must never download mock QA reports (server model wins)
-  if (accessActor === "customer" && generationMode === "mock") {
+  // Production customer must never download mock QA reports (server model wins).
+  // Toss TEST sandbox (local, test keys only) may view the generated mock report.
+  if (
+    accessActor === "customer" &&
+    generationMode === "mock" &&
+    !isTossTestSandboxCheckoutAllowed()
+  ) {
     throw new FreeFlowError(
       "CUSTOMER_MOCK_REPORT_FORBIDDEN",
       "이 리포트는 확인할 수 없습니다.",

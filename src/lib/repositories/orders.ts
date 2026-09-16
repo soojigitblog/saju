@@ -55,6 +55,29 @@ export async function getOrderById(id: string): Promise<Order | null> {
   return data;
 }
 
+export async function getOrderByAccessTokenHash(
+  tokenHash: string
+): Promise<Order | null> {
+  if (!tokenHash) return null;
+
+  if (getDataMode() === "mock") {
+    for (const order of mockStore.orders.values()) {
+      if (order.access_token_hash === tokenHash) return order;
+    }
+    return null;
+  }
+
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("orders")
+    .select("*")
+    .eq("access_token_hash", tokenHash)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data;
+}
+
 export async function getOrderByOrderNo(
   orderNo: string
 ): Promise<Order | null> {

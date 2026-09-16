@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { mockPaidReport } from "@/lib/mock-data";
 import { isConsultingReportRenderVersion } from "@/lib/report/paid-report-versions";
 import { deriveReportGenerationMode } from "@/lib/services/paid-report-metadata";
+import { isTossTestSandboxCheckoutAllowed } from "@/lib/payments/toss-sandbox";
 import type { PaidReport } from "@/types";
 import type { PaidFortuneReport } from "@/lib/ai/schemas/paid-report";
 import type { PaidCrossReading } from "@/lib/ai/schemas/paid-cross-reading";
@@ -138,6 +139,7 @@ type PageModel =
       headline: string;
       summary: string;
       accessToken?: string | null;
+      testMode?: boolean;
     }
   | {
       kind: "paid_tarot";
@@ -231,7 +233,10 @@ async function loadPage(input: {
 
     if (isConsultingReportRenderVersion(raw?.reportRenderVersion)) {
       const generationMode = deriveReportGenerationMode(report);
-      if (generationMode === "mock") {
+      if (
+        generationMode === "mock" &&
+        !isTossTestSandboxCheckoutAllowed()
+      ) {
         return {
           kind: "message",
           title: "리포트를 확인할 수 없습니다",
@@ -249,6 +254,7 @@ async function loadPage(input: {
         headline: raw.title ?? "나만의 사용설명서",
         summary: raw.executiveSummary ?? "",
         accessToken: input.access ?? null,
+        testMode: isTossTestSandboxCheckoutAllowed(),
       };
     }
 
@@ -316,6 +322,7 @@ export default async function ReportPage({
         headline={model.headline}
         summary={model.summary}
         accessToken={model.accessToken}
+        testMode={model.testMode}
       />
     );
   }

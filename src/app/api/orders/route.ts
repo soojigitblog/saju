@@ -17,7 +17,7 @@ const uuidLike = z
 const bodySchema = z.object({
   productId: uuidLike,
   sourceResultId: uuidLike,
-  depositorName: z.string().min(2).max(40),
+  depositorName: z.string().min(2).max(40).optional(),
   paymentMethod: z.enum(["BANK_TRANSFER", "TOSS"]).optional(),
   sourceTarotReadingId: uuidLike.optional(),
   // Ignored — never trust client prices or QA bypass flags
@@ -104,9 +104,10 @@ export async function POST(request: Request) {
       orderNo: result.order.orderNo,
       amount: result.order.amount,
       waitUrl: result.waitUrl,
-      checkoutUrl: result.waitUrl,
+      checkoutUrl: result.checkoutUrl,
       reused: result.reused,
       bankAccount: result.bankAccount,
+      accessToken: result.accessToken,
     });
   } catch (error) {
     if (error instanceof FreeFlowError) {

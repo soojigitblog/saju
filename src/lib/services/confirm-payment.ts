@@ -325,3 +325,26 @@ export async function confirmTossPaymentForOwner(input: {
     alreadyPaid: false,
   };
 }
+
+/**
+ * Toss webhook fallback. The webhook payload is not treated as payment proof:
+ * this delegates to the normal provider confirmation with the server-side
+ * Toss secret before any order or report state can change.
+ */
+export async function confirmTossPaymentFromWebhook(input: {
+  orderNo: string;
+  paymentKey: string;
+  amount: number;
+}): Promise<ConfirmPaymentResult> {
+  const order = await getOrderByOrderNo(input.orderNo);
+  if (!order) {
+    throw new FreeFlowError("NOT_FOUND", "주문을 찾을 수 없습니다.", 404);
+  }
+  return confirmTossPaymentForOwner({
+    guestSessionId: order.guest_session_id,
+    orderIdParam: order.order_no,
+    paymentKey: input.paymentKey,
+    callbackAmount: input.amount,
+    analyticsSessionId: order.guest_session_id,
+  });
+}

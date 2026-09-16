@@ -18,13 +18,18 @@ import type {
   FreeInterpretationOutput,
   PaidInterpretationOutput,
 } from "@/lib/ai/types";
+import { assertPaidQualityGate } from "@/lib/ai/validators/paid-quality";
+import {
+  assertPaidQualityV2Gate,
+  evaluateConsultingDepth,
+} from "@/lib/ai/validators/paid-quality-v2";
 
 function createFortuneInterpreterForProvider(
   provider: AiProviderName,
   tier: AiBillingTier
 ): FortuneInterpreter {
   if (provider === "mock") return new MockFortuneInterpreter();
-  if (provider === "openai") return new OpenAIFortuneInterpreter();
+  if (provider === "openai") return new OpenAIFortuneInterpreter(tier);
   if (provider === "gemini") {
     return new ProviderFortuneInterpreter("gemini", undefined, tier);
   }
@@ -77,11 +82,22 @@ export async function generatePaidInterpretation(
 ): Promise<PaidInterpretationOutput> {
   const interpreter =
     options?.interpreter ?? createFortuneInterpreterForTier("paid");
-  return interpreter.generatePaid({
+  const result = await interpreter.generatePaid({
     chart,
     product,
     promptVersion,
     presentation: options?.presentation,
     model: options?.model,
   });
+  assertPaidQualityGate(result, { productSlug: product.slug });
+  assertPaidQualityV2Gate(result);
+  if (!options?.interpreter && resolveAiProviderForPaid() !== "mock") {
+    const depth = evaluateConsultingDepth(result);
+    if (!depth.pass) {
+      throw new Error(
+        `PAID_CONSULTING_DEPTH_FAILED count=${depth.count} need=${depth.need}`
+      );
+    }
+  }
+  return result;
 }

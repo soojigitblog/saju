@@ -890,6 +890,48 @@ export type Database = {
         };
         Relationships: [];
       };
+      refund_requests: {
+        Row: {
+          id: string;
+          order_id: string;
+          guest_session_id: string | null;
+          user_id: string | null;
+          reason: string;
+          screenshot_data_url: string | null;
+          status: "PENDING" | "APPROVED" | "REJECTED";
+          admin_note: string | null;
+          decided_by: string | null;
+          decided_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          order_id: string;
+          guest_session_id?: string | null;
+          user_id?: string | null;
+          reason: string;
+          screenshot_data_url?: string | null;
+          status?: "PENDING" | "APPROVED" | "REJECTED";
+          admin_note?: string | null;
+          decided_by?: string | null;
+          decided_at?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          order_id?: string;
+          guest_session_id?: string | null;
+          user_id?: string | null;
+          reason?: string;
+          screenshot_data_url?: string | null;
+          status?: "PENDING" | "APPROVED" | "REJECTED";
+          admin_note?: string | null;
+          decided_by?: string | null;
+          decided_at?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
       admin_audit_logs: {
         Row: {
           id: string;

@@ -16,11 +16,12 @@ function moneyOutline(): string {
     "money_v4_blindspot — 결정 지연·사각",
     "money_v4_work — 수입 구조",
     "money_v4_people — 사람과 돈",
-    "money_v4_playbook — 돈 사용설명서",
+    "money_v4_playbook — 돈 관리 습관·대응 플레이북 (본문에 관리/대응/습관/플레이북 중 하나를 반드시 포함)",
     "각 section: coreInsight, behaviorScenes, evidenceExplanation(고유), evidence,",
-    "  discoveryLevel(주요≥3), whyDeeper, reactionChain(TRIGGER→…→RESULT),",
+    "  discoveryLevel=3, whyDeeper, reactionChain(TRIGGER→…→RESULT),",
     "  selfInterpretation, outsideInterpretation, selfMisread, counterPattern",
-    "actionItems ≥5 with when/what/why/how (임의 일수 ‘사흘’ 등 금지, 시간 비특정)",
+    "actionItems ≥5 with when/what/why/how (임의 일수 ‘사흘’ 등 금지, 시간 비특정). portraitNarrative 3개와 possibleNextQuestions 3개 필수.",
+    "evidence와 evidenceAxisIds는 최소 3개 축(dayMaster, pillars.month, fiveElements, tenGods)으로 분산하고, 같은 근거 문장을 다른 section에 재사용하지 말 것. evidence에는 허용 키만 사용: dayMaster, pillars.month.ganji, pillars.day.ganji, fiveElements.wood/fire/earth/metal/water, tenGods.month.stem/branch, tenGods.year.stem/branch, pillars.hour.ganji(출생시간이 있을 때만). pillars.month/day/hour처럼 축약한 키는 금지. 최소 3개 section에 discoveryLevel=3·40자 이상의 whyDeeper·4단계 reactionChain·selfMisread를 채울 것. ‘절약하세요/계획하세요/긍정적으로/무조건/항상/반드시’ 같은 일반 조언 금지.",
     "scopeNotes는 report 말미 1회. 대운·세운·용신·신강신약 창작 HARD FAIL.",
   ].join("\n");
 }
@@ -30,10 +31,10 @@ function totalOutline(): string {
     "상품: 나의 사주 사용설명서 (12,900). 약한 chapter 나열 금지.",
     "profileDashboard ≥6 + fiveElementsSnapshot.",
     "필수 section key 9개:",
-    "total_v4_decision, total_v4_relationship, total_v4_work, total_v4_money_link,",
-    "total_v4_love, total_v4_stress, total_v4_paradox, total_v4_shadow, total_v4_playbook",
-    "contradictions ≥4 with result. strengthShadows ≥3 with balancePoint.",
-    "crossDomainLinks ≥4. patternChains ≥3.",
+    "total_v4_decision, total_v4_relationship, total_v4_work, total_v4_money_link(본문에 돈/통제/연결),",
+    "total_v4_love, total_v4_stress, total_v4_paradox(본문에 모순/겉/속), total_v4_shadow(본문에 강점/과해/균형), total_v4_playbook(본문에 플레이북/대응/습관/일/관계/자기)",
+    "blueprint 필수. contradictions ≥4 with result. strengthShadows ≥3 with balancePoint. finalSummary.portraitNarrative ≥2.",
+    "crossDomainLinks ≥4. patternChains ≥3. evidence와 evidenceAxisIds는 dayMaster·pillars.month·fiveElements·tenGods의 4개 축을 모두 사용.",
     "주요 Discovery: discoveryLevel 3, whyDeeper, reactionChain, self/outside/selfMisread",
     "actionItems ≥8 WHEN/DO/WHY/HOW. scopeNotes 말미 1회.",
   ].join("\n");
@@ -45,7 +46,7 @@ function careerOutline(): string {
     "필수 section key 10개:",
     "career_character, career_strength_work, career_org_friction, career_conflict,",
     "career_overload, career_recognition, career_path_type, career_change_signal,",
-    "career_check, career_closing",
+    "career_check, career_closing — 10개를 정확히 모두 생성. career_check와 career_closing을 생략하거나 다른 장에 합치지 말 것.",
     "각 section: coreInsight, behaviorScenes, evidenceExplanation(고유), evidence,",
     "  주요 항목은 discoveryLevel 3 + whyDeeper + reactionChain + misread 필드",
     "actionItems ≥5 with when/what/why/how",
@@ -57,7 +58,7 @@ function loveOutline(): string {
     "상품: 나의 연애 사용설명서 (6,900). ‘따뜻한 사람’ 금지. 행동·거리·갈등 중심.",
     "필수 section key 10개:",
     "love_attraction, love_before, love_after, love_expression, love_needs,",
-    "love_fight, love_breaking, love_distance, love_fit, love_closing",
+    "love_fight, love_breaking, love_distance, love_fit, love_closing — 10개를 정확히 모두 생성. love_closing을 생략하거나 다른 장에 합치지 말 것.",
     "주요 Discovery(love_before/after/needs/fight): Level3 + chain + misread",
     "strengthShadows에 overuse(위험/그림자) 포함 — Snapshot 주의 조건용",
     "actionItems ≥5 with when/what/why/how",
@@ -89,6 +90,8 @@ const QUALITY_RULES = [
   "profileDashboard, fiveElementsSnapshot(FORTUNE DATA 숫자 그대로), finalSummary(strengths/cautions/changeHabits?/keepHabits?/closingLine)",
   "fiveElementsSnapshot.label은 반드시 木/火/土/金/水 (각 1글자, 영문 Wood 등 금지).",
   "discoveryLevel은 정수 1|2|3만 (문자열/레벨명 금지).",
+  "CHART LOCK: signatureStatement·첫 coreInsight·shareableLine은 이 명식의 일간·우세오행·희소오행·월간십성에 묶일 것. 다른 생년월일에도 그대로 쓰는 문장은 HARD FAIL.",
+  "CONSULTING: 주요 섹션 whyDeeper·reactionChain·selfMisread 필수. 비어 있으면 HARD FAIL.",
 ].join("\n");
 
 export function buildPaidUserPrompt(input: {
@@ -101,6 +104,16 @@ export function buildPaidUserPrompt(input: {
   const target =
     input.product.targetLengthChars ??
     targetLengthForPaidProduct(input.product.slug);
+  const elementRows = [
+    ["木", input.fortuneContext.fiveElements.wood],
+    ["火", input.fortuneContext.fiveElements.fire],
+    ["土", input.fortuneContext.fiveElements.earth],
+    ["金", input.fortuneContext.fiveElements.metal],
+    ["水", input.fortuneContext.fiveElements.water],
+  ] as const;
+  const dominant = [...elementRows].sort((a, b) => b[1] - a[1])[0]![0];
+  const scarce = [...elementRows].sort((a, b) => a[1] - b[1])[0]![0];
+  const chartIdentity = `${input.fortuneContext.dayMaster.stem} 일간 · ${input.fortuneContext.pillars.month.ganji} 월주 · ${dominant} 우세 · ${scarce} 희소`;
 
   const blocks: string[] = [
     "TASK: 운의결 Paid Report V3를 1회 Structured Output으로 생성.",
@@ -108,8 +121,9 @@ export function buildPaidUserPrompt(input: {
     `분량 목표 ≈${target}자. 빈 문장으로 페이지를 늘리지 말 것. 밀도 있는 insight.`,
     chapterOutline(kind),
     QUALITY_RULES,
+    `IDENTITY ANCHOR: signatureStatement에는 반드시 다음 명식 식별값을 모두 자연스럽게 포함: ${chartIdentity}. 첫 section의 coreInsight와 shareableLine에는 반드시 '${input.fortuneContext.dayMaster.stem} 일간' 및 '${input.fortuneContext.pillars.month.ganji} 월주'라는 표기를 그대로 포함하고, 우세·희소 오행도 연결할 것. 다른 명식에도 그대로 쓸 수 있는 문장은 재생성 대상입니다.`,
     consultingDiscoveryPromptBlock(),
-    "reportKind는 상품 kind와 맞출 것. monthlyOutlook은 넣지 말 것.",
+    "reportKind는 상품 kind와 맞출 것. monthlyOutlook은 넣지 말 것. scopeNotes에는 이 리포트의 해석 범위와 대운·세운·용신·신강신약을 다루지 않는다는 점을 1회만 자연스럽게 적을 것.",
     "NOTE: Human Value Gate PASSED — Live Gemini Acceptance 허용. Mock enrich 금지.",
   ];
 

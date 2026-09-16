@@ -1,33 +1,41 @@
 import "server-only";
 
 import OpenAI from "openai";
-import { getAiTimeoutMs, getOpenAiApiKey } from "@/lib/ai/config";
+import {
+  getAiTimeoutMs,
+  getOpenAiApiKeyForTier,
+  type AiBillingTier,
+} from "@/lib/ai/config";
 import { AiEngineError } from "@/lib/ai/errors";
 
-let cached: OpenAI | null = null;
+const cached = new Map<AiBillingTier, OpenAI>();
 
-export function getOpenAIClient(): OpenAI {
-  const apiKey = getOpenAiApiKey();
+export function getOpenAIClient(tier: AiBillingTier = "free"): OpenAI {
+  const apiKey = getOpenAiApiKeyForTier(tier);
   if (!apiKey) {
     throw new AiEngineError(
       "OPENAI_API_KEY_MISSING",
-      "OPENAI_API_KEY is not configured.",
+      `OpenAI ${tier} API key is not configured.`,
       { retryable: false }
     );
   }
 
-  if (!cached) {
-    cached = new OpenAI({
-      apiKey,
-      timeout: getAiTimeoutMs(),
-      maxRetries: 0, // we handle retries ourselves
-    });
-  }
+  const existing = cached.get(tier);
+  if (existing) return existing;
 
-  return cached;
+  const client = new OpenAI({
+      apiKey,
+      // Paid reports are generated asynchronously and contain a much larger
+      // structured payload than free previews. Keep the customer job from
+      // being discarded at the general 60-second preview timeout.
+      timeout: tier === "paid" ? Math.max(getAiTimeoutMs(), 120_000) : getAiTimeoutMs(),
+      maxRetries: 0, // we handle retries ourselves
+  });
+  cached.set(tier, client);
+  return client;
 }
 
 /** Test helper — reset singleton. */
 export function resetOpenAIClientForTests(): void {
-  cached = null;
+  cached.clear();
 }

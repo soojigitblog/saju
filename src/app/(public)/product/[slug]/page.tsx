@@ -4,7 +4,7 @@ import { getProductBySlug } from "@/lib/repositories/products";
 import { getGuestSessionId } from "@/lib/guest/cookie";
 import { getFreeResultById } from "@/lib/repositories/free-results";
 import { getProfileById } from "@/lib/repositories/profiles";
-import { isPaidCheckoutEnabled } from "@/lib/ai/config";
+import { isCustomerPaidCheckoutOpen, isTossTestSandboxCheckoutAllowed } from "@/lib/payments/checkout-policy";
 import { isKnownPaidFortuneProductSlug } from "@/lib/report/paid-report-kind";
 
 export async function generateMetadata({
@@ -51,11 +51,12 @@ export default async function ProductPage({
       ? tarotReadingId
       : null;
 
-  const checkoutEnabled = isPaidCheckoutEnabled();
+  const paidSaleProduct =
+    (product.productType === "fortune" &&
+      isKnownPaidFortuneProductSlug(product.slug)) ||
+    product.productType === "tarot_paid";
   const purchaseBlocked =
-    product.productType === "fortune" &&
-    isKnownPaidFortuneProductSlug(product.slug) &&
-    !checkoutEnabled;
+    paidSaleProduct && !isCustomerPaidCheckoutOpen();
 
   return (
     <ProductDetail
@@ -68,6 +69,8 @@ export default async function ProductPage({
           ? "현재 최종 점검 중입니다. 유료 리포트 판매는 잠시 후 오픈됩니다."
           : null
       }
+      checkoutMethod="toss"
+      tossTestMode={isTossTestSandboxCheckoutAllowed()}
     />
   );
 }

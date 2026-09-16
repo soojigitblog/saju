@@ -30,6 +30,7 @@ type FeedbackRow = import("@/lib/repositories/feedbacks").FeedbackRow;
 type ClientIssue = import("@/lib/repositories/client-issues").ClientIssue;
 type SharedResultRow = import("@/lib/repositories/shared-results").SharedResultRow;
 type BankTransactionRow = import("@/lib/repositories/bank-transactions").BankTransactionRow;
+type RefundRequestRow = import("@/lib/repositories/refund-requests").RefundRequestRow;
 
 type BankPollerHealth = {
   id: string;
@@ -57,6 +58,7 @@ type MockStoreBundle = {
   payments: Map<string, Payment>;
   reports: Map<string, Report>;
   bankTransactions: Map<string, BankTransactionRow>;
+  refundRequests: Map<string, RefundRequestRow>;
   bankPollerHealth: BankPollerHealth;
   clear(): void;
   touch(): void;
@@ -82,6 +84,7 @@ function createMaps() {
     payments: new Map<string, Payment>(),
     reports: new Map<string, Report>(),
     bankTransactions: new Map<string, BankTransactionRow>(),
+    refundRequests: new Map<string, RefundRequestRow>(),
     bankPollerHealth: null as BankPollerHealth,
   };
 }
@@ -102,6 +105,7 @@ function buildSnapshot(m: ReturnType<typeof createMaps>) {
     payments: mapToEntries(m.payments),
     reports: mapToEntries(m.reports),
     bankTransactions: mapToEntries(m.bankTransactions),
+    refundRequests: mapToEntries(m.refundRequests),
     bankPollerHealth: m.bankPollerHealth,
   };
 }
@@ -163,6 +167,10 @@ function applySnapshot(bundle: MockStoreBundle, snap: Record<string, unknown>) {
   entriesToMap(snap.bankTransactions as Array<[string, BankTransactionRow]>).forEach(
     (v, k) => bundle.bankTransactions.set(k, v)
   );
+  bundle.refundRequests.clear();
+  entriesToMap(snap.refundRequests as Array<[string, RefundRequestRow]>).forEach(
+    (v, k) => bundle.refundRequests.set(k, v)
+  );
   bundle.bankPollerHealth = (snap.bankPollerHealth as BankPollerHealth) ?? null;
 }
 
@@ -201,6 +209,7 @@ function patchAllMaps(m: ReturnType<typeof createMaps>, persist: () => void) {
   patchMapMutations(m.payments, persist);
   patchMapMutations(m.reports, persist);
   patchMapMutations(m.bankTransactions, persist);
+  patchMapMutations(m.refundRequests, persist);
 }
 
 function createMockStoreBundle(): MockStoreBundle {
@@ -231,6 +240,7 @@ function createMockStoreBundle(): MockStoreBundle {
       maps.payments.clear();
       maps.reports.clear();
       maps.bankTransactions.clear();
+      maps.refundRequests.clear();
       maps.bankPollerHealth = null;
       persistSoon();
     },

@@ -133,6 +133,424 @@ const ELEMENT_LABEL: Record<ElementKey, string> = {
   water: "水",
 };
 
+type TenGodFamily = "peer" | "output" | "wealth" | "officer" | "resource";
+
+function tenGodFamily(label: TenGodLabel): TenGodFamily {
+  if (label === "비견" || label === "겁재") return "peer";
+  if (label === "식신" || label === "상관") return "output";
+  if (label === "편재" || label === "정재") return "wealth";
+  if (label === "편관" || label === "정관") return "officer";
+  return "resource";
+}
+
+function buildMoneyHypothesis(input: {
+  family: TenGodFamily;
+  dominant: ElementKey;
+  scarce: ElementKey;
+  evidenceAxisIds: string[];
+  evidenceIds: string[];
+}): InsightCardV2 {
+  const d = ELEMENT_LABEL[input.dominant];
+  const s = ELEMENT_LABEL[input.scarce];
+  const packs: Record<
+    TenGodFamily,
+    Pick<
+      InsightCardV2,
+      | "coreInterpretation"
+      | "behaviorPossibilities"
+      | "realLifeExamples"
+      | "counterPattern"
+      | "triggerConditions"
+      | "strengthSide"
+      | "shadowSide"
+      | "practicalMeaning"
+      | "actionOptions"
+      | "shareableLine"
+    >
+  > = {
+    officer: {
+      coreInterpretation: `${d}이 우세한 배치에서는 허용 범위가 선 뒤에야 큰돈이 움직이고, ${s}이 빈 자리에서는 예외 지출이 장부에 늦게 붙을 수 있습니다.`,
+      behaviorPossibilities: [
+        "규칙·한도가 보이면 큰 결제는 오히려 빨리 끝낼 수 있습니다.",
+        "예외로 열어 둔 소액은 ‘이번만’이 반복되며 합산이 늦어질 수 있습니다.",
+      ],
+      realLifeExamples: [
+        "구독·자동이체처럼 한 번 허용한 항목은 한동안 다시 안 볼 수 있습니다.",
+        "큰 구매 전에는 조건표를 만든 뒤에야 마음이 놓일 수 있습니다.",
+      ],
+      counterPattern: "이미 한도와 종료일이 박힌 항목은 큰돈보다 관리가 쉬워질 수 있습니다.",
+      triggerConditions: ["규칙이 없는 큰 지출", "예외 허용", "정산 주기 공백"],
+      strengthSide: "선이 보이면 큰 손실을 잘 막음",
+      shadowSide: "예외 칸이 새는 지점이 됨",
+      practicalMeaning: "절약 성향보다 ‘허용 예외를 어디에 두었는가’를 먼저 보는 편이 맞습니다.",
+      actionOptions: ["예외 항목 3개만 허용", "월 1회 예외 합산"],
+      shareableLine: `${d}이 많을수록 규칙은 지키는데, ${s}이 빈 예외 지출은 늦게 보일 수 있다.`,
+    },
+    wealth: {
+      coreInterpretation: `${d} 기운이 앞서는 명식에서는 벌 구멍은 잘 보이지만, ${s}이 약한 자리에서는 쓰는 속도가 장면마다 갈라질 수 있습니다.`,
+      behaviorPossibilities: [
+        "수입은 ‘설명이 되는 대가’가 보이면 오래 힘을 쓰기 쉽습니다.",
+        "지출은 기분·피로가 끼면 기준과 다른 속도로 나갈 수 있습니다.",
+      ],
+      realLifeExamples: [
+        "성과급·보수는 따지면서, 편의 결제는 영수증을 나중에 볼 수 있습니다.",
+        "부업 아이디어는 떠올려도 정산 구조가 흐리면 실행이 늦어질 수 있습니다.",
+      ],
+      counterPattern: "산출 기준이 고정된 수입은 생각보다 결정을 빨리 끝낼 수 있습니다.",
+      triggerConditions: ["대가 설명 부재", "피로한 날의 소액", "수입·지출을 한 기준으로 묶음"],
+      strengthSide: "벌 구조의 빈틈을 잘 봄",
+      shadowSide: "쓰기 속도가 들쭉날쭉해짐",
+      practicalMeaning: "돈 성향은 욕심이 아니라 벌기/쓰기의 종료 조건이 다른지로 읽어야 합니다.",
+      actionOptions: ["수입 기준과 지출 한도를 분리", "피로 지출만 별도 표시"],
+      shareableLine: `${d}이 강하면 벌 구멍은 보이는데, ${s}이 약하면 쓰는 속도가 먼저 흔들릴 수 있다.`,
+    },
+    resource: {
+      coreInterpretation: `${d}이 두드러진 배치에서는 정보를 모은 뒤에야 돈이 움직이고, ${s}이 희소한 자리에서는 수집이 길어지는 동안 소액이 먼저 흘러갈 수 있습니다.`,
+      behaviorPossibilities: [
+        "비교·후기·조건 정리가 끝나기 전에는 큰돈을 보류하는 쪽에 가깝습니다.",
+        "자료를 모으는 동안에도 작은 반복 결제는 예외처럼 지나갈 수 있습니다.",
+      ],
+      realLifeExamples: [
+        "가전·보험처럼 정보가 많은 결정은 표로 정리한 뒤에야 결론이 날 수 있습니다.",
+        "검색 탭이 열린 채로 배달·구독은 이미 빠져 있을 수 있습니다.",
+      ],
+      counterPattern: "선택지가 두세 개로 이미 줄여진 항목은 빠르게 끝낼 수 있습니다.",
+      triggerConditions: ["선택지 과다", "후기 수집", "종료 기준 없음"],
+      strengthSide: "성급한 큰 지출을 줄임",
+      shadowSide: "수집 중에 소액이 샘",
+      practicalMeaning: "신중함의 대가가 어디 구멍으로 나가는지 분리해 보는 편이 맞습니다.",
+      actionOptions: ["비교 항목 3개 상한", "수집 중에도 소액 합산"],
+      shareableLine: `${d}이 많으면 정보는 모으는데, ${s}이 빈 동안 소액이 먼저 흘러갈 수 있다.`,
+    },
+    output: {
+      coreInterpretation: `${d}이 앞선 명식에서는 돈이 ‘쓰는 손길’로 먼저 움직이고, ${s}이 약한 자리에서는 남는 계산이 한 박자 늦게 붙을 수 있습니다.`,
+      behaviorPossibilities: [
+        "만들고 해결하는 과정에서는 비용이 도구처럼 빠르게 나갈 수 있습니다.",
+        "정산·잔액 확인은 일이 끝난 뒤에야 몰아서 볼 수 있습니다.",
+      ],
+      realLifeExamples: [
+        "프로젝트·선물·접대처럼 ‘지금 필요한 것’에는 손이 빨리 갈 수 있습니다.",
+        "월말 잔액을 보고 나서야 이번 달 속도가 보이기도 합니다.",
+      ],
+      counterPattern: "쓰는 행위 자체에 한도를 붙여 두면 계산 지연이 줄 수 있습니다.",
+      triggerConditions: ["즉시 해결해야 하는 지출", "창작·접대", "사후 정산"],
+      strengthSide: "필요한 곳에 돈을 막히지 않게 씀",
+      shadowSide: "남는 그림이 늦게 보임",
+      practicalMeaning: "낭비가 아니라 ‘사용과 정산의 시간차’를 먼저 봐야 합니다.",
+      actionOptions: ["쓰기 직후 한 줄 기록", "주 1회 잔액 스냅샷"],
+      shareableLine: `${d}이 강하면 쓰는 손은 빠른데, ${s}이 약하면 남는 계산이 늦게 붙을 수 있다.`,
+    },
+    peer: {
+      coreInterpretation: `${d}이 우세한 배치에서는 내 몫은 지키려 하지만, ${s}이 빈 자리에서는 공동 비용이 섞이면 판단 기준이 흔들릴 수 있습니다.`,
+      behaviorPossibilities: [
+        "혼자 쓰는 돈은 기준이 분명한데, 더치페이·가족 지출은 미뤄질 수 있습니다.",
+        "공평함이 말로 정리되기 전에는 속으로만 계산이 돌아갈 수 있습니다.",
+      ],
+      realLifeExamples: [
+        "개인 구독은 바로 끊으면서, 공동 공과금은 ‘나중에 정산’이 길어질 수 있습니다.",
+        "선물을 줄 때는 후한데, 반복 분담이 되면 갑자기 선이 생길 수 있습니다.",
+      ],
+      counterPattern: "분담 문장이 먼저 있는 관계는 오히려 갈등이 적을 수 있습니다.",
+      triggerConditions: ["공동비용", "말만 된 분담", "공평함 불명"],
+      strengthSide: "내 흐름의 손실은 잘 지킴",
+      shadowSide: "섞인 돈에서 기준이 늦어짐",
+      practicalMeaning: "인색함보다 ‘누구 돈인지가 흐릴 때’를 핵심 장면으로 봐야 합니다.",
+      actionOptions: ["공동비용 한 문장 선공유", "개인/공동 계좌 분리 기록"],
+      shareableLine: `${d}이 많으면 내 몫은 지키는데, ${s}이 빈 공동 비용에서 판단이 흔들릴 수 있다.`,
+    },
+  };
+  const pack = packs[input.family];
+  return {
+    id: "money-threshold",
+    title: "돈에서 먼저 보는 기준",
+    coreInterpretation: pack.coreInterpretation,
+    evidenceAxisIds: input.evidenceAxisIds,
+    evidenceIds: input.evidenceIds,
+    behaviorPossibilities: pack.behaviorPossibilities,
+    realLifeExamples: pack.realLifeExamples,
+    counterPattern: pack.counterPattern,
+    triggerConditions: pack.triggerConditions,
+    strengthSide: pack.strengthSide,
+    shadowSide: pack.shadowSide,
+    practicalMeaning: pack.practicalMeaning,
+    actionOptions: pack.actionOptions,
+    confidence: "high",
+    shareableLine: pack.shareableLine,
+  };
+}
+
+function buildWorkHypothesis(input: {
+  family: TenGodFamily;
+  dominant: ElementKey;
+  scarce: ElementKey;
+  evidenceAxisIds: string[];
+  evidenceIds: string[];
+}): InsightCardV2 {
+  const d = ELEMENT_LABEL[input.dominant];
+  const s = ELEMENT_LABEL[input.scarce];
+  const packs: Record<
+    TenGodFamily,
+    Pick<
+      InsightCardV2,
+      | "coreInterpretation"
+      | "behaviorPossibilities"
+      | "realLifeExamples"
+      | "counterPattern"
+      | "triggerConditions"
+      | "strengthSide"
+      | "shadowSide"
+      | "practicalMeaning"
+      | "actionOptions"
+      | "shareableLine"
+    >
+  > = {
+    officer: {
+      coreInterpretation: `${d}이 강한 일 구조에서는 완료 조건과 검수 지점이 보여야 힘이 붙고, ${s}이 빈 자리에서는 기준 없는 수정이 반복될 때 급격히 지칩니다.`,
+      behaviorPossibilities: [
+        "범위가 정리된 과제에서 집중력이 붙을 수 있습니다.",
+        "수정 이유가 흐릴수록 일 자체보다 과정 관리에 지칠 수 있습니다.",
+      ],
+      realLifeExamples: [
+        "요구사항이 적힌 프로젝트 후반 점검에서 강점이 드러날 수 있습니다.",
+        "‘느낌상 다시’가 반복되면 능력보다 피로가 먼저 보일 수 있습니다.",
+      ],
+      counterPattern: "목표가 선명하면 평소보다 과감하게 밀어붙일 수 있습니다.",
+      triggerConditions: ["모호한 수정 요청", "책임 범위 불명확", "완료 기준 부재"],
+      strengthSide: "완성도 관리",
+      shadowSide: "위임 지연",
+      practicalMeaning: "직업명보다 업무 구조와 검수 리듬이 더 중요합니다.",
+      actionOptions: ["완료 조건 선확인", "위임 범위와 검수 포인트 분리"],
+      shareableLine: `${d}이 강하면 기준이 보일 때 일하고, ${s}이 비면 수정 반복에 먼저 지친다.`,
+    },
+    output: {
+      coreInterpretation: `${d}이 앞선 배치에서는 만드는 과정에서 에너지가 나고, ${s}이 약한 자리에서는 산출이 안 보이는 회의·조율에서 힘이 빠질 수 있습니다.`,
+      behaviorPossibilities: [
+        "초안을 빨리 만들고 다듬는 리듬에서 몰입이 붙을 수 있습니다.",
+        "결과물이 없는 조율만 길어지면 의욕이 빠르게 식을 수 있습니다.",
+      ],
+      realLifeExamples: [
+        "시안·프로토타입을 먼저 보여주는 일에서 평가가 좋아질 수 있습니다.",
+        "결정만 미루는 회의가 반복되면 자리를 피하고 싶어질 수 있습니다.",
+      ],
+      counterPattern: "산출 주기가 짧은 팀에서는 오히려 조율도 잘 버틸 수 있습니다.",
+      triggerConditions: ["무산출 회의", "아이디어만 쌓임", "마감 없는 브레인스토밍"],
+      strengthSide: "만들어 내는 추진",
+      shadowSide: "조율 구간에 에너지 누수",
+      practicalMeaning: "성실함보다 ‘무엇이 남는 일인가’가 강점을 켜고 끕니다.",
+      actionOptions: ["회의마다 산출물 1개", "초안 먼저 공유"],
+      shareableLine: `${d}이 많으면 만드는 일에 살고, ${s}이 빈 조율만 남으면 급격히 꺼질 수 있다.`,
+    },
+    resource: {
+      coreInterpretation: `${d}이 우세한 일에서는 배우고 정리한 뒤에야 실행이 안정되고, ${s}이 희소하면 학습 없이 밀어붙이는 환경에서 실수가 커 보일 수 있습니다.`,
+      behaviorPossibilities: [
+        "매뉴얼·사례를 확보한 뒤 속도가 붙을 수 있습니다.",
+        "준비 시간을 안 주면 시작은 해도 품질 불안이 남을 수 있습니다.",
+      ],
+      realLifeExamples: [
+        "신규 업무는 정리 노트를 만든 뒤에야 자신감이 생길 수 있습니다.",
+        "즉흥 발표·현장 대응만 요구되면 실제 실력보다 더 흔들려 보일 수 있습니다.",
+      ],
+      counterPattern: "이미 체화된 반복 업무에서는 준비 없이 빠르게 움직일 수 있습니다.",
+      triggerConditions: ["신규 영역", "자료 부재", "즉흥 대응 압박"],
+      strengthSide: "학습이 쌓이는 일",
+      shadowSide: "준비 부족 장면의 과소평가",
+      practicalMeaning: "느린 게 아니라 실행 전에 지도를 그리는 타입으로 읽는 편이 맞습니다.",
+      actionOptions: ["착수 전 한 페이지 지도", "신규 업무 온보딩 질문 3개"],
+      shareableLine: `${d}이 강하면 정리 후 일하고, ${s}이 비면 즉흥 압박에서 실력이 가려질 수 있다.`,
+    },
+    wealth: {
+      coreInterpretation: `${d}이 두드러진 일에서는 대가와 성과가 연결돼야 오래 가고, ${s}이 빈 자리에서는 역할만 늘고 보상이 흐릴 때 이직 고민이 커질 수 있습니다.`,
+      behaviorPossibilities: [
+        "성과가 숫자·산출로 남는 구조에서 꾸준함이 유지될 수 있습니다.",
+        "하는 일은 늘고 인정·보상이 흐리면 성실한데도 불만이 쌓일 수 있습니다.",
+      ],
+      realLifeExamples: [
+        "KPI가 보이는 프로젝트에서는 야근도 납득할 수 있습니다.",
+        "잡무만 늘면 ‘내가 왜 여기 있지?’가 먼저 올라올 수 있습니다.",
+      ],
+      counterPattern: "보상은 낮아도 성장 축적이 보이면 버틸 수 있습니다.",
+      triggerConditions: ["역할 팽창", "보상 불명", "성과 미측정"],
+      strengthSide: "대가-성과 연결 민감도",
+      shadowSide: "설명 안 되는 헌신에 급격히 식음",
+      practicalMeaning: "욕심이라기보다 일의 교환 조건이 보여야 엔진이 켜집니다.",
+      actionOptions: ["이번 분기 대가 한 문장", "역할 증가 시 보상 재확인"],
+      shareableLine: `${d}이 강하면 대가 연결이 보여야 일하고, ${s}이 비면 역할만 늘 때 먼저 떠난다.`,
+    },
+    peer: {
+      coreInterpretation: `${d}이 앞선 일에서는 내 몫이 분명해야 속도가 나고, ${s}이 약한 자리에서는 책임이 겹치면 혼자 다 쥐려다 과부하가 올 수 있습니다.`,
+      behaviorPossibilities: [
+        "역할이 나뉜 팀에서는 품질을 끝까지 맞출 수 있습니다.",
+        "경계가 흐리면 위임을 미루고 검수까지 본인이 가져갈 수 있습니다.",
+      ],
+      realLifeExamples: [
+        "공동 문서에서 담당자가 안 찍히면 결국 본인이 고치고 있을 수 있습니다.",
+        "명확한 R&R 프로젝트에서는 갈등이 줄고 속도가 날 수 있습니다.",
+      ],
+      counterPattern: "신뢰하는 파트너와는 몫을 나눠도 품질 불안이 적을 수 있습니다.",
+      triggerConditions: ["R&R 공백", "공동 책임", "최종 서명만 본인"],
+      strengthSide: "내 몫의 완성도",
+      shadowSide: "겹친 일을 혼자 회수",
+      practicalMeaning: "협업 기피라기보다 경계가 안 그려질 때 과책임으로 흐릅니다.",
+      actionOptions: ["담당자 이름 먼저 적기", "최종 검수만 남기기"],
+      shareableLine: `${d}이 많으면 내 몫이 보여야 강하고, ${s}이 비면 겹친 책임을 혼자 끌어안을 수 있다.`,
+    },
+  };
+  const pack = packs[input.family];
+  return {
+    id: "work-environment",
+    title: "일에서 힘이 나는 방식",
+    coreInterpretation: pack.coreInterpretation,
+    evidenceAxisIds: input.evidenceAxisIds,
+    evidenceIds: input.evidenceIds,
+    behaviorPossibilities: pack.behaviorPossibilities,
+    realLifeExamples: pack.realLifeExamples,
+    counterPattern: pack.counterPattern,
+    triggerConditions: pack.triggerConditions,
+    strengthSide: pack.strengthSide,
+    shadowSide: pack.shadowSide,
+    practicalMeaning: pack.practicalMeaning,
+    actionOptions: pack.actionOptions,
+    confidence: "high",
+    shareableLine: pack.shareableLine,
+  };
+}
+
+function buildLoveHypothesis(input: {
+  family: TenGodFamily;
+  yinYang: "yang" | "yin";
+  dominant: ElementKey;
+  evidenceAxisIds: string[];
+  evidenceIds: string[];
+}): InsightCardV2 {
+  const d = ELEMENT_LABEL[input.dominant];
+  const pace = input.yinYang === "yang" ? "확신 후 속도가 갑자기 빨라질" : "확신이 서기 전 관찰이 길어질";
+  const packs: Record<
+    TenGodFamily,
+    Pick<
+      InsightCardV2,
+      | "coreInterpretation"
+      | "behaviorPossibilities"
+      | "realLifeExamples"
+      | "counterPattern"
+      | "triggerConditions"
+      | "strengthSide"
+      | "shadowSide"
+      | "practicalMeaning"
+      | "actionOptions"
+      | "shareableLine"
+    >
+  > = {
+    officer: {
+      coreInterpretation: `${d} 기운과 선 긋는 리듬이 겹치면, 처음에는 예의가 앞서고 ${pace} 수 있습니다. 경계가 흔들리면 다시 거리를 둡니다.`,
+      behaviorPossibilities: [
+        "관계의 이름을 정하기 전에는 속도를 스스로 조절할 수 있습니다.",
+        "약속이 지켜지지 않으면 설명보다 거리가 먼저 생길 수 있습니다.",
+      ],
+      realLifeExamples: [
+        "호감이 있어도 ‘우리’라는 말이 나오기 전에는 선을 유지할 수 있습니다.",
+        "말과 행동이 어긋나면 감정 표현보다 연락 텀이 먼저 늘어날 수 있습니다.",
+      ],
+      counterPattern: "규칙과 신뢰가 이미 있는 관계에서는 속도가 생각보다 빠를 수 있습니다.",
+      triggerConditions: ["관계 정의 이전", "약속 불이행", "공개 압박"],
+      strengthSide: "관계의 선을 오래 지킴",
+      shadowSide: "속 결론 공유 지연",
+      practicalMeaning: "냉정이 아니라 이름이 붙기 전의 안전 확인으로 읽는 편이 맞습니다.",
+      actionOptions: ["관계 기대 한 문장 공유", "거리 조절 이유를 하루 안에 말하기"],
+      shareableLine: `${d}이 강하면 선이 보일 때 마음을 열고, 이름이 없으면 ${input.yinYang === "yang" ? "갑자기 빨라지거나" : "관찰이 길어지거나"} 한다.`,
+    },
+    output: {
+      coreInterpretation: `${d}이 앞선 연애에서는 챙김과 표현이 행동으로 먼저 나가고, ${pace} 수 있습니다. 말이 안 통하면 설명이 아니라 이벤트가 늘 수 있습니다.`,
+      behaviorPossibilities: [
+        "좋아하면 실무적 도움·선물이 말보다 빠를 수 있습니다.",
+        "감정이 복잡하면 대화를 미루고 먼저 무언가를 해주려 할 수 있습니다.",
+      ],
+      realLifeExamples: [
+        "바쁠 때도 맛있는 걸 보내거나 일정을 맞춰 주는 식으로 마음이 보일 수 있습니다.",
+        "갈등이 생기면 긴 대화보다 ‘일단 분위기 전환’을 시도할 수 있습니다.",
+      ],
+      counterPattern: "상대가 말로 확인받길 원하면 행동만으로는 오해가 남을 수 있습니다.",
+      triggerConditions: ["표현 압박", "감정 대화", "오해 누적"],
+      strengthSide: "실질적 챙김",
+      shadowSide: "말로 풀 타이밍 놓침",
+      practicalMeaning: "애정 없음이 아니라 표현 채널이 행동 쪽인 패턴입니다.",
+      actionOptions: ["행동 뒤에 한 줄 이유", "주 1회 감정 확인 질문"],
+      shareableLine: `${d}이 많으면 챙김은 빠른데, 말로 마음을 푸는 속도는 ${input.yinYang === "yin" ? "더 늦을" : "들쭉날쭉할"} 수 있다.`,
+    },
+    resource: {
+      coreInterpretation: `${d}이 두드러진 관계에서는 상대를 이해한 뒤에야 마음이 열리고, ${pace} 수 있습니다. 정보가 부족하면 호감이 있어도 보류가 길어집니다.`,
+      behaviorPossibilities: [
+        "말보다 일관된 태도를 충분히 본 뒤에 확신이 생길 수 있습니다.",
+        "상대의 과거·가치관이 안 보이면 가까워지는 속도를 스스로 늦출 수 있습니다.",
+      ],
+      realLifeExamples: [
+        "몇 번 더 만나며 ‘이 사람이 평소에 어떤지’를 확인한 뒤에야 소개를 할 수 있습니다.",
+        "갑작스러운 고백은 기쁨보다 부담으로 먼저 느껴질 수 있습니다.",
+      ],
+      counterPattern: "이미 오래 본 상대라면 갑작스러운 진전에도 안정적으로 반응할 수 있습니다.",
+      triggerConditions: ["정보 공백", "급가속", "일관성 부족"],
+      strengthSide: "진정성을 오래 봄",
+      shadowSide: "관찰만 길어짐",
+      practicalMeaning: "소극적이라기보다 확신을 위한 데이터 수집에 가깝습니다.",
+      actionOptions: ["확인할 태도 3가지를 미리 적기", "관찰 기한 정하기"],
+      shareableLine: `${d}이 강하면 이해한 뒤에 열리고, 확신이 없으면 관찰이 사랑처럼 보일 수 있다.`,
+    },
+    wealth: {
+      coreInterpretation: `${d} 기운이 관계에 섞이면 현실 조건과 마음이 같이 저울질되고, ${pace} 수 있습니다. 생활이 안 그려지면 감정이 있어도 보류가 됩니다.`,
+      behaviorPossibilities: [
+        "호감과 별개로 생활 리듬·책임 나눔이 보이는지 먼저 볼 수 있습니다.",
+        "로맨스만 있고 일상이 안 맞으면 스스로 속도를 줄일 수 있습니다.",
+      ],
+      realLifeExamples: [
+        "데이트는 즐거운데 주중 연락·일정 조율이 안 되면 확신이 늦어질 수 있습니다.",
+        "함께 사는 그림이 구체화되면 태도가 급격히 진지해질 수 있습니다.",
+      ],
+      counterPattern: "현실 조건이 이미 맞는 상대에게는 감정의 속도가 빨라질 수 있습니다.",
+      triggerConditions: ["생활 그림 부재", "책임 불균형", "미래 대화 회피"],
+      strengthSide: "관계를 생활로 번역",
+      shadowSide: "조건 확인이 냉정으로 읽힘",
+      practicalMeaning: "계산적이라기보다 마음이 일상이 될 수 있는지를 먼저 봅니다.",
+      actionOptions: ["주중 리듬 한 가지 맞춰 보기", "기대하는 생활 한 문장"],
+      shareableLine: `${d}이 많으면 마음이 있어도 생활이 안 그려지면 속도를 늦출 수 있다.`,
+    },
+    peer: {
+      coreInterpretation: `${d}이 앞선 연애에서는 대등함이 핵심이라, 맞추기만 요구되면 마음이 식고 ${pace} 수 있습니다. 존중이 보이면 의외로 깊이 들어갑니다.`,
+      behaviorPossibilities: [
+        "지시·압박이 느껴지면 호감이 있어도 선을 다시 그을 수 있습니다.",
+        "서로의 영역이 존중되면 챙김이 빠르게 늘어날 수 있습니다.",
+      ],
+      realLifeExamples: [
+        "‘왜 연락이 늦냐’가 추궁이 되면 해명 대신 텀이 생길 수 있습니다.",
+        "각자의 일정을 인정해 주면 먼저 시간을 내게 될 수 있습니다.",
+      ],
+      counterPattern: "리더십이 돌봄으로 느껴지는 상대에게는 의외로 기대고 싶어질 수 있습니다.",
+      triggerConditions: ["일방적 요구", "비교", "영역 침범"],
+      strengthSide: "대등한 관계 유지",
+      shadowSide: "맞추라는 압력에 급냉각",
+      practicalMeaning: "자존심 싸움보다 존중 여부가 개폐 스위치입니다.",
+      actionOptions: ["서로 양보할 항목 나누기", "추궁 대신 요청 문장"],
+      shareableLine: `${d}이 강하면 대등함이 보일 때 깊어지고, 맞추기만 강요되면 바로 식을 수 있다.`,
+    },
+  };
+  const pack = packs[input.family];
+  return {
+    id: "love-distance",
+    title: "가까워질수록 달라지는 태도",
+    coreInterpretation: pack.coreInterpretation,
+    evidenceAxisIds: input.evidenceAxisIds,
+    evidenceIds: input.evidenceIds,
+    behaviorPossibilities: pack.behaviorPossibilities,
+    realLifeExamples: pack.realLifeExamples,
+    counterPattern: pack.counterPattern,
+    triggerConditions: pack.triggerConditions,
+    strengthSide: pack.strengthSide,
+    shadowSide: pack.shadowSide,
+    practicalMeaning: pack.practicalMeaning,
+    actionOptions: pack.actionOptions,
+    confidence: "medium",
+    shareableLine: pack.shareableLine,
+  };
+}
+
 function countsFromTenGods(ctx: FortuneAiContext): Map<TenGodLabel, number> {
   const m = new Map<TenGodLabel, number>();
   const labels = [
@@ -375,74 +793,29 @@ export function buildInterpretationContextV2(
     },
   ];
 
+  const monthFamily = tenGodFamily(ctx.tenGods.month.stem);
   const behaviorHypotheses: InsightCardV2[] = [
-    {
-      id: "money-threshold",
-      title: "돈에서 먼저 보는 기준",
-      coreInterpretation: "큰돈에서는 속도보다 기준 정리가 앞서고, 작은 반복에서는 시야가 느슨해질 여지가 있습니다.",
+    buildMoneyHypothesis({
+      family: monthFamily,
+      dominant: dominant.key,
+      scarce: scarce.key,
       evidenceAxisIds: ["day_master", "five_elements", "ten_gods_month"],
       evidenceIds: [dayMasterEvidenceId, dominantEvidenceId, monthStemEvidenceId],
-      behaviorPossibilities: [
-        "결정을 미루는 것이 아니라 기준이 서기 전까지 보류하는 쪽에 가깝습니다.",
-        "반복 결제는 규모가 작을수록 체감보다 늦게 잡힐 수 있습니다.",
-      ],
-      realLifeExamples: [
-        "큰 결제에서는 필요·대안·한도를 먼저 정한 뒤 결론을 내리는 식으로 나타날 수 있습니다.",
-        "월 단위 고정비보다 잔잔한 편의 소비가 나중에 합쳐져 보일 수 있습니다.",
-      ],
-      counterPattern: "이미 기준이 있는 영역에서는 오히려 결정이 빠르게 끝날 수 있습니다.",
-      triggerConditions: ["큰 금액", "비교 선택지 다수", "정산 기준 불명확"],
-      strengthSide: "큰 흐름을 지키는 판단",
-      shadowSide: "소액·반복 지출의 사각",
-      practicalMeaning: "절약 조언보다 ‘어디서 놓치는가’를 분리해 보는 편이 맞습니다.",
-      actionOptions: ["큰 결제 기준 3개 고정", "반복 지출만 주 1회 합산"],
-      confidence: "high",
-      shareableLine: "큰돈은 막는데, 작은 반복은 늦게 보일 수 있다.",
-    },
-    {
-      id: "work-environment",
-      title: "일에서 힘이 나는 방식",
-      coreInterpretation: "역할·완료 조건·검수 지점이 보이는 환경에서 강점이 살아나고, 기준 없는 수정 반복에서는 피로가 커질 수 있습니다.",
+    }),
+    buildWorkHypothesis({
+      family: monthFamily,
+      dominant: dominant.key,
+      scarce: scarce.key,
       evidenceAxisIds: ["five_elements", "ten_god_distribution", "ten_gods_month"],
       evidenceIds: [dominantEvidenceId, monthStemEvidenceId, topTenGods[0]?.evidenceId ?? monthStemEvidenceId],
-      behaviorPossibilities: [
-        "막연한 아이디어보다 범위가 정리된 과제에서 집중력이 붙을 수 있습니다.",
-        "수정 이유가 흐릴수록 일 자체보다 과정 관리에 지칠 수 있습니다.",
-      ],
-      realLifeExamples: [
-        "프로젝트 초반에는 요구사항 정리, 후반에는 마감 직전 점검에서 강점이 드러날 수 있습니다.",
-      ],
-      counterPattern: "목표가 선명하면 평소보다 훨씬 과감하게 밀어붙일 수 있습니다.",
-      triggerConditions: ["모호한 수정 요청", "책임 범위 불명확", "완료 기준 부재"],
-      strengthSide: "완성도 관리",
-      shadowSide: "위임 지연",
-      practicalMeaning: "직업명보다 업무 구조와 검수 리듬이 더 중요합니다.",
-      actionOptions: ["완료 조건 선확인", "위임 범위와 검수 포인트 분리"],
-      confidence: "high",
-      shareableLine: "능력보다 환경이 먼저 맞아야 강점이 제대로 작동한다.",
-    },
-    {
-      id: "love-distance",
-      title: "가까워질수록 달라지는 태도",
-      coreInterpretation: "처음에는 예의와 관찰이 앞서고, 확신이 생긴 뒤에는 챙김이 빨라지지만 경계가 흔들리면 다시 거리를 둡니다.",
+    }),
+    buildLoveHypothesis({
+      family: monthFamily,
+      yinYang: ctx.dayMaster.yinYang,
+      dominant: dominant.key,
       evidenceAxisIds: ["pillar_day", "ten_gods_day", "yin_yang"],
       evidenceIds: [dayBranchEvidenceId, yinYangEvidenceId],
-      behaviorPossibilities: [
-        "말보다 행동의 일관성을 보고 마음을 정할 수 있습니다.",
-        "불편함을 바로 표출하기보다 정리 후에야 거리를 조절할 수 있습니다.",
-      ],
-      realLifeExamples: [
-        "호감 초기에는 속도를 늦추다가, 믿음이 생기면 실질적 챙김이 빨라지는 식으로 나타날 수 있습니다.",
-      ],
-      counterPattern: "신뢰가 한 번 정리된 관계에서는 오히려 설명 없이도 바로 움직일 수 있습니다.",
-      triggerConditions: ["관계 정의 이전", "말과 행동 불일치", "갈등 후 정리 시간 필요"],
-      strengthSide: "관계의 진정성을 오래 본다",
-      shadowSide: "속 결론 공유 지연",
-      practicalMeaning: "연애 해석은 호감의 유무보다 ‘가까워질수록 어떻게 달라지는가’에 답해야 합니다.",
-      actionOptions: ["불편함을 하루 안에 짧게 공유", "확신 전 확인 기준 언어화"],
-      confidence: "medium",
-      shareableLine: "마음이 생긴 뒤의 속도와, 마음을 정하기 전의 속도가 다를 수 있다.",
-    },
+    }),
   ];
 
   const tensions: TensionV2[] = [
@@ -517,8 +890,8 @@ export function buildInterpretationContextV2(
       keyQuestion: "나는 돈 앞에서 어떻게 움직이는가?",
       evidenceAxisIds: ["day_master", "five_elements", "ten_gods_month", "ten_gods_year"],
       signalSummary: [
-        "큰돈 방어와 소액 사각이 함께 나타날 수 있음",
-        "정산 기준이 없을 때 스트레스가 커질 수 있음",
+        behaviorHypotheses[0]!.shareableLine ?? "돈 앞에서 속도가 갈라질 수 있음",
+        behaviorHypotheses[0]!.shadowSide,
       ],
     },
     {
@@ -526,8 +899,8 @@ export function buildInterpretationContextV2(
       keyQuestion: "나는 어떤 방식으로 일할 때 강해지는가?",
       evidenceAxisIds: ["five_elements", "ten_god_distribution", "ten_gods_month"],
       signalSummary: [
-        "완료 조건과 검수 지점이 보이는 일에서 강점이 살아남",
-        "모호한 수정 반복에서는 피로가 빠르게 누적됨",
+        behaviorHypotheses[1]!.shareableLine ?? "환경이 맞을 때 강점이 살아남",
+        behaviorHypotheses[1]!.shadowSide,
       ],
     },
     {
@@ -535,8 +908,8 @@ export function buildInterpretationContextV2(
       keyQuestion: "나는 관계가 깊어질수록 어떻게 달라지는가?",
       evidenceAxisIds: ["pillar_day", "ten_gods_day", "yin_yang"],
       signalSummary: [
-        "확신 전과 후의 속도가 다름",
-        "갈등 시 바로 폭발하기보다 거리 조절이 먼저 나타날 수 있음",
+        behaviorHypotheses[2]!.shareableLine ?? "가까워질수록 속도가 달라질 수 있음",
+        behaviorHypotheses[2]!.shadowSide,
       ],
     },
     {

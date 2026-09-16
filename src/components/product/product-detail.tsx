@@ -7,9 +7,34 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { formatKRW } from "@/lib/utils";
 import { trackClientEvent } from "@/lib/analytics/client";
+import { saveOrderAccessToken } from "@/lib/orders/client-access-token";
 import type { Product } from "@/types";
 import { MysticPage } from "@/components/mystic/celestial-background";
 import { OrnamentCard, MysticPanel } from "@/components/mystic/ornament-card";
+
+const REPORT_VALUE: Record<string, string[]> = {
+  "2026-total": [
+    "타고난 흐름에서 반복되는 판단과 선택의 패턴",
+    "일·돈·관계가 서로 영향을 주는 지점",
+    "강점과 그림자, 지금 더 살펴볼 질문",
+    "다음 행동으로 옮길 수 있는 현실적인 가이드",
+  ],
+  "2026-money": [
+    "돈을 벌고, 쓰고, 관리할 때 반복되는 습관",
+    "기회와 불안 사이에서 흔들리는 판단의 원인",
+    "내 성향에 맞는 돈 관리와 실행의 우선순위",
+  ],
+  "2026-career": [
+    "능력이 가장 잘 살아나는 업무 방식과 환경",
+    "일에서 지치거나 막히기 쉬운 반복 패턴",
+    "다음 선택 전에 점검할 현실적인 기준",
+  ],
+  "2026-love": [
+    "관계가 가까워질수록 드러나는 나의 반응 패턴",
+    "끌림과 갈등이 반복되는 이유",
+    "상대와의 거리를 건강하게 조율하는 실마리",
+  ],
+};
 
 export function ProductDetail({
   product,
@@ -17,18 +42,28 @@ export function ProductDetail({
   linkedTarotReadingId,
   purchaseBlocked = false,
   purchaseBlockedMessage = null,
+  checkoutMethod = "toss",
+  tossTestMode = false,
 }: {
   product: Product;
   linkedFreeResultId?: string | null;
   linkedTarotReadingId?: string | null;
   purchaseBlocked?: boolean;
   purchaseBlockedMessage?: string | null;
+  checkoutMethod?: "toss" | "bank";
+  tossTestMode?: boolean;
 }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [depositorName, setDepositorName] = useState("");
   const isPaidTarot = product.productType === "tarot_paid";
+  const useToss = checkoutMethod === "toss";
+  const reportValue = REPORT_VALUE[product.slug] ?? [
+    "입력한 사주 정보를 바탕으로 한 개인 리포트",
+    "지금의 고민을 정리할 수 있는 해석과 질문",
+    "다음 선택을 위한 실용적인 가이드",
+  ];
 
   useEffect(() => {
     trackClientEvent({
@@ -65,7 +100,7 @@ export function ProductDetail({
       );
       return;
     }
-    if (depositorName.trim().length < 2) {
+    if (!useToss && depositorName.trim().length < 2) {
       setError("실제 입금하실 분의 입금자명을 입력해 주세요.");
       return;
     }
@@ -85,8 +120,8 @@ export function ProductDetail({
         body: JSON.stringify({
           productId: product.id,
           sourceResultId: linkedFreeResultId,
-          depositorName: depositorName.trim(),
-          paymentMethod: "BANK_TRANSFER",
+          paymentMethod: useToss ? "TOSS" : "BANK_TRANSFER",
+          ...(!useToss ? { depositorName: depositorName.trim() } : {}),
           ...(linkedTarotReadingId
             ? { sourceTarotReadingId: linkedTarotReadingId }
             : {}),
@@ -96,13 +131,20 @@ export function ProductDetail({
         code?: string;
         message?: string;
         waitUrl?: string;
+        checkoutUrl?: string;
+        orderId?: string;
+        accessToken?: string | null;
       };
-      if (!res.ok || !data.waitUrl) {
+      const nextUrl = data.checkoutUrl ?? data.waitUrl;
+      if (!res.ok || !nextUrl) {
         setError(data.message ?? "주문을 생성하지 못했습니다.");
         setLoading(false);
         return;
       }
-      router.push(data.waitUrl);
+      if (data.accessToken && data.orderId) {
+        saveOrderAccessToken(data.orderId, data.accessToken);
+      }
+      router.push(nextUrl);
     } catch {
       setError("주문을 생성하지 못했습니다. 잠시 후 다시 시도해 주세요.");
       setLoading(false);
@@ -135,20 +177,57 @@ export function ProductDetail({
         </div>
 
         <MysticPanel className="mt-8">
+          <p className="text-xs text-[var(--gold-primary)]">이 리포트에서 받는 것</p>
+          <ul className="mt-3 space-y-2">
+            {reportValue.map((item) => (
+              <li
+                key={item}
+                className="flex gap-2 text-sm leading-relaxed text-[var(--text-secondary)]"
+              >
+                <span aria-hidden className="mt-1 text-[var(--gold-primary)]">✦</span>
+                <span>{item}</span>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-4 border-t border-[var(--border-subtle)] pt-3 text-xs leading-relaxed text-[var(--text-muted)]">
+            결제 후 입력한 사주 정보를 바탕으로 개인 리포트가 생성되며, 내 리포트에서 다시 확인할 수 있습니다.
+          </p>
+        </MysticPanel>
+
+        <MysticPanel className="mt-8">
           <p className="text-xs text-[var(--gold-primary)]">결제 방법</p>
-          <p className="mt-2 text-sm text-[var(--text-secondary)]">
-            ● 계좌이체 (하나은행)
-          </p>
-          <p className="mt-1 text-xs text-[var(--text-muted)]">
-            주문 후 안내되는 계좌로 입금해 주세요. 입금자명은 주문 시 입력한
-            이름과 동일해야 합니다.
-          </p>
+          {useToss ? (
+            <>
+              <p className="mt-2 text-sm text-[var(--text-secondary)]">
+                ● 토스페이먼츠 카드/간편결제
+              </p>
+              {tossTestMode ? (
+                <p className="mt-1 text-xs text-[var(--text-muted)]">
+                  지금은 토스 테스트 결제입니다. 실제 매출 정산이 아닌 샌드박스
+                  결제입니다.
+                </p>
+              ) : (
+                <p className="mt-1 text-xs text-[var(--text-muted)]">
+                  결제 완료 후 리포트가 생성됩니다.
+                </p>
+              )}
+            </>
+          ) : (
+            <>
+              <p className="mt-2 text-sm text-[var(--text-secondary)]">
+                ● 계좌이체 (하나은행)
+              </p>
+              <p className="mt-1 text-xs text-[var(--text-muted)]">
+                카드 결제(Toss)는 준비 중입니다.
+              </p>
+            </>
+          )}
         </MysticPanel>
 
         <MysticPanel className="mt-4">
           <p className="text-xs text-[var(--gold-primary)]">결제 후 안내</p>
           <p className="mt-2 text-sm leading-relaxed text-[var(--text-secondary)]">
-            입금 확인 후 「내 결과」에서 주문 상태를 확인할 수 있습니다. 리포트는
+            결제 확인 후 「내 결과」에서 주문 상태를 확인할 수 있습니다. 리포트는
             준비가 완료되면 같은 화면에서 열람 및 PDF 다운로드가 가능합니다.
           </p>
           <p className="mt-2 text-xs text-[var(--text-muted)]">
@@ -166,19 +245,25 @@ export function ProductDetail({
               "현재 최종 점검 중입니다. 유료 리포트 판매는 잠시 후 오픈됩니다."}
           </p>
         ) : linkedFreeResultId ? (
-          <div className="mt-6 space-y-2">
-            <Label htmlFor="depositor">입금자명</Label>
-            <Input
-              id="depositor"
-              placeholder="실제 입금하실 계좌의 입금자명"
-              value={depositorName}
-              onChange={(e) => setDepositorName(e.target.value)}
-              maxLength={40}
-            />
-            <p className="text-xs text-[var(--text-muted)]">
-              실제로 송금하실 때 표시되는 입금자명을 입력해 주세요.
+          useToss ? (
+            <p className="mt-6 text-sm leading-relaxed text-[var(--text-secondary)]">
+              아래 버튼으로 결제창을 엽니다. 하나은행 입금 확인은 사용하지 않습니다.
             </p>
-          </div>
+          ) : (
+            <div className="mt-6 space-y-2">
+              <Label htmlFor="depositor">입금자명</Label>
+              <Input
+                id="depositor"
+                placeholder="실제 입금하실 계좌의 입금자명"
+                value={depositorName}
+                onChange={(e) => setDepositorName(e.target.value)}
+                maxLength={40}
+              />
+              <p className="text-xs text-[var(--text-muted)]">
+                실제로 송금하실 때 표시되는 입금자명을 입력해 주세요.
+              </p>
+            </div>
+          )
         ) : (
           <p className="mt-6 border border-[var(--border-subtle)] bg-[var(--surface-strong)] px-4 py-3 text-sm text-[var(--text-secondary)]">
             구매하려면 무료 사주 결과에서 이 상품을 선택해 주세요.
@@ -205,7 +290,9 @@ export function ProductDetail({
                 ? "판매 준비 중"
                 : loading
                   ? "주문 준비 중..."
-                  : "계좌이체로 구매하기"}
+                  : useToss
+                    ? "카드로 결제하기"
+                    : "계좌이체로 구매하기"}
             </Button>
           </div>
         </div>

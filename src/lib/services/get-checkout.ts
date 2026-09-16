@@ -6,6 +6,7 @@ import { getProductById } from "@/lib/repositories/products";
 import { getProfileById } from "@/lib/repositories/profiles";
 import { getPublicPaymentMode } from "@/lib/payments";
 import { getTossClientKey } from "@/lib/payments/toss/client";
+import { isTossTestKeyPair } from "@/lib/payments/checkout-policy";
 
 export type CheckoutPageDTO = {
   orderId: string;
@@ -18,6 +19,7 @@ export type CheckoutPageDTO = {
   clientKey: string | null;
   paymentMode: "toss" | "mock";
   customerKey: string;
+  testMode: boolean;
 };
 
 export async function getCheckoutPageForOwner(input: {
@@ -88,6 +90,7 @@ export async function getCheckoutPageForOwner(input: {
     clientKey,
     paymentMode,
     customerKey,
+    testMode: paymentMode === "toss" && isTossTestKeyPair(),
   };
 }
 

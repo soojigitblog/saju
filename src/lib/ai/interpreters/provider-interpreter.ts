@@ -172,7 +172,10 @@ export class ProviderFortuneInterpreter implements FortuneInterpreter {
         );
       }
 
-      validatePaidSemantics(parsed, ctx, { productSlug: args.product.slug });
+      validatePaidSemantics(parsed, ctx, {
+        productSlug: args.product.slug,
+        requireConsultingDepth: true,
+      });
 
       const generationKey = buildGenerationKey({
         calculationHash: args.chart.engine.calculationHash,

@@ -19,6 +19,7 @@ const links = [
   { href: "/admin/analytics", label: "Analytics" },
   { href: "/admin/bank", label: "은행 상태" },
   { href: "/admin/bugs", label: "버그/에러" },
+  { href: "/admin/refund-requests", label: "환불 신청" },
   { href: "/admin/settings", label: "설정" },
 ];
 

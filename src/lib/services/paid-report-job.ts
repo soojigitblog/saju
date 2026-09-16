@@ -52,6 +52,7 @@ import {
 } from "@/lib/services/paid-report-failure-policy";
 import { stampServerPaidReportMetadata } from "@/lib/services/paid-report-metadata";
 import { PAID_REPORT_WAITING_ERROR_CODE } from "@/lib/services/paid-report-waiting";
+import { isTossTestSandboxCheckoutAllowed } from "@/lib/payments/toss-sandbox";
 
 export type PaidReportJobResult = {
   reportId: string | null;
@@ -165,7 +166,11 @@ export async function startPaidReportJob(input: {
     return { reportId: report.id, status: report.generation_status };
   }
 
-  if (actor === "customer" && !isPaidReportGenerationEnabled()) {
+  if (
+    actor === "customer" &&
+    !isPaidReportGenerationEnabled() &&
+    !isTossTestSandboxCheckoutAllowed()
+  ) {
     return markReportWaitingForAi({
       reportId: report.id,
       orderId: order.id,
@@ -260,7 +265,11 @@ export async function startPaidReportJob(input: {
     return { reportId: report.id, status: "FAILED" };
   }
 
-  if (actor === "customer" && provider === "mock") {
+  if (
+    actor === "customer" &&
+    provider === "mock" &&
+    !isTossTestSandboxCheckoutAllowed()
+  ) {
     await updateReport(report.id, {
       generation_status: "FAILED",
       error_code: "CUSTOMER_MOCK_PROVIDER_FORBIDDEN",

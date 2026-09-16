@@ -2,10 +2,17 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { formatKRW } from "@/lib/utils";
 import { MysticPage } from "@/components/mystic/celestial-background";
 import { OrnamentCard, MysticPanel } from "@/components/mystic/ornament-card";
+import {
+  reportHrefWithAccess,
+  saveOrderAccessToken,
+} from "@/lib/orders/client-access-token";
+import { RefundRequestForm } from "@/components/refund/refund-request-form";
 import {
   isReportWaitingForAi,
   PAID_REPORT_WAITING_ERROR_CODE,
@@ -80,9 +87,14 @@ function statusLabel(
 }
 
 export default function MyResultsPage() {
+  const router = useRouter();
   const [orders, setOrders] = useState<OrderItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [restoreCode, setRestoreCode] = useState("");
+  const [restoreError, setRestoreError] = useState("");
+  const [restoreLoading, setRestoreLoading] = useState(false);
+  const [refundOrderId, setRefundOrderId] = useState<string | null>(null);
 
   useEffect(() => {
     const ac = new AbortController();
@@ -116,8 +128,66 @@ export default function MyResultsPage() {
         <p className="hanja-accent mb-2">ARCHIVE</p>
         <h1 className="display-title text-3xl">내 결과</h1>
         <p className="mt-2 text-sm text-[var(--text-secondary)]">
-          이 기기에서 진행한 주문과 리포트입니다.
+          이 기기에서 진행한 주문과 리포트입니다. 다른 기기에서 결제했다면 결과
+          보관 코드로 찾을 수 있습니다.
         </p>
+
+        <MysticPanel className="mt-6 space-y-3">
+          <p className="text-xs text-[var(--gold-primary)]">결과 보관 코드</p>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Input
+              value={restoreCode}
+              onChange={(e) => setRestoreCode(e.target.value)}
+              placeholder="입금 안내 화면에 나온 코드를 붙여 넣으세요"
+              className="flex-1"
+            />
+            <Button
+              type="button"
+              size="sm"
+              disabled={restoreLoading || restoreCode.trim().length < 16}
+              onClick={() => {
+                void (async () => {
+                  setRestoreError("");
+                  setRestoreLoading(true);
+                  try {
+                    const res = await fetch("/api/orders/restore", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ accessToken: restoreCode.trim() }),
+                    });
+                    const data = (await res.json()) as {
+                      message?: string;
+                      orderId?: string;
+                      reportUrl?: string | null;
+                      waitUrl?: string;
+                    };
+                    if (!res.ok || !data.orderId) {
+                      setRestoreError(
+                        data.message ?? "코드로 주문을 찾지 못했습니다."
+                      );
+                      return;
+                    }
+                    saveOrderAccessToken(data.orderId, restoreCode.trim());
+                    router.push(
+                      data.reportUrl
+                        ? `${data.reportUrl}?access=${encodeURIComponent(restoreCode.trim())}`
+                        : data.waitUrl ?? "/my-results"
+                    );
+                  } catch {
+                    setRestoreError("복원에 실패했습니다. 잠시 후 다시 시도해 주세요.");
+                  } finally {
+                    setRestoreLoading(false);
+                  }
+                })();
+              }}
+            >
+              {restoreLoading ? "찾는 중…" : "코드로 찾기"}
+            </Button>
+          </div>
+          {restoreError ? (
+            <p className="text-xs text-[var(--error-text)]">{restoreError}</p>
+          ) : null}
+        </MysticPanel>
 
         {loading ? (
           <p className="mt-8 text-sm text-[var(--text-muted)]">불러오는 중…</p>
@@ -166,7 +236,14 @@ export default function MyResultsPage() {
                   ) : null}
                   {item.reportUrl ? (
                     <Button asChild size="sm">
-                      <Link href={item.reportUrl}>전체 리포트 보기</Link>
+                      <Link
+                        href={reportHrefWithAccess(
+                          item.reportUrl.replace(/^\/report\//, ""),
+                          item.order.id
+                        )}
+                      >
+                        전체 리포트 보기
+                      </Link>
                     </Button>
                   ) : null}
                   {!item.paymentUrl && !item.reportUrl ? (
@@ -176,12 +253,28 @@ export default function MyResultsPage() {
                       </Link>
                     </Button>
                   ) : null}
+                  {item.order.paidAt && item.order.status !== "REFUNDED" ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setRefundOrderId(item.order.id)}
+                    >
+                      환불 신청
+                    </Button>
+                  ) : null}
                 </div>
               </OrnamentCard>
             </li>
           ))}
         </ul>
       </div>
+
+      {refundOrderId ? (
+        <RefundRequestForm
+          orderId={refundOrderId}
+          onClose={() => setRefundOrderId(null)}
+        />
+      ) : null}
     </MysticPage>
   );
 }

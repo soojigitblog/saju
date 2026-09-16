@@ -6,6 +6,10 @@ import { Button } from "@/components/ui/button";
 import { formatKRW } from "@/lib/utils";
 import { MysticPage } from "@/components/mystic/celestial-background";
 import { OrnamentCard } from "@/components/mystic/ornament-card";
+import {
+  readOrderAccessToken,
+  reportHrefWithAccess,
+} from "@/lib/orders/client-access-token";
 
 type StatusPayload = {
   order: {
@@ -97,6 +101,7 @@ export function BankTransferWaitClient({ orderId }: { orderId: string }) {
   const [depositAcked, setDepositAcked] = useState(false);
   const [ackLoading, setAckLoading] = useState(false);
   const [refreshLoading, setRefreshLoading] = useState(false);
+  const [accessToken, setAccessToken] = useState<string | null>(null);
 
   const applyStatus = useCallback(
     (json: StatusPayload, acked?: boolean) => {
@@ -126,6 +131,10 @@ export function BankTransferWaitClient({ orderId }: { orderId: string }) {
     },
     [orderId]
   );
+
+  useEffect(() => {
+    setAccessToken(readOrderAccessToken(orderId));
+  }, [orderId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -337,6 +346,32 @@ export function BankTransferWaitClient({ orderId }: { orderId: string }) {
               ) : null}
             </div>
           </div>
+          {accessToken ? (
+            <div>
+              <p className="text-xs text-[var(--text-muted)]">결과 보관 코드</p>
+              <div className="mt-1 flex flex-wrap items-center gap-3">
+                <p className="break-all font-mono text-xs leading-relaxed">
+                  {accessToken}
+                </p>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() =>
+                    void copyText(accessToken, () =>
+                      setCopyFeedback("결과 보관 코드를 복사했습니다.")
+                    )
+                  }
+                >
+                  코드 복사
+                </Button>
+              </div>
+              <p className="mt-2 text-xs leading-relaxed text-[var(--text-secondary)]">
+                다른 기기에서 결과를 보려면 이 코드를 저장해 두세요. 입금 확인 후에도
+                유효합니다.
+              </p>
+            </div>
+          ) : null}
           {isPending ? (
             <p className="text-xs leading-relaxed text-[var(--text-secondary)]">
               위 금액을 정확히 입금해 주세요. 입금 확인 후 「내 결과」에서 리포트
@@ -384,7 +419,12 @@ export function BankTransferWaitClient({ orderId }: { orderId: string }) {
           ) : null}
           {reportReady && (data?.report?.id || data?.order.id) ? (
             <Button asChild size="full">
-              <Link href={`/report/${data?.report?.id ?? data?.order.id}`}>
+              <Link
+                href={reportHrefWithAccess(
+                  data?.report?.id ?? data?.order.id ?? orderId,
+                  orderId
+                )}
+              >
                 전체 리포트 보기
               </Link>
             </Button>

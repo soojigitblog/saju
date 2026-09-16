@@ -2,6 +2,7 @@ import "server-only";
 
 import type { z } from "zod";
 import { generateStructuredResult } from "@/lib/ai/wrapper/generate-structured";
+import type { AiBillingTier } from "@/lib/ai/config";
 import type {
   AIProvider,
   AIProviderGenerateOptions,
@@ -14,6 +15,8 @@ import type {
 export class OpenAIProvider implements AIProvider {
   readonly name = "openai" as const;
 
+  constructor(private readonly tier: AiBillingTier = "free") {}
+
   async generateStructured<T extends z.ZodType>(
     options: AIProviderGenerateOptions<T>
   ): Promise<AIProviderResult<z.infer<T>>> {
@@ -23,6 +26,7 @@ export class OpenAIProvider implements AIProvider {
       userPrompt: options.userPrompt,
       schema: options.schema,
       schemaName: options.schemaName,
+      tier: this.tier,
     });
 
     return {

@@ -72,6 +72,7 @@ export function buildEvidenceWhitelist(ctx: FortuneAiContext): Set<string> {
     "dayMaster.element",
     "dayMaster.yinYang",
     `dayMaster.hangul=${ctx.dayMaster.hangul}`,
+    "fiveElements",
     "fiveElements.wood",
     "fiveElements.fire",
     "fiveElements.earth",

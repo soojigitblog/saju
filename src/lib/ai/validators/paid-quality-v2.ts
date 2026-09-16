@@ -85,6 +85,30 @@ function countUnsupportedClaims(text: string): number {
   return matches?.length ?? 0;
 }
 
+export function paidQualityV2Errors(
+  report: PaidFortuneReport,
+  options?: { requireConsultingDepth?: boolean }
+): string[] {
+  const v2 = evaluatePaidQualityV2(report);
+  const errors: string[] = [];
+  if (v2.insightDiversity === "FAIL") errors.push("quality-v2 insightDiversity FAIL");
+  if (v2.evidenceDiversity === "FAIL") errors.push("quality-v2 evidenceDiversity FAIL");
+  if (v2.genericAdvice === "FAIL") errors.push("quality-v2 genericAdvice FAIL");
+  if (v2.possibleNextQuestions === "FAIL") errors.push("quality-v2 possibleNextQuestions FAIL");
+  if (v2.mixedLanguageErrors > 0) errors.push("quality-v2 mixed language");
+  if (v2.unsupportedClaims > 0) errors.push("quality-v2 unsupported claims");
+  if (v2.nameDayMasterSafety === "FAIL") errors.push("quality-v2 name-daymaster");
+  if (options?.requireConsultingDepth) {
+    const why = report.sections.filter((s) => (s.whyDeeper?.trim().length ?? 0) >= 40);
+    if (why.length < 3) errors.push("quality-v2 consulting whyDeeper < 3");
+    const chains = report.sections.filter((s) => (s.reactionChain?.length ?? 0) >= 4);
+    if (chains.length < 2) errors.push("quality-v2 consulting reactionChain < 2");
+    const misread = report.sections.filter((s) => (s.selfMisread?.trim().length ?? 0) >= 12);
+    if (misread.length < 2) errors.push("quality-v2 consulting selfMisread < 2");
+  }
+  return errors;
+}
+
 export function evaluatePaidQualityV2(report: PaidFortuneReport): PaidQualityV2Report {
   const sectionAxisIds = report.sections.flatMap((s) => s.evidenceAxisIds ?? []);
   const evidenceAxesUsed = uniqCount(sectionAxisIds);
@@ -185,6 +209,35 @@ export function evaluatePaidQualityV2(report: PaidFortuneReport): PaidQualityV2R
     nameDayMasterSafety:
       /경님|갑님|을님|병님|정님|무님|기님|신님|임님|계님/.test(allText) ? "FAIL" : "SEPARATED",
   };
+}
+
+export function evaluateConsultingDepth(report: PaidFortuneReport): {
+  pass: boolean;
+  count: number;
+  need: number;
+} {
+  const count = report.sections.filter(
+    (s) =>
+      s.discoveryLevel === 3 &&
+      (s.whyDeeper?.length ?? 0) >= 40 &&
+      (s.reactionChain?.length ?? 0) >= 4 &&
+      Boolean(s.selfMisread)
+  ).length;
+  const need = report.reportKind === "total" ? 5 : 3;
+  return { pass: count >= need, count, need };
+}
+
+export function assertPaidQualityV2Gate(report: PaidFortuneReport): void {
+  const q = evaluatePaidQualityV2(report);
+  const fails: string[] = [];
+  if (q.insightDiversity === "FAIL") fails.push("insightDiversity");
+  if (q.evidenceDiversity === "FAIL") fails.push("evidenceDiversity");
+  if (q.genericAdvice === "FAIL") fails.push("genericAdvice");
+  if (q.mixedLanguageErrors > 0) fails.push("mixedLanguage");
+  if (q.nameDayMasterSafety === "FAIL") fails.push("nameDayMasterSafety");
+  if (fails.length) {
+    throw new Error(`PAID_QUALITY_V2_FAILED ${fails.join(",")}`);
+  }
 }
 
 export function comparePaidReportOverlap(

@@ -50,6 +50,9 @@ export {
 } from "@/lib/ai/validators/paid-quality";
 export {
   evaluatePaidQualityV2,
+  paidQualityV2Errors,
+  evaluateConsultingDepth,
+  assertPaidQualityV2Gate,
   comparePaidReportOverlap,
   compareFreeVsPaidNovelty,
 } from "@/lib/ai/validators/paid-quality-v2";
