@@ -77,15 +77,15 @@ function joinSoftEvidence(a: string, b: string, tail: string): string {
   return `${left}과 ${right}을 함께 보면, ${tail}`;
 }
 
-function clean(s: string | undefined): string {
+function clean(s: string | null | undefined): string {
   return (s ?? "").replace(/\s{2,}/g, " ").trim();
 }
 
-function counterCopy(s: string | undefined): string {
+function counterCopy(s: string | null | undefined): string {
   return clean(s).replace(/^(반대로|다만|그러나|하지만)\s*/g, "");
 }
 
-function pickScenes(...lists: (string[] | undefined)[]): string[] {
+function pickScenes(...lists: (string[] | null | undefined)[]): string[] {
   const out: string[] = [];
   const seen = new Set<string>();
   for (const list of lists) {
@@ -645,7 +645,7 @@ export function buildTotalValuePack(
         report.strengthShadows?.map((s) => `${s.strength} → ${s.overuse}`),
         shadow?.behaviorScenes
       ).slice(0, 3),
-      counter: report.strengthShadows?.[0]?.balancePoint,
+      counter: report.strengthShadows?.[0]?.balancePoint ?? undefined,
       whyMatters: "강점을 끄지 않고도, 과사용 지점만 조절하면 됩니다.",
       moment: report.strengthShadows?.[0]
         ? `${report.strengthShadows[0].strength}이 빛나는 만큼, 그림자도 같이 온다.`

@@ -11,6 +11,7 @@ export type AiErrorCode =
   | "RETRY_EXHAUSTED"
   | "CONFIGURATION_ERROR"
   | "PAID_AI_NOT_CONFIGURED"
+  | "OPENAI_INSUFFICIENT_CREDITS"
   | "UNKNOWN";
 
 export class AiEngineError extends Error {

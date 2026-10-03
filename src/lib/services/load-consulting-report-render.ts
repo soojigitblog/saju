@@ -41,7 +41,7 @@ export async function loadConsultingReportRenderContext(input: {
   }
 
   const accessActor = input.accessActor ?? "customer";
-  const raw = input.report.result_json as PaidFortuneReport & {
+  const raw = input.report.result_json as Omit<PaidFortuneReport, "reportKind"> & {
     reportRenderVersion?: string;
     reportKind?: string;
     generationMode?: "mock" | "live";
@@ -118,7 +118,7 @@ export async function loadConsultingReportRenderContext(input: {
     nickname: profile.nickname,
     productName: input.order.product_name_snapshot ?? product.name,
     productSlug: product.slug,
-    report: raw,
+    report: raw as PaidFortuneReport,
     chart,
     live: generationMode === "live",
     reportRenderVersion: raw.reportRenderVersion!,

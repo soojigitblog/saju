@@ -470,7 +470,7 @@ export function paidFortuneReportLiveAiSchemaForProduct(kind: PaidProductKind) {
       }),
     });
   }
-  const minSections = kind === "career" || kind === "love" ? 10 : kind === "total" ? 9 : 6;
+  const minSections = kind === "career" ? 10 : 6;
   return paidFortuneReportLiveAiSchema.extend({
     sections: z.array(
       paidSectionSchema.extend({

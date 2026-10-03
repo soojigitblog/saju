@@ -340,11 +340,19 @@ export async function confirmTossPaymentFromWebhook(input: {
   if (!order) {
     throw new FreeFlowError("NOT_FOUND", "주문을 찾을 수 없습니다.", 404);
   }
+  if (!order.guest_session_id) {
+    throw new FreeFlowError(
+      "ORDER_OWNER_MISSING",
+      "주문 소유 정보를 확인할 수 없습니다.",
+      409
+    );
+  }
+  const guestSessionId = order.guest_session_id;
   return confirmTossPaymentForOwner({
-    guestSessionId: order.guest_session_id,
+    guestSessionId,
     orderIdParam: order.order_no,
     paymentKey: input.paymentKey,
     callbackAmount: input.amount,
-    analyticsSessionId: order.guest_session_id,
+    analyticsSessionId: guestSessionId,
   });
 }

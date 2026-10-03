@@ -793,7 +793,7 @@ export function buildInterpretationContextV2(
     },
   ];
 
-  const monthFamily = tenGodFamily(ctx.tenGods.month.stem);
+  const monthFamily = tenGodFamily(ctx.tenGods.month.stem as TenGodLabel);
   const behaviorHypotheses: InsightCardV2[] = [
     buildMoneyHypothesis({
       family: monthFamily,
@@ -811,7 +811,7 @@ export function buildInterpretationContextV2(
     }),
     buildLoveHypothesis({
       family: monthFamily,
-      yinYang: ctx.dayMaster.yinYang,
+      yinYang: ctx.dayMaster.yinYang as "yang" | "yin",
       dominant: dominant.key,
       evidenceAxisIds: ["pillar_day", "ten_gods_day", "yin_yang"],
       evidenceIds: [dayBranchEvidenceId, yinYangEvidenceId],

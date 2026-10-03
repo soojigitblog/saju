@@ -36,9 +36,9 @@ export function PaidConsultingReportView({
   const pdfUrl = `/api/reports/${reportId}/consulting-pdf${accessQuery}`;
 
   useEffect(() => {
-    trackClientEvent("paid_report_viewed", {
-      reportId,
-      renderVersion: REPORT_RENDER_VERSION_CONSULTING,
+    trackClientEvent({
+      eventName: "paid_report_viewed",
+      metadata: { reportId, renderVersion: REPORT_RENDER_VERSION_CONSULTING },
     });
   }, [reportId]);
 
@@ -83,9 +83,9 @@ export function PaidConsultingReportView({
               target="_blank"
               rel="noopener noreferrer"
               onClick={() =>
-                trackClientEvent("paid_pdf_opened", {
-                  reportId,
-                  renderVersion: REPORT_RENDER_VERSION_CONSULTING,
+                trackClientEvent({
+                  eventName: "paid_pdf_opened",
+                  metadata: { reportId, renderVersion: REPORT_RENDER_VERSION_CONSULTING },
                 })
               }
             >

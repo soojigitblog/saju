@@ -34,9 +34,9 @@ function esc(s: string | undefined | null) {
     .replace(/"/g, "&quot;");
 }
 
-function cleanCustomerText(s: string): string {
+function cleanCustomerText(s: string | null | undefined): string {
   return sanitizeEditorialCopy(
-    s
+    (s ?? "")
       .replace(/이 장은[^.。]*예언하지 않습니다[^.。]*[。.…]?/g, "")
       .replace(/재물\s*focused\s*report[^。.…]*/gi, "")
       .replace(/이 리포트를 읽고 나면[^。.…]*/g, "")
@@ -291,7 +291,7 @@ function overviewBodies(
   return out.map((p) => `<p class="body">${esc(p)}</p>`).join("");
 }
 
-function portraitBodies(lines: string[] | undefined, used: Set<string>, limit = 3) {
+function portraitBodies(lines: string[] | null | undefined, used: Set<string>, limit = 3) {
   return dedupeLines(lines ?? [], used, limit)
     .map((p) => `<p class="portrait">${esc(p)}</p>`)
     .join("");
@@ -782,9 +782,7 @@ function plainWhyForEvidence(
       (a) => a.id === primary.axisId || a.evidenceIds.includes(primary.id)
     );
     const axisSummary = cleanCustomerText(axis?.summary ?? "");
-    if (axisSummary && isSafeForKind(axisSummary, kind)) {
-      if (kind === "total") return axisSummary;
-    }
+    if (axisSummary && isSafeForKind(axisSummary, kind)) return axisSummary;
 
     return structuralPlain(primary, kind);
   }
@@ -995,8 +993,8 @@ function coverPage(
 </div>`;
 }
 
-function playbookItems(items: string[], limit = 5) {
-  return items
+function playbookItems(items: string[] | null | undefined, limit = 5) {
+  return (items ?? [])
     .filter(Boolean)
     .slice(0, limit)
     .map(
@@ -1081,7 +1079,7 @@ function buildMoney(input: {
     reservedDetail,
     overview: true,
   })}
-  ${pullQuote(primaryShare)}
+  ${pullQuote(primaryShare ?? undefined)}
   ${footer(2, total)}
 </div>`,
     `<div class="page tint sans" data-shot="core-structure" data-layout="insight">
@@ -1160,7 +1158,7 @@ function buildCareer(input: {
   reserveDetailLines(reservedDetail, pack);
   const primaryShare = r.shareableInsights?.[0] ?? strength?.shareableLine;
   reserveRawLines(reservedDetail, [
-    primaryShare,
+    primaryShare ?? undefined,
     ...(strength?.behaviorScenes ?? []),
     ...(friction?.behaviorScenes ?? []),
   ]);
@@ -1245,7 +1243,7 @@ function buildCareer(input: {
   <p class="kicker">프로필 · 환경</p>
   <p class="sig serif">${esc(glossFirstMentions(cleanCustomerText(r.signatureStatement), glossSeen))}</p>
   <div class="dash-grid">${dashHtml(r, 4)}</div>
-  ${pullQuote(primaryShare)}
+  ${pullQuote(primaryShare ?? undefined)}
   <div class="rule"></div>
   <p class="section-title serif">Work Environment Map</p>
   <div class="env-map">
@@ -1408,7 +1406,7 @@ function buildLove(input: {
   <p class="kicker">프로필 · 확신 전·후</p>
   <p class="sig serif">${esc(glossFirstMentions(cleanCustomerText(r.signatureStatement), glossSeen))}</p>
   <div class="dash-grid">${dashHtml(r, 4)}</div>
-  ${pullQuote(primaryShare)}
+  ${pullQuote(primaryShare ?? undefined)}
   <div class="rule"></div>
   <div class="two">
     <div><p class="col-h">확신 전</p><p class="body">${esc(beforeTeaser)}</p>${overviewBodies(before?.behaviorScenes ?? [], used, reservedDetail, glossSeen, 1)}</div>
@@ -1652,7 +1650,7 @@ function buildTotal(input: {
   <p class="kicker">핵심 프로필 · 판단 · 스트레스</p>
   <p class="sig serif">${esc(glossFirstMentions(cleanCustomerText(r.signatureStatement), glossSeen))}</p>
   <div class="dash-grid">${dashHtml(r, 6)}</div>
-  ${pullQuote(primaryShare)}
+  ${pullQuote(primaryShare ?? undefined)}
   <div class="rule"></div>
   ${insightHtml(pack.unknownPatterns[0]!, glossSeen, "", { usedLines: used, omitMoment: true })}
   ${insightHtml(pack.unknownPatterns[1]!, glossSeen, "", { usedLines: used })}
