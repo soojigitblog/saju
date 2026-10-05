@@ -1,18 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Noto_Sans_KR, Noto_Serif_KR } from "next/font/google";
 import "./globals.css";
-
-const bodyFont = Noto_Sans_KR({
-  variable: "--font-body",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-});
-
-const displayFont = Noto_Serif_KR({
-  variable: "--font-display",
-  subsets: ["latin"],
-  weight: ["500", "600", "700"],
-});
 
 export const metadata: Metadata = {
   title: {
@@ -35,7 +22,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ko" className={`${bodyFont.variable} ${displayFont.variable} h-full`}>
+    <html lang="ko" className="h-full">
       <body className="min-h-full antialiased">{children}</body>
     </html>
   );

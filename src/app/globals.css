@@ -1,6 +1,9 @@
 @import "tailwindcss";
 
 :root {
+  /* System stacks keep local/dev rendering independent from Google Fonts. */
+  --font-body: "Apple SD Gothic Neo", "Malgun Gothic", Arial, sans-serif;
+  --font-display: "Iowan Old Style", "Batang", "Times New Roman", serif;
   /* Deep navy — almost black */
   --bg-primary: #07111f;
   --bg-secondary: #0a1727;
