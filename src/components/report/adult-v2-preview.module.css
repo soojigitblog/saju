@@ -1,20 +1,125 @@
-.page{--ink:#292824;--muted:#6d685f;--paper:#f7f2e9;--gold:#a47a32;--line:#d8cdbb;max-width:760px;margin:0 auto;background:var(--paper);color:var(--ink);font-family:var(--font-body)}
-.cover{min-height:720px;position:relative;overflow:hidden;padding:28px;background:#282722;color:#f8f1e5;display:flex;flex-direction:column;justify-content:space-between}
-.cover:before{content:"";position:absolute;inset:-20%;background:radial-gradient(circle at 70% 32%,#92743855,transparent 28%),radial-gradient(circle at 18% 72%,#e2ce9e22,transparent 22%);transform:rotate(-12deg)}
-.coverGrain{position:absolute;inset:0;opacity:.22;background-image:radial-gradient(#fff .45px,transparent .6px);background-size:5px 5px}
-.coverTop,.coverBottom{position:relative;display:flex;justify-content:space-between;font-size:10px;letter-spacing:.16em;color:#d9c69e}
-.coverCenter{position:relative;text-align:center;padding:80px 12px}.coverEyebrow,.sectionTitle>p,.tarotLabel{color:var(--gold);font-size:11px;letter-spacing:.16em}
-.cover h1,.sectionTitle h2,.cta h2,.tarotGrid h3{font-family:var(--font-display);font-weight:500}.cover h1{font-size:clamp(43px,10vw,72px);line-height:1.17;letter-spacing:-.06em;margin:18px 0}
-.coverRule{width:1px;height:74px;background:#d1b16b;margin:28px auto}.coverCenter>p:last-child{line-height:1.8;color:#d8d0bf;font-size:14px}
-.notice{padding:14px 24px;background:#e8ddc7;color:#605642;font-size:12px;line-height:1.6;text-align:center}.section{padding:76px 26px;border-bottom:1px solid var(--line)}.tinted{background:#f0e8db}
-.sectionTitle{margin-bottom:30px}.sectionTitle h2{font-size:31px;letter-spacing:-.055em;margin:9px 0 8px}.sectionTitle>p:last-child{font-size:13px;color:var(--muted);line-height:1.7;letter-spacing:0}
-.lead{font-family:var(--font-display);font-size:23px;line-height:1.7;letter-spacing:-.04em}.wordRow{display:flex;flex-wrap:wrap;gap:8px;margin:28px 0}.wordRow span{border:1px solid #cbb887;border-radius:99px;padding:7px 11px;color:#785c2a;font-size:12px}.bodyCopy,.smallCopy{font-size:14px;color:var(--muted);line-height:2}
-.portraitGrid{display:grid;gap:24px}.portraitGrid article{padding-top:20px;border-top:1px solid #cfbea5}.portraitGrid b{color:var(--gold);font-size:12px;letter-spacing:.12em}.portraitGrid h3{font-size:19px;font-weight:500;margin:10px 0}.portraitGrid p{font-size:14px;line-height:1.8;color:var(--muted)}
-.flowChart{height:190px;display:flex;align-items:flex-end;gap:10px;padding:15px 5px 25px;border-bottom:1px solid #b9aa92;position:relative}.flowLine{position:absolute;left:0;right:0;bottom:74px;border-top:1px dashed #c7b99e}.flowChart i{flex:1;display:block;background:linear-gradient(180deg,#c6a467,#806130);min-height:18px;opacity:.82}.flowLabels{display:flex;justify-content:space-between;color:var(--muted);font-size:11px;margin-top:10px}
-.darkSection{background:#313029;color:#f7f0e4}.darkSection .sectionTitle h2{color:#fff8ee}.darkSection .sectionTitle>p:last-child{color:#c9c0ae}.yearList{list-style:none;padding:0;margin:0}.yearList li{display:grid;grid-template-columns:52px 1fr 18px;gap:12px;align-items:center;padding:19px 0;border-top:1px solid #565348}.yearList time{color:#d0a95e;font-family:var(--font-display);font-size:18px}.yearList strong{font-size:15px;font-weight:400}.yearList em{font-size:10px;color:#2f2c26;background:#e6c17d;padding:3px 6px;margin-left:7px;font-style:normal}.yearList>li>span{color:#d0a95e}
-.signalList>div{margin:20px 0}.signalList>div>div{display:flex;justify-content:space-between;font-size:14px}.signalList b{color:#80612a;font-size:12px;font-weight:500}.signalList>div>i{height:5px;background:#dfd3c2;display:block;margin-top:9px}.signalList>div>i i{height:100%;display:block;background:#9a783b}.section blockquote{margin:34px 0 0;padding:21px 18px;border-left:2px solid var(--gold);background:#f0e8da;font-family:var(--font-display);font-size:18px;line-height:1.75}
-.relationship{display:flex;gap:20px;align-items:center}.relationship span{font-family:var(--font-display);color:var(--gold);font-size:64px}.relationship p{font-family:var(--font-display);font-size:20px;line-height:1.7;margin:0}
-.map{height:300px;border:1px solid #cdbd9f;border-radius:50%;position:relative;margin:20px auto 12px;max-width:300px;background:radial-gradient(circle,#ede0ca 0 22%,transparent 22.5%),radial-gradient(circle at center,#faf6ee 0 62%,#efe5d5 63%)}.map span{position:absolute;font-size:13px;color:#72582d}.mapCenter{top:41%;left:36%;text-align:center;font-family:var(--font-display);font-size:18px!important;color:#3e3427!important}.mapOne{top:16%;left:45%}.mapTwo{right:12%;top:42%}.mapThree{bottom:17%;left:42%}.mapFour{left:15%;top:43%}.centerCopy{text-align:center;font-size:13px;color:var(--muted);line-height:1.8}
-.tarotSection{background:#24231f;color:#f4ede2}.tarotSection .sectionTitle h2{color:#fff}.tarotGrid{display:grid;grid-template-columns:108px 1fr;gap:20px;align-items:center}.tarotCard{aspect-ratio:2/3;border:1px solid #d9b56b;background:linear-gradient(145deg,#75613a,#28271f 65%);display:flex;align-items:center;justify-content:center;text-align:center;font-family:var(--font-display);color:#f2da9e;letter-spacing:.1em;line-height:1.5}.tarotGrid h3{font-size:19px;line-height:1.55;margin:5px 0 10px}.tarotGrid p:last-child{font-size:12px;line-height:1.7;color:#c2b9a7}
-.cta{padding:90px 28px;text-align:center;background:#d8c39a;color:#302a20}.cta>p{font-size:10px;letter-spacing:.18em}.cta h2{font-size:34px;line-height:1.35;letter-spacing:-.06em}.cta span{font-size:13px;color:#66583f}
-@media(min-width:680px){.section{padding:92px 64px}.cover{min-height:800px;padding:38px}.portraitGrid{grid-template-columns:repeat(3,1fr);gap:18px}.tarotGrid{grid-template-columns:135px 1fr}.tarotCard{font-size:18px}}
+.page {
+  --ink: #292824;
+  --muted: #6d685f;
+  --paper: #f7f2e9;
+  --gold: #a47a32;
+  --line: #d8cdbb;
+  max-width: 760px;
+  margin: 0 auto;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body);
+}
+
+.cover { min-height: 720px; position: relative; overflow: hidden; padding: 28px; background: #282722; color: #f8f1e5; display: flex; flex-direction: column; justify-content: space-between; }
+.cover::before { content: ""; position: absolute; inset: -20%; background: radial-gradient(circle at 70% 32%, #92743855, transparent 28%), radial-gradient(circle at 18% 72%, #e2ce9e22, transparent 22%); transform: rotate(-12deg); }
+.coverGrain { position: absolute; inset: 0; opacity: .22; background-image: radial-gradient(#fff .45px, transparent .6px); background-size: 5px 5px; }
+.coverTop, .coverBottom { position: relative; display: flex; justify-content: space-between; gap: 12px; font-size: 10px; letter-spacing: .16em; color: #d9c69e; }
+.coverCenter { position: relative; text-align: center; padding: 80px 12px; }
+.coverEyebrow, .sectionTitle > p, .tarotLabel { color: var(--gold); font-size: 11px; letter-spacing: .16em; }
+.cover h1, .sectionTitle h2, .cta h2, .tarotGrid h3, .primaryTendency h3 { font-family: var(--font-display); font-weight: 500; }
+.cover h1 { font-size: clamp(43px, 10vw, 72px); line-height: 1.17; letter-spacing: -.06em; margin: 18px 0; }
+.coverRule { width: 1px; height: 74px; background: #d1b16b; margin: 28px auto; }
+.coverCenter > p:last-child { line-height: 1.8; color: #d8d0bf; font-size: 14px; }
+
+.section { padding: 76px 26px; border-bottom: 1px solid var(--line); }
+.tinted { background: #f0e8db; }
+.sectionTitle { margin-bottom: 30px; }
+.sectionTitle h2 { font-size: 31px; letter-spacing: -.055em; margin: 9px 0 8px; }
+.sectionTitle > p:last-child { font-size: 13px; color: var(--muted); line-height: 1.7; letter-spacing: 0; }
+.lead { font-family: var(--font-display); font-size: 23px; line-height: 1.7; letter-spacing: -.04em; }
+.wordRow { display: flex; flex-wrap: wrap; gap: 8px; margin: 28px 0; }
+.wordRow span { border: 1px solid #cbb887; border-radius: 99px; padding: 7px 11px; color: #785c2a; font-size: 12px; }
+.bodyCopy, .smallCopy { font-size: 14px; color: var(--muted); line-height: 2; }
+
+.contrastInsights { display: grid; gap: 12px; margin: 28px 0; }
+.contrastInsights article { padding: 18px; border-top: 1px solid #cfbea5; background: #f3ecdf; }
+.contrastInsights b, .primaryTendency b, .supportingTendencies b { color: var(--gold); font-size: 11px; letter-spacing: .12em; }
+.contrastInsights p { margin: 9px 0 0; color: var(--muted); font-size: 14px; line-height: 1.8; }
+
+.primaryTendency { padding: 28px 0 30px; border-top: 2px solid #a47a32; }
+.primaryTendency h3 { margin: 12px 0; font-size: 27px; letter-spacing: -.045em; line-height: 1.35; }
+.primaryTendency p { margin: 0; color: var(--muted); font-size: 15px; line-height: 1.9; }
+.supportingTendencies { display: grid; gap: 24px; }
+.supportingTendencies article { padding-top: 20px; border-top: 1px solid #cfbea5; }
+.supportingTendencies h3 { font-size: 18px; font-weight: 500; margin: 10px 0; }
+.supportingTendencies p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.8; }
+
+.lifeFlow { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 7px; list-style: none; padding: 10px 0 0; margin: 0; align-items: end; }
+.lifeFlow li { position: relative; min-width: 0; display: grid; grid-template-rows: 176px auto auto auto; gap: 7px; align-items: end; }
+.flowBar { display: flex; align-items: end; height: 176px; border-bottom: 1px solid #b9aa92; }
+.flowBar i { display: block; width: 100%; background: linear-gradient(180deg, #c6a467, #806130); opacity: .86; }
+.quiet i { height: 28%; } .steady i { height: 43%; } .rising i { height: 62%; } .focused i { height: 82%; } .turning i { height: 68%; }
+.lifeFlow strong { font-family: var(--font-display); font-size: 16px; color: #5f4d2d; }
+.lifeFlow > li > span:not(.currentMarker) { min-height: 38px; font-size: 11px; line-height: 1.5; color: var(--ink); word-break: keep-all; }
+.lifeFlow em { min-height: 30px; font-size: 10px; line-height: 1.45; color: var(--muted); font-style: normal; word-break: keep-all; }
+.currentFlow .flowBar { outline: 1px solid #a47a32; outline-offset: 4px; }
+.currentMarker { position: absolute; z-index: 1; top: -16px; left: 50%; transform: translateX(-50%); padding: 4px 7px; background: #a47a32; color: #fff8ee; font-size: 10px; white-space: nowrap; }
+
+.darkSection { background: #313029; color: #f7f0e4; }
+.darkSection .sectionTitle h2 { color: #fff8ee; }
+.darkSection .sectionTitle > p:last-child { color: #c9c0ae; }
+.yearList { list-style: none; padding: 0; margin: 0; }
+.yearList li { display: grid; grid-template-columns: 58px 1fr; gap: 14px; padding: 24px 0; border-top: 1px solid #565348; }
+.yearHeading time { display: block; color: #d0a95e; font-family: var(--font-display); font-size: 19px; }
+.yearHeading em { display: inline-block; margin-top: 6px; padding: 3px 6px; color: #2f2c26; background: #e6c17d; font-size: 10px; font-style: normal; }
+.yearDetails strong { display: block; font-size: 16px; font-weight: 500; line-height: 1.6; }
+.yearDetails p { margin: 9px 0 0; color: #c9c0ae; font-size: 12px; line-height: 1.75; }
+.yearDetails .yearInterpretation { color: #e2d9c9; }
+.keywords { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 11px; }
+.keywords span { color: #d9c69e; font-size: 11px; }
+
+.signalList > div { margin: 22px 0; }
+.signalList > div > div { display: flex; justify-content: space-between; gap: 12px; font-size: 14px; }
+.signalList b { color: #80612a; font-size: 12px; font-weight: 500; white-space: nowrap; }
+.signalList > div > i { height: 5px; background: #dfd3c2; display: block; margin-top: 9px; }
+.signalList > div > i i { height: 100%; display: block; background: #9a783b; }
+.section blockquote { margin: 34px 0 0; padding: 21px 18px; border-left: 2px solid var(--gold); background: #f0e8da; font-family: var(--font-display); font-size: 18px; line-height: 1.75; }
+
+.relationship { display: flex; gap: 20px; align-items: center; }
+.relationship > span { flex: 0 0 auto; font-family: var(--font-display); color: var(--gold); font-size: 64px; }
+.relationship p { margin: 0; font-family: var(--font-display); font-size: 20px; line-height: 1.7; }
+.relationshipInsights { display: grid; gap: 0; margin-top: 32px; }
+.relationshipInsights article { padding: 22px 0; border-top: 1px solid #cfbea5; }
+.relationshipInsights h3 { margin: 0 0 9px; font-size: 15px; font-weight: 600; }
+.relationshipInsights p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.9; }
+
+.radarWrap { position: relative; width: min(100%, 330px); margin: 8px auto 20px; }
+.radar { display: block; width: 100%; height: auto; overflow: visible; }
+.radar line, .radarGrid { fill: none; stroke: #d3c3a2; stroke-width: 1; }
+.radarData { fill: #aa834044; stroke: #9a783b; stroke-width: 1.5; }
+.radar text { fill: #72582d; font-size: 13px; font-family: var(--font-body); }
+.radarCenter { position: absolute; top: 50%; left: 50%; display: grid; width: 82px; height: 82px; place-items: center; transform: translate(-50%, -50%); border-radius: 50%; background: #efe3ca; color: #3e3427; font-family: var(--font-display); font-size: 17px; line-height: 1.35; text-align: center; }
+.strongestThemes { margin: 0; padding: 20px; background: #f0e8da; color: var(--muted); font-size: 14px; line-height: 1.85; }
+.strongestThemes b { display: block; margin-bottom: 8px; color: #72582d; font-size: 12px; letter-spacing: .04em; }
+
+.tarotSection { background: #24231f; color: #f4ede2; }
+.tarotSection .sectionTitle h2 { color: #fff; }
+.tarotGrid { display: grid; grid-template-columns: 108px 1fr; gap: 20px; align-items: center; }
+.tarotCard { aspect-ratio: 2 / 3; border: 1px solid #d9b56b; background: linear-gradient(145deg, #75613a, #28271f 65%); display: flex; align-items: center; justify-content: center; text-align: center; font-family: var(--font-display); color: #f2da9e; letter-spacing: .1em; line-height: 1.5; }
+.tarotGrid h3 { margin: 5px 0 10px; font-size: 19px; line-height: 1.55; }
+.tarotGrid p:last-child { margin: 0; color: #c2b9a7; font-size: 12px; line-height: 1.7; }
+.crossSignals { margin-top: 34px; }
+.crossSignals article { padding: 18px 0; border-top: 1px solid #504d43; }
+.crossSignals h3 { margin: 0 0 8px; color: #d8bd82; font-size: 13px; font-weight: 500; }
+.crossSignals p { margin: 0; color: #d0c6b4; font-size: 13px; line-height: 1.85; }
+
+.cta { padding: 90px 28px; text-align: center; background: #d8c39a; color: #302a20; }
+.cta > p { margin: 0; font-size: 10px; letter-spacing: .18em; }
+.cta h2 { margin: 16px 0; font-size: 34px; line-height: 1.35; letter-spacing: -.06em; }
+.cta > span { display: block; color: #66583f; font-size: 14px; line-height: 1.85; }
+.cta a { display: inline-block; margin: 30px 0 22px; padding: 14px 20px; border: 1px solid #564426; color: #302a20; font-size: 14px; text-decoration: none; }
+.cta small { display: block; color: #66583f; font-size: 11px; line-height: 1.8; }
+.cta strong { display: block; margin-top: 30px; font-family: var(--font-display); font-size: 18px; font-weight: 500; }
+
+@media (min-width: 680px) {
+  .section { padding: 92px 64px; }
+  .cover { min-height: 800px; padding: 38px; }
+  .contrastInsights, .supportingTendencies { grid-template-columns: repeat(2, 1fr); gap: 18px; }
+  .lifeFlow { gap: 13px; }
+  .lifeFlow li { grid-template-rows: 205px auto auto auto; }
+  .flowBar { height: 205px; }
+  .yearList li { grid-template-columns: 84px 1fr; gap: 22px; }
+  .tarotGrid { grid-template-columns: 135px 1fr; }
+  .tarotCard { font-size: 18px; }
+}
