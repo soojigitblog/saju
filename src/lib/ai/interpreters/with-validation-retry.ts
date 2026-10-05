@@ -9,6 +9,26 @@ const REGENERABLE_CODES = new Set([
   "STRUCTURED_PARSE_FAILED",
 ]);
 
+/**
+ * Adds validator feedback to the next model draw without exposing it to the
+ * customer. Repeating the exact same prompt after a semantic rejection tends
+ * to reproduce the same too-short fields.
+ */
+export function buildValidationRetryInstruction(error: unknown): string {
+  const diagnostic =
+    error instanceof AiEngineError
+      ? error.message.replace(/\s+/g, " ").slice(0, 1_200)
+      : "The previous structured response did not satisfy the required output format.";
+
+  return [
+    "",
+    "=== REVISION REQUIRED ===",
+    "The immediately preceding JSON was rejected by the output quality validator.",
+    `Validation feedback: ${diagnostic}`,
+    "Return a complete fresh JSON object. Preserve the schema and correct every listed issue; do not mention this revision instruction in the result.",
+  ].join("\n");
+}
+
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }

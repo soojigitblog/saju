@@ -33,7 +33,10 @@ import {
   validatePaidSemantics,
 } from "@/lib/ai/validators/semantic-validator";
 import { generateStructuredResult } from "@/lib/ai/wrapper/generate-structured";
-import { withValidationRetry } from "@/lib/ai/interpreters/with-validation-retry";
+import {
+  buildValidationRetryInstruction,
+  withValidationRetry,
+} from "@/lib/ai/interpreters/with-validation-retry";
 import type {
   FreeInterpretationOutput,
   PaidInterpretationOutput,
@@ -166,11 +169,12 @@ export class OpenAIFortuneInterpreter implements FortuneInterpreter {
       productInstruction: args.promptVersion.productInstruction,
     });
 
+    let retryInstruction = "";
     return withValidationRetry(async () => {
       const generated = await generateStructuredResult({
         model,
         systemPrompt,
-        userPrompt,
+        userPrompt: userPrompt + retryInstruction,
         schema: freeFortuneResultStrictSchema,
         schemaName: "free_fortune_result",
         tier: "free",
@@ -220,6 +224,10 @@ export class OpenAIFortuneInterpreter implements FortuneInterpreter {
           providerRequestId: generated.providerRequestId,
         },
       };
+    }, {
+      onRetry(error) {
+        retryInstruction = buildValidationRetryInstruction(error);
+      },
     });
   }
 

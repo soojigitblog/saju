@@ -30,7 +30,10 @@ import {
   validateFreeSemantics,
   validatePaidSemantics,
 } from "@/lib/ai/validators/semantic-validator";
-import { withValidationRetry } from "@/lib/ai/interpreters/with-validation-retry";
+import {
+  buildValidationRetryInstruction,
+  withValidationRetry,
+} from "@/lib/ai/interpreters/with-validation-retry";
 import { coercePaidReportRaw } from "@/lib/ai/interpreters/coerce-paid-report";
 import type {
   FreeInterpretationOutput,
@@ -67,11 +70,12 @@ export class ProviderFortuneInterpreter implements FortuneInterpreter {
       productInstruction: args.promptVersion.productInstruction,
     });
 
+    let retryInstruction = "";
     return withValidationRetry(async () => {
       const generated = await this.provider().generateStructured({
         model,
         systemPrompt,
-        userPrompt,
+        userPrompt: userPrompt + retryInstruction,
         schema: freeFortuneResultStrictSchema,
         schemaName: "free_fortune_result",
       });
@@ -125,6 +129,10 @@ export class ProviderFortuneInterpreter implements FortuneInterpreter {
           latencyMs: generated.latencyMs,
         },
       };
+    }, {
+      onRetry(error) {
+        retryInstruction = buildValidationRetryInstruction(error);
+      },
     });
   }
 
@@ -152,7 +160,7 @@ export class ProviderFortuneInterpreter implements FortuneInterpreter {
         maxOutputTokens: getPaidReportMaxOutputTokens(),
       });
 
-      let data = coercePaidReportRaw(generated.data);
+      const data = coercePaidReportRaw(generated.data);
       let parsed;
       try {
         parsed = paidFortuneReportStrictSchema.parse({
