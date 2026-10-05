@@ -17,7 +17,11 @@ export async function portoneVerifyPayment(input: ConfirmPaymentInput): Promise<
     if (isUnrecognizedPayment(payment) || payment.status !== "PAID") {
       throw new PaymentConfirmError("PAYMENT_PROVIDER_REJECTED", "승인된 결제를 확인하지 못했습니다.", 400);
     }
-    const customData = typeof payment.customData === "string" ? payment.customData : "";
+    const customData = typeof payment.customData === "string"
+      ? payment.customData
+      : payment.customData && typeof payment.customData === "object" && "orderNo" in payment.customData
+        ? String(payment.customData.orderNo)
+        : "";
     if (payment.amount.total !== input.amount || payment.currency !== "KRW" || customData !== input.orderId) {
       throw new PaymentConfirmError("PAYMENT_AMOUNT_MISMATCH", "결제 정보가 주문과 일치하지 않습니다.", 400);
     }
