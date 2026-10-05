@@ -22,10 +22,10 @@ export function buildValidationRetryInstruction(error: unknown): string {
 
   return [
     "",
-    "=== REVISION REQUIRED ===",
-    "The immediately preceding JSON was rejected by the output quality validator.",
-    `Validation feedback: ${diagnostic}`,
-    "Return a complete fresh JSON object. Preserve the schema and correct every listed issue; do not mention this revision instruction in the result.",
+    "=== 재생성 필수 ===",
+    "직전 JSON은 내부 품질 검증에 실패했습니다.",
+    `검증 피드백: ${diagnostic}`,
+    "전체 JSON을 처음부터 다시 작성하세요. 스키마의 모든 필수 필드와 위 길이 조건을 충족하고, 이 재생성 지시나 검증 피드백은 결과에 언급하지 마세요.",
   ].join("\n");
 }
 

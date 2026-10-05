@@ -33,6 +33,6 @@ describe("AI validation regeneration", () => {
     expect(result).toBe("complete");
     expect(attempts).toBe(2);
     expect(revision).toContain("preview[money] length 38 out of range");
-    expect(revision).toContain("complete fresh JSON object");
+    expect(revision).toContain("전체 JSON을 처음부터 다시 작성하세요");
   });
 });
