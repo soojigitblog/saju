@@ -101,7 +101,7 @@ export function BankTransferWaitClient({ orderId }: { orderId: string }) {
   const [depositAcked, setDepositAcked] = useState(false);
   const [ackLoading, setAckLoading] = useState(false);
   const [refreshLoading, setRefreshLoading] = useState(false);
-  const [accessToken, setAccessToken] = useState<string | null>(null);
+  const accessToken = readOrderAccessToken(orderId);
 
   const applyStatus = useCallback(
     (json: StatusPayload, acked?: boolean) => {
@@ -131,10 +131,6 @@ export function BankTransferWaitClient({ orderId }: { orderId: string }) {
     },
     [orderId]
   );
-
-  useEffect(() => {
-    setAccessToken(readOrderAccessToken(orderId));
-  }, [orderId]);
 
   useEffect(() => {
     let cancelled = false;

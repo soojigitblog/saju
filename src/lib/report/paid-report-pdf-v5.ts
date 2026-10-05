@@ -204,7 +204,7 @@ function overviewTeaserFallback(line: string): string {
   if (t.length < 12) return "";
   if (/때가 있다|편이다|타입일 때|사람일 때/.test(t)) return "";
 
-  let out = t
+  const out = t
     .replace(/수 있습니다\.?$/u, "수 있음")
     .replace(/수 있다\.?$/u, "수 있음")
     .replace(/습니다\.?$/u, "음")
