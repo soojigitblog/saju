@@ -3,6 +3,7 @@ import type {
   LocalDateParts,
   LocalTimeParts,
   Pillar,
+  LuckPillars,
 } from "../types";
 
 export type ProviderPillarsResult = {
@@ -16,6 +17,7 @@ export type ProviderPillarsResult = {
     previous: { name: string; atKst: string } | null;
     next: { name: string; atKst: string } | null;
   };
+  luckPillars?: LuckPillars;
   warnings: string[];
 };
 
@@ -27,6 +29,7 @@ export type CalendarProvider = {
     date: LocalDateParts;
     time: LocalTimeParts;
     birthTimeUnknown: boolean;
+    gender: "male" | "female";
     lunarLeapMonth: boolean;
     config: FortuneEngineConfig;
   }): ProviderPillarsResult;

@@ -99,6 +99,24 @@ export type PillarTenGods = {
   branch: TenGodLabel;
 };
 
+/** Deterministic luck-pillar data supplied by manseryeok. No interpretation is
+ * included here: V2 consumes it as calculation input only. */
+export type LuckPillarPeriod = {
+  age: number;
+  ganji: GanjiInfo;
+  stem: StemInfo;
+  branch: BranchInfo;
+};
+
+export type LuckPillars = {
+  forward: boolean;
+  startAge: number;
+  startYears: number;
+  startMonths: number;
+  startDays: number;
+  periods: LuckPillarPeriod[];
+};
+
 export type FortuneChart = {
   engine: {
     name: string;
@@ -160,6 +178,8 @@ export type FortuneChart = {
     previous: { name: string; atKst: string } | null;
     next: { name: string; atKst: string } | null;
   };
+  /** Present only when a gender-supported manseryeok calculation succeeds. */
+  luckPillars?: LuckPillars;
   warnings: string[];
 };
 

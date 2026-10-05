@@ -38,6 +38,7 @@ export function createFortuneEngine(options?: {
         date: normalized.rawDate,
         time: normalized.effectiveTime,
         birthTimeUnknown: normalized.birthTimeUnknown,
+        gender: normalized.gender,
         lunarLeapMonth: normalized.lunarLeapMonth,
         config,
       });
@@ -102,6 +103,7 @@ export function createFortuneEngine(options?: {
         fiveElements,
         tenGods,
         solarTerms: pillarsResult.solarTerms,
+        luckPillars: pillarsResult.luckPillars,
         warnings: pillarsResult.warnings,
       };
 

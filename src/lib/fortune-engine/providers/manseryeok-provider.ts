@@ -5,7 +5,10 @@ import {
   solarToLunar,
 } from "manseryeok";
 import { formatLocalDate } from "../normalize/birth-input";
-import { pillarFromHanjaGanji } from "../calculators/pillars";
+import {
+  pillarFromHanjaGanji,
+  pillarFromHangulGanji,
+} from "../calculators/pillars";
 import { FortuneEngineError } from "../types";
 import type { CalendarProvider, ProviderPillarsResult } from "./provider";
 import { PROVIDER_NAME, PROVIDER_VERSION } from "../version";
@@ -142,6 +145,7 @@ export const manseryeokProvider: CalendarProvider = {
         isLunar: input.calendarType === "lunar",
         isLeapMonth: input.lunarLeapMonth,
         dayBoundary: "midnight",
+        gender: input.gender,
       });
     } catch (error) {
       const message =
@@ -177,6 +181,28 @@ export const manseryeokProvider: CalendarProvider = {
       solarDate,
       lunarDate: lunarMeta,
       solarTerms: findAdjacentTerms(solarDate, instant),
+      luckPillars: detail.luckPillars
+        ? {
+            forward: detail.luckPillars.forward,
+            startAge: detail.luckPillars.startAge,
+            startYears: detail.luckPillars.startYears,
+            startMonths: detail.luckPillars.startMonths,
+            startDays: detail.luckPillars.startDays,
+            periods: detail.luckPillars.pillars.map((period) => {
+              // manseryeok's LuckPillar stores the component values in Hangul
+              // (for example "신" + "유"), unlike toHanjaObject above.
+              const pillar = pillarFromHangulGanji(
+                `${period.pillar.heavenlyStem}${period.pillar.earthlyBranch}`
+              );
+              return {
+                age: period.age,
+                ganji: pillar.ganji,
+                stem: pillar.stem,
+                branch: pillar.branch,
+              };
+            }),
+          }
+        : undefined,
       warnings,
     };
   },
