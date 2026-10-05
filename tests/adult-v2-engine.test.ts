@@ -4,13 +4,25 @@ import { calculateAnnualFortune } from "@/lib/adult-v2/annual-fortune";
 import { calculateAdultV2Data } from "@/lib/adult-v2";
 import { calculateDaeun, daeunForYear } from "@/lib/adult-v2/daeun";
 import { buildFortuneEvidence } from "@/lib/adult-v2/evidence";
-import { calculateLifeMapScores, FORTUNE_SCORE_WEIGHTS } from "@/lib/adult-v2/scoring";
+import {
+  ACTIVATION_SCORE_WEIGHTS,
+  calculateChangePressure,
+  calculateDomainActivation,
+  calculateEvidenceCoverage,
+} from "@/lib/adult-v2/scoring";
 import type { FortuneEvidence } from "@/lib/adult-v2/types";
 import { BRANCHES, STEMS } from "@/lib/fortune-engine/constants";
 import { pillarFromHangulGanji } from "@/lib/fortune-engine/calculators/pillars";
-import { adultV2ReferenceCases } from "./fixtures/adult-v2-reference-cases";
+import {
+  ADULT_V2_EXTERNAL_DAEUN_VALIDATION,
+  adultV2ReferenceCases,
+} from "./fixtures/adult-v2-reference-cases";
 
 describe("Adult V2 daeun engine", () => {
+  it("does not misrepresent provider snapshots as independent external validation", () => {
+    expect(ADULT_V2_EXTERNAL_DAEUN_VALIDATION).toBe("EXTERNAL_VALIDATION_PENDING");
+  });
+
   for (const fixture of adultV2ReferenceCases) {
     it(fixture.name, () => {
       const chart = fortuneEngine.calculate(fixture.input);
@@ -123,7 +135,7 @@ describe("Adult V2 annual fortune", () => {
   });
 });
 
-describe("Adult V2 evidence and score engine", () => {
+describe("Adult V2 evidence, activation, and change-pressure engines", () => {
   it("emits only reproducible evidence and makes six clashes traceable", () => {
     const chart = fortuneEngine.calculate({
       gender: "male", calendarType: "solar", birthDate: "1992-10-24",
@@ -137,37 +149,69 @@ describe("Adult V2 evidence and score engine", () => {
     expect(evidence.every((item) => !item.detail.includes("용신") && !item.detail.includes("신강"))).toBe(true);
   });
 
-  it("is deterministic and soft-clamps ordinary output", () => {
-    const evidence: FortuneEvidence[] = Array.from({ length: 12 }, (_, index) => ({
-      id: `clash-${index}`, type: "CLASH", effect: "caution", target: "relationship",
-      source: "annualBranch", relation: "충", detail: "test",
-    }));
-    const first = calculateLifeMapScores(evidence);
-    for (let run = 0; run < 100; run += 1) {
-      expect(calculateLifeMapScores(evidence)).toEqual(first);
-    }
-    expect(first.relationship.score).toBe(FORTUNE_SCORE_WEIGHTS.softRange.min);
-    expect(first.overall.score).toBe(FORTUNE_SCORE_WEIGHTS.softRange.min);
+  it("treats ten-god evidence as activation, never positive fortune", () => {
+    const evidence: FortuneEvidence = {
+      id: "money-theme", type: "TEN_GOD", effect: "activation", domain: "money",
+      source: "annualStem", tenGod: "정재", detail: "test",
+    };
+    const activation = calculateDomainActivation([evidence]);
+    expect(evidence.effect).toBe("activation");
+    expect(activation.money.score).toBe(
+      ACTIVATION_SCORE_WEIGHTS.base + ACTIVATION_SCORE_WEIGHTS.tenGod.annualStem
+    );
+    expect(activation.career.score).toBe(ACTIVATION_SCORE_WEIGHTS.base);
   });
 
-  it("keeps a multi-case score distribution inside the intended operating range", () => {
+  it("keeps clashes out of domain activation and records change pressure instead", () => {
+    const clash: FortuneEvidence = {
+      id: "change", type: "CLASH", effect: "change", source: "annualBranch",
+      relation: "충", detail: "test",
+    };
+    expect(calculateDomainActivation([clash]).relationship.score)
+      .toBe(ACTIVATION_SCORE_WEIGHTS.base);
+    expect(calculateChangePressure([clash])).toMatchObject({ score: 35, level: "normal" });
+  });
+
+  it("is deterministic across 100 runs and keeps every indicator in 0–100", () => {
+    const chart = fortuneEngine.calculate({
+      gender: "male", calendarType: "solar", birthDate: "1992-10-24",
+      birthTime: "05:30", birthTimeUnknown: false, timezone: "Asia/Seoul", countryCode: "KR",
+    });
+    const first = calculateAdultV2Data(chart, 2026);
+    for (let run = 0; run < 100; run += 1) {
+      expect(calculateAdultV2Data(chart, 2026)).toEqual(first);
+    }
+    const values = [
+      ...Object.values(first.activation).map((item) => item.score),
+      first.changePressure.score,
+      first.confidence.score,
+    ];
+    expect(values.every((value) => value >= 0 && value <= 100)).toBe(true);
+  });
+
+  it("reports evidence coverage rather than prediction confidence", () => {
+    expect(calculateEvidenceCoverage({ birthTimeKnown: true, hasDaeun: true }))
+      .toMatchObject({ score: 100, level: "strong", missingSources: [] });
+    expect(calculateEvidenceCoverage({ birthTimeKnown: false, hasDaeun: true }))
+      .toMatchObject({ score: 80, level: "strong", missingSources: ["birthTime"] });
+  });
+
+  it("keeps multi-case activation and pressure values inside 0–100", () => {
     const inputs = adultV2ReferenceCases.slice(0, 4).map((fixture) => fixture.input);
     const values = inputs.flatMap((input) =>
       [2026, 2027, 2028].flatMap((year) =>
-        Object.values(calculateAdultV2Data(fortuneEngine.calculate(input), year).scores)
-          .map((score) => score.score)
+        (() => {
+          const result = calculateAdultV2Data(fortuneEngine.calculate(input), year);
+          return [
+            ...Object.values(result.activation).map((score) => score.score),
+            result.changePressure.score,
+            result.confidence.score,
+          ];
+        })()
       )
     ).sort((a, b) => a - b);
-    const minimum = values[0];
-    const maximum = values[values.length - 1];
-    const average = values.reduce((sum, value) => sum + value, 0) / values.length;
-    const median = values[Math.floor(values.length / 2)];
-    expect(minimum).toBeGreaterThanOrEqual(35);
-    expect(maximum).toBeLessThanOrEqual(85);
-    expect(average).toBeGreaterThanOrEqual(35);
-    expect(average).toBeLessThanOrEqual(85);
-    expect(median).toBeGreaterThanOrEqual(35);
-    expect(median).toBeLessThanOrEqual(85);
+    expect(values[0]).toBeGreaterThanOrEqual(0);
+    expect(values[values.length - 1]).toBeLessThanOrEqual(100);
     expect(new Set(values).size).toBeGreaterThan(2);
   });
 });

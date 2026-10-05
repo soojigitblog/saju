@@ -1,7 +1,7 @@
 import { STEMS } from "@/lib/fortune-engine/constants";
 import { tenGodForTarget } from "@/lib/fortune-engine/calculators/ten-gods";
 import type { ElementKey, FortuneChart, StemInfo, TenGodLabel } from "@/lib/fortune-engine/types";
-import type { AnnualFortune, DaeunPeriod, FortuneEvidence, ScoreArea } from "./types";
+import type { ActivationDomain, AnnualFortune, DaeunPeriod, FortuneEvidence } from "./types";
 
 const CLASH_PAIRS = new Map<number, number>([
   [0, 6], [6, 0], // 子-午
@@ -12,13 +12,13 @@ const CLASH_PAIRS = new Map<number, number>([
   [5, 11], [11, 5], // 巳-亥
 ]);
 
-function tenGodTarget(tenGod: TenGodLabel): ScoreArea {
+function tenGodDomain(tenGod: TenGodLabel): ActivationDomain | undefined {
   if (tenGod === "편재" || tenGod === "정재") return "money";
   if (tenGod === "편관" || tenGod === "정관") return "career";
   if (tenGod === "편인" || tenGod === "정인") return "condition";
   if (tenGod === "비견" || tenGod === "겁재") return "relationship";
   if (tenGod === "식신" || tenGod === "상관") return "loveFamily";
-  return "overall";
+  return undefined;
 }
 
 function evidenceForStem(input: {
@@ -32,11 +32,9 @@ function evidenceForStem(input: {
   return {
     id: input.id,
     type: "TEN_GOD",
-    // This means a deterministic domain indicator is present, not that a
-    // real-world outcome is guaranteed. Strength/useful-god inference is
-    // deliberately excluded from the rule.
-    effect: "positive",
-    target: tenGodTarget(tenGod),
+    // A theme is active; this never means favorable outcome or probability.
+    effect: "activation",
+    domain: tenGodDomain(tenGod),
     source: input.source,
     tenGod,
     detail: `${input.sourceLabel} 천간 ${input.stem.hanja}은(는) 일간 ${input.dayMaster.hanja} 기준 ${tenGod}입니다.`,
@@ -57,8 +55,7 @@ function elementEvidence(input: {
     type: "ELEMENT",
     // Visible counts are facts, but favorable/unfavorable balance cannot be
     // concluded without a separately validated strength/useful-god engine.
-    effect: "neutral",
-    target: "overall",
+    effect: "context",
     source: input.source,
     element: input.element,
     detail: `원국의 표면 오행 집계에서 ${input.element}은(는) ${input.visibleCount}회(${state} 편)이고, ${input.sourceLabel} 천간도 ${input.element}입니다.`,
@@ -82,8 +79,7 @@ function branchClashes(input: {
     return [{
       id: `clash:${input.source}:${input.sourceBranch.index}:${branch.index}:${label}`,
       type: "CLASH" as const,
-      effect: "caution" as const,
-      target: "relationship" as const,
+      effect: "change" as const,
       source: input.source,
       relation: "충" as const,
       detail: `${input.sourceLabel} 지지 ${input.sourceBranch.hanja}와 원국 ${label} ${branch.hanja}는 육충 관계입니다.`,

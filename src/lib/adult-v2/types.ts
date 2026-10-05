@@ -15,13 +15,15 @@ export type CalculatedFortuneData = {
   annual: AnnualFortune;
   selectedDaeun: DaeunPeriod | null;
   evidence: FortuneEvidence[];
-  scores: LifeMapScores;
+  activation: DomainActivationScores;
+  changePressure: ChangePressureScore;
+  confidence: EvidenceCoverage;
 };
 
 /** Reserved for the later language layer. It must never contain calculation inputs. */
 export type AIInterpretationData = {
   summary: string;
-  scoreExplanations: Partial<Record<ScoreArea, string>>;
+  activationExplanations: Partial<Record<ActivationDomain, string>>;
 };
 
 export type AdultReportV2 = {
@@ -63,10 +65,10 @@ export type AnnualFortune = {
   method: "manseryeok_lichun_year_pillar";
 };
 
-export type EvidenceEffect = "positive" | "caution" | "neutral";
+/** Calculation roles; none indicate real-world good/bad fortune. */
+export type EvidenceEffect = "activation" | "context" | "change";
 export type EvidenceType = "TEN_GOD" | "ELEMENT" | "CLASH";
-export type ScoreArea =
-  | "overall"
+export type ActivationDomain =
   | "money"
   | "career"
   | "relationship"
@@ -77,7 +79,8 @@ export type FortuneEvidence = {
   id: string;
   type: EvidenceType;
   effect: EvidenceEffect;
-  target: ScoreArea;
+  /** Only TEN_GOD evidence currently has a scored activation domain. */
+  domain?: ActivationDomain;
   source: "annualStem" | "daeunStem" | "annualBranch" | "daeunBranch";
   detail: string;
   tenGod?: TenGodLabel;
@@ -85,12 +88,31 @@ export type FortuneEvidence = {
   relation?: "충";
 };
 
-export type FortuneScore = {
+export type DomainActivationScore = {
+  domain: ActivationDomain;
   score: number;
-  level: "caution" | "steady" | "strong";
+  level: "low" | "normal" | "high" | "very_high";
   evidence: FortuneEvidence[];
-  positiveFactors: FortuneEvidence[];
-  cautionFactors: FortuneEvidence[];
 };
 
-export type LifeMapScores = Record<ScoreArea, FortuneScore>;
+export type DomainActivationScores = Record<ActivationDomain, DomainActivationScore>;
+
+export type ChangePressureScore = {
+  score: number;
+  level: "low" | "normal" | "high";
+  evidence: FortuneEvidence[];
+};
+
+/** Evidence coverage, not a forecast-accuracy probability. */
+export type EvidenceCoverage = {
+  score: number;
+  level: "limited" | "moderate" | "strong";
+  availableSources: Array<"natal" | "birthTime" | "annual" | "daeun">;
+  missingSources: Array<"birthTime" | "daeun">;
+};
+
+/** Reserved only for a future, separately validated favorability engine. */
+export type FavorabilityScore = {
+  score: number;
+  rationale: string[];
+};

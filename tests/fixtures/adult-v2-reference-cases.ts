@@ -5,6 +5,9 @@
  * so. Exact luck-age accuracy remains a vendor-dependency assertion until a
  * separate Korean manseryeok reference is licensed/added.
  */
+export const ADULT_V2_EXTERNAL_DAEUN_VALIDATION =
+  "EXTERNAL_VALIDATION_PENDING" as const;
+
 export const adultV2ReferenceCases = [
   {
     name: "1992 male / yang year / forward luck pillars",
