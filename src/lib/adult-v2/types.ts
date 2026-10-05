@@ -15,15 +15,16 @@ export type CalculatedFortuneData = {
   annual: AnnualFortune;
   selectedDaeun: DaeunPeriod | null;
   evidence: FortuneEvidence[];
-  activation: DomainActivationScores;
+  themeActivation: TenGodThemeActivations;
   changePressure: ChangePressureScore;
-  confidence: EvidenceCoverage;
+  analysisCoverage: AnalysisCoverage;
+  validationStatus: CalculationValidationStatus;
 };
 
 /** Reserved for the later language layer. It must never contain calculation inputs. */
 export type AIInterpretationData = {
   summary: string;
-  activationExplanations: Partial<Record<ActivationDomain, string>>;
+  themeExplanations: Partial<Record<TenGodTheme, string>>;
 };
 
 export type AdultReportV2 = {
@@ -68,19 +69,19 @@ export type AnnualFortune = {
 /** Calculation roles; none indicate real-world good/bad fortune. */
 export type EvidenceEffect = "activation" | "context" | "change";
 export type EvidenceType = "TEN_GOD" | "ELEMENT" | "CLASH";
-export type ActivationDomain =
-  | "money"
-  | "career"
-  | "relationship"
-  | "loveFamily"
-  | "condition";
+export type TenGodTheme =
+  | "wealthResource"
+  | "responsibilityRole"
+  | "learningSupport"
+  | "expressionOutput"
+  | "selfPeerCompetition";
 
 export type FortuneEvidence = {
   id: string;
   type: EvidenceType;
   effect: EvidenceEffect;
-  /** Only TEN_GOD evidence currently has a scored activation domain. */
-  domain?: ActivationDomain;
+  /** Only TEN_GOD evidence currently has a scored theme. */
+  theme?: TenGodTheme;
   source: "annualStem" | "daeunStem" | "annualBranch" | "daeunBranch";
   detail: string;
   tenGod?: TenGodLabel;
@@ -88,14 +89,14 @@ export type FortuneEvidence = {
   relation?: "충";
 };
 
-export type DomainActivationScore = {
-  domain: ActivationDomain;
+export type TenGodThemeActivation = {
+  theme: TenGodTheme;
   score: number;
   level: "low" | "normal" | "high" | "very_high";
   evidence: FortuneEvidence[];
 };
 
-export type DomainActivationScores = Record<ActivationDomain, DomainActivationScore>;
+export type TenGodThemeActivations = Record<TenGodTheme, TenGodThemeActivation>;
 
 export type ChangePressureScore = {
   score: number;
@@ -103,12 +104,20 @@ export type ChangePressureScore = {
   evidence: FortuneEvidence[];
 };
 
-/** Evidence coverage, not a forecast-accuracy probability. */
-export type EvidenceCoverage = {
+/** Analysis input coverage, not a forecast-accuracy probability. */
+export type AnalysisCoverage = {
   score: number;
-  level: "limited" | "moderate" | "strong";
+  level: "limited" | "normal" | "sufficient";
   availableSources: Array<"natal" | "birthTime" | "annual" | "daeun">;
   missingSources: Array<"birthTime" | "daeun">;
+};
+
+/** Internal QA metadata. It must not be represented as customer-facing accuracy. */
+export type CalculationValidationStatus = {
+  natal: "validated";
+  solarTerm: "validated";
+  daeun: "provider_verified";
+  daeunExternal: "pending";
 };
 
 /** Reserved only for a future, separately validated favorability engine. */

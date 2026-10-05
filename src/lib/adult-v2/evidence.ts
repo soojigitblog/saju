@@ -1,7 +1,7 @@
 import { STEMS } from "@/lib/fortune-engine/constants";
 import { tenGodForTarget } from "@/lib/fortune-engine/calculators/ten-gods";
 import type { ElementKey, FortuneChart, StemInfo, TenGodLabel } from "@/lib/fortune-engine/types";
-import type { ActivationDomain, AnnualFortune, DaeunPeriod, FortuneEvidence } from "./types";
+import type { AnnualFortune, DaeunPeriod, FortuneEvidence, TenGodTheme } from "./types";
 
 const CLASH_PAIRS = new Map<number, number>([
   [0, 6], [6, 0], // 子-午
@@ -12,12 +12,12 @@ const CLASH_PAIRS = new Map<number, number>([
   [5, 11], [11, 5], // 巳-亥
 ]);
 
-function tenGodDomain(tenGod: TenGodLabel): ActivationDomain | undefined {
-  if (tenGod === "편재" || tenGod === "정재") return "money";
-  if (tenGod === "편관" || tenGod === "정관") return "career";
-  if (tenGod === "편인" || tenGod === "정인") return "condition";
-  if (tenGod === "비견" || tenGod === "겁재") return "relationship";
-  if (tenGod === "식신" || tenGod === "상관") return "loveFamily";
+function tenGodTheme(tenGod: TenGodLabel): TenGodTheme | undefined {
+  if (tenGod === "편재" || tenGod === "정재") return "wealthResource";
+  if (tenGod === "편관" || tenGod === "정관") return "responsibilityRole";
+  if (tenGod === "편인" || tenGod === "정인") return "learningSupport";
+  if (tenGod === "비견" || tenGod === "겁재") return "selfPeerCompetition";
+  if (tenGod === "식신" || tenGod === "상관") return "expressionOutput";
   return undefined;
 }
 
@@ -34,7 +34,7 @@ function evidenceForStem(input: {
     type: "TEN_GOD",
     // A theme is active; this never means favorable outcome or probability.
     effect: "activation",
-    domain: tenGodDomain(tenGod),
+    theme: tenGodTheme(tenGod),
     source: input.source,
     tenGod,
     detail: `${input.sourceLabel} 천간 ${input.stem.hanja}은(는) 일간 ${input.dayMaster.hanja} 기준 ${tenGod}입니다.`,

@@ -5,10 +5,10 @@ import { calculateAdultV2Data } from "@/lib/adult-v2";
 import { calculateDaeun, daeunForYear } from "@/lib/adult-v2/daeun";
 import { buildFortuneEvidence } from "@/lib/adult-v2/evidence";
 import {
-  ACTIVATION_SCORE_WEIGHTS,
+  THEME_ACTIVATION_WEIGHTS,
   calculateChangePressure,
-  calculateDomainActivation,
-  calculateEvidenceCoverage,
+  calculateAnalysisCoverage,
+  calculateTenGodThemeActivation,
 } from "@/lib/adult-v2/scoring";
 import type { FortuneEvidence } from "@/lib/adult-v2/types";
 import { BRANCHES, STEMS } from "@/lib/fortune-engine/constants";
@@ -149,26 +149,37 @@ describe("Adult V2 evidence, activation, and change-pressure engines", () => {
     expect(evidence.every((item) => !item.detail.includes("용신") && !item.detail.includes("신강"))).toBe(true);
   });
 
-  it("treats ten-god evidence as activation, never positive fortune", () => {
+  it("treats wealth ten-god evidence as a theme, never money-positive fortune", () => {
     const evidence: FortuneEvidence = {
-      id: "money-theme", type: "TEN_GOD", effect: "activation", domain: "money",
+      id: "wealth-theme", type: "TEN_GOD", effect: "activation", theme: "wealthResource",
       source: "annualStem", tenGod: "정재", detail: "test",
     };
-    const activation = calculateDomainActivation([evidence]);
+    const activation = calculateTenGodThemeActivation([evidence]);
     expect(evidence.effect).toBe("activation");
-    expect(activation.money.score).toBe(
-      ACTIVATION_SCORE_WEIGHTS.base + ACTIVATION_SCORE_WEIGHTS.tenGod.annualStem
+    expect(activation.wealthResource.score).toBe(
+      THEME_ACTIVATION_WEIGHTS.base + THEME_ACTIVATION_WEIGHTS.tenGod.annualStem
     );
-    expect(activation.career.score).toBe(ACTIVATION_SCORE_WEIGHTS.base);
+    expect(activation.learningSupport.score).toBe(THEME_ACTIVATION_WEIGHTS.base);
   });
 
-  it("keeps clashes out of domain activation and records change pressure instead", () => {
+  it("does not force resource or output themes into condition or love domains", () => {
+    const evidence: FortuneEvidence[] = [
+      { id: "resource", type: "TEN_GOD", effect: "activation", theme: "learningSupport", source: "annualStem", tenGod: "정인", detail: "test" },
+      { id: "output", type: "TEN_GOD", effect: "activation", theme: "expressionOutput", source: "annualStem", tenGod: "식신", detail: "test" },
+    ];
+    const activation = calculateTenGodThemeActivation(evidence);
+    expect(evidence.every((item) => !("domain" in item))).toBe(true);
+    expect(activation.learningSupport.score).toBeGreaterThan(THEME_ACTIVATION_WEIGHTS.base);
+    expect(activation.expressionOutput.score).toBeGreaterThan(THEME_ACTIVATION_WEIGHTS.base);
+  });
+
+  it("keeps clashes out of theme activation and records change pressure instead", () => {
     const clash: FortuneEvidence = {
       id: "change", type: "CLASH", effect: "change", source: "annualBranch",
       relation: "충", detail: "test",
     };
-    expect(calculateDomainActivation([clash]).relationship.score)
-      .toBe(ACTIVATION_SCORE_WEIGHTS.base);
+    expect(calculateTenGodThemeActivation([clash]).selfPeerCompetition.score)
+      .toBe(THEME_ACTIVATION_WEIGHTS.base);
     expect(calculateChangePressure([clash])).toMatchObject({ score: 35, level: "normal" });
   });
 
@@ -182,18 +193,29 @@ describe("Adult V2 evidence, activation, and change-pressure engines", () => {
       expect(calculateAdultV2Data(chart, 2026)).toEqual(first);
     }
     const values = [
-      ...Object.values(first.activation).map((item) => item.score),
+      ...Object.values(first.themeActivation).map((item) => item.score),
       first.changePressure.score,
-      first.confidence.score,
+      first.analysisCoverage.score,
     ];
     expect(values.every((value) => value >= 0 && value <= 100)).toBe(true);
   });
 
   it("reports evidence coverage rather than prediction confidence", () => {
-    expect(calculateEvidenceCoverage({ birthTimeKnown: true, hasDaeun: true }))
-      .toMatchObject({ score: 100, level: "strong", missingSources: [] });
-    expect(calculateEvidenceCoverage({ birthTimeKnown: false, hasDaeun: true }))
-      .toMatchObject({ score: 80, level: "strong", missingSources: ["birthTime"] });
+    expect(calculateAnalysisCoverage({ birthTimeKnown: true, hasDaeun: true }))
+      .toMatchObject({ score: 90, level: "sufficient", missingSources: [] });
+    expect(calculateAnalysisCoverage({ birthTimeKnown: false, hasDaeun: true }))
+      .toMatchObject({ score: 70, level: "limited", missingSources: ["birthTime"] });
+  });
+
+  it("keeps external daeun validation pending in calculation metadata", () => {
+    const chart = fortuneEngine.calculate({
+      gender: "female", calendarType: "solar", birthDate: "1992-10-24",
+      birthTime: "05:30", birthTimeUnknown: false, timezone: "Asia/Seoul", countryCode: "KR",
+    });
+    expect(calculateAdultV2Data(chart, 2026).validationStatus).toMatchObject({
+      daeun: "provider_verified",
+      daeunExternal: "pending",
+    });
   });
 
   it("keeps multi-case activation and pressure values inside 0–100", () => {
@@ -203,9 +225,9 @@ describe("Adult V2 evidence, activation, and change-pressure engines", () => {
         (() => {
           const result = calculateAdultV2Data(fortuneEngine.calculate(input), year);
           return [
-            ...Object.values(result.activation).map((score) => score.score),
+            ...Object.values(result.themeActivation).map((score) => score.score),
             result.changePressure.score,
-            result.confidence.score,
+            result.analysisCoverage.score,
           ];
         })()
       )

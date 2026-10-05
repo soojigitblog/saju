@@ -2,7 +2,12 @@ import type { FortuneChart } from "@/lib/fortune-engine/types";
 import { calculateAnnualFortune } from "./annual-fortune";
 import { calculateDaeun, daeunForYear } from "./daeun";
 import { buildFortuneEvidence } from "./evidence";
-import { calculateChangePressure, calculateDomainActivation, calculateEvidenceCoverage } from "./scoring";
+import {
+  calculateAnalysisCoverage,
+  calculateChangePressure,
+  calculateTenGodThemeActivation,
+  getCalculationValidationStatus,
+} from "./scoring";
 import type { AdultReportV2, CalculatedFortuneData } from "./types";
 
 export * from "./types";
@@ -22,12 +27,13 @@ export function calculateAdultV2Data(chart: FortuneChart, year: number): Calcula
     annual,
     selectedDaeun,
     evidence,
-    activation: calculateDomainActivation(evidence),
+    themeActivation: calculateTenGodThemeActivation(evidence),
     changePressure: calculateChangePressure(evidence),
-    confidence: calculateEvidenceCoverage({
+    analysisCoverage: calculateAnalysisCoverage({
       birthTimeKnown: !chart.input.birthTimeUnknown,
       hasDaeun: selectedDaeun !== null,
     }),
+    validationStatus: getCalculationValidationStatus(),
   };
 }
 

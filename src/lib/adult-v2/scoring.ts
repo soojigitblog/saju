@@ -1,14 +1,14 @@
 import type {
-  ActivationDomain,
+  AnalysisCoverage,
   ChangePressureScore,
-  DomainActivationScore,
-  DomainActivationScores,
-  EvidenceCoverage,
   FortuneEvidence,
+  TenGodTheme,
+  TenGodThemeActivation,
+  TenGodThemeActivations,
 } from "./types";
 
-export const ACTIVATION_DOMAINS: readonly ActivationDomain[] = [
-  "money", "career", "relationship", "loveFamily", "condition",
+export const TEN_GOD_THEMES: readonly TenGodTheme[] = [
+  "wealthResource", "responsibilityRole", "learningSupport", "expressionOutput", "selfPeerCompetition",
 ] as const;
 
 /**
@@ -16,7 +16,7 @@ export const ACTIVATION_DOMAINS: readonly ActivationDomain[] = [
  * They are not favorability weights and must not be rendered as fortune,
  * success, income, health, or relationship outcome scores.
  */
-export const ACTIVATION_SCORE_WEIGHTS = {
+export const THEME_ACTIVATION_WEIGHTS = {
   base: 20,
   tenGod: { annualStem: 30, daeunStem: 25 },
   range: { min: 0, max: 100 },
@@ -33,7 +33,7 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
-function activationLevel(score: number): DomainActivationScore["level"] {
+function activationLevel(score: number): TenGodThemeActivation["level"] {
   if (score >= 75) return "very_high";
   if (score >= 50) return "high";
   if (score >= 25) return "normal";
@@ -42,31 +42,31 @@ function activationLevel(score: number): DomainActivationScore["level"] {
 
 function activationWeight(item: FortuneEvidence): number {
   if (item.type !== "TEN_GOD" || item.effect !== "activation") return 0;
-  if (item.source === "annualStem") return ACTIVATION_SCORE_WEIGHTS.tenGod.annualStem;
-  if (item.source === "daeunStem") return ACTIVATION_SCORE_WEIGHTS.tenGod.daeunStem;
+  if (item.source === "annualStem") return THEME_ACTIVATION_WEIGHTS.tenGod.annualStem;
+  if (item.source === "daeunStem") return THEME_ACTIVATION_WEIGHTS.tenGod.daeunStem;
   return 0;
 }
 
 function activationFor(
-  domain: ActivationDomain,
+  theme: TenGodTheme,
   allEvidence: FortuneEvidence[]
-): DomainActivationScore {
+): TenGodThemeActivation {
   const evidence = allEvidence.filter(
-    (item) => item.effect === "activation" && item.domain === domain
+    (item) => item.effect === "activation" && item.theme === theme
   );
   const score = clamp(
-    ACTIVATION_SCORE_WEIGHTS.base + evidence.reduce((sum, item) => sum + activationWeight(item), 0),
-    ACTIVATION_SCORE_WEIGHTS.range.min,
-    ACTIVATION_SCORE_WEIGHTS.range.max
+    THEME_ACTIVATION_WEIGHTS.base + evidence.reduce((sum, item) => sum + activationWeight(item), 0),
+    THEME_ACTIVATION_WEIGHTS.range.min,
+    THEME_ACTIVATION_WEIGHTS.range.max
   );
-  return { domain, score, level: activationLevel(score), evidence };
+  return { theme, score, level: activationLevel(score), evidence };
 }
 
-/** Deterministic domain-topic intensity; deliberately not a fortune rating. */
-export function calculateDomainActivation(evidence: FortuneEvidence[]): DomainActivationScores {
+/** This index measures signal prominence, not fortune favorability. */
+export function calculateTenGodThemeActivation(evidence: FortuneEvidence[]): TenGodThemeActivations {
   return Object.fromEntries(
-    ACTIVATION_DOMAINS.map((domain) => [domain, activationFor(domain, evidence)])
-  ) as DomainActivationScores;
+    TEN_GOD_THEMES.map((theme) => [theme, activationFor(theme, evidence)])
+  ) as TenGodThemeActivations;
 }
 
 export function calculateChangePressure(evidence: FortuneEvidence[]): ChangePressureScore {
@@ -83,13 +83,13 @@ export function calculateChangePressure(evidence: FortuneEvidence[]): ChangePres
   };
 }
 
-export function calculateEvidenceCoverage(input: {
+export function calculateAnalysisCoverage(input: {
   birthTimeKnown: boolean;
   hasDaeun: boolean;
-}): EvidenceCoverage {
-  const availableSources: EvidenceCoverage["availableSources"] = ["natal", "annual"];
-  const missingSources: EvidenceCoverage["missingSources"] = [];
-  let score = 55;
+}): AnalysisCoverage {
+  const availableSources: AnalysisCoverage["availableSources"] = ["natal", "annual"];
+  const missingSources: AnalysisCoverage["missingSources"] = [];
+  let score = 50;
   if (input.birthTimeKnown) {
     availableSources.push("birthTime");
     score += 20;
@@ -98,15 +98,27 @@ export function calculateEvidenceCoverage(input: {
   }
   if (input.hasDaeun) {
     availableSources.push("daeun");
-    score += 25;
+    score += 20;
   } else {
     missingSources.push("daeun");
   }
   const normalized = clamp(score, 0, 100);
   return {
     score: normalized,
-    level: normalized >= 75 ? "strong" : normalized >= 55 ? "moderate" : "limited",
+    // Missing time materially limits the usable natal chart even where the
+    // remaining evidence is internally consistent.
+    level: !input.birthTimeKnown ? "limited" : normalized >= 70 ? "sufficient" : "normal",
     availableSources,
     missingSources,
   };
+}
+
+/** QA-only: provider data is tested, but independent daeun validation is pending. */
+export function getCalculationValidationStatus() {
+  return {
+    natal: "validated",
+    solarTerm: "validated",
+    daeun: "provider_verified",
+    daeunExternal: "pending",
+  } as const;
 }
