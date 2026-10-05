@@ -430,7 +430,7 @@ export type Database = {
         Row: {
           id: string;
           order_id: string;
-          provider: "TOSS" | "KAKAO" | "NAVER" | "BANK_TRANSFER";
+          provider: "TOSS" | "PORTONE" | "KAKAO" | "NAVER" | "BANK_TRANSFER";
           payment_key: string | null;
           payment_method: string | null;
           provider_status: string | null;
@@ -447,7 +447,7 @@ export type Database = {
         Insert: {
           id?: string;
           order_id: string;
-          provider?: "TOSS" | "KAKAO" | "NAVER" | "BANK_TRANSFER";
+          provider?: "TOSS" | "PORTONE" | "KAKAO" | "NAVER" | "BANK_TRANSFER";
           payment_key?: string | null;
           payment_method?: string | null;
           provider_status?: string | null;
@@ -464,7 +464,7 @@ export type Database = {
         Update: {
           id?: string;
           order_id?: string;
-          provider?: "TOSS" | "KAKAO" | "NAVER" | "BANK_TRANSFER";
+          provider?: "TOSS" | "PORTONE" | "KAKAO" | "NAVER" | "BANK_TRANSFER";
           payment_key?: string | null;
           payment_method?: string | null;
           provider_status?: string | null;

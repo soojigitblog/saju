@@ -1,6 +1,7 @@
 import { SiteHeader } from "@/components/layout/site-header";
 import { MobileBottomNav } from "@/components/layout/mobile-bottom-nav";
 import { ClientIssueReporter } from "@/components/feedback/client-issue-reporter";
+import { BusinessFooter } from "@/components/layout/business-footer";
 
 export default function PublicLayout({
   children,
@@ -12,6 +13,7 @@ export default function PublicLayout({
       <SiteHeader />
       <main className="flex-1 pb-20 md:pb-0">{children}</main>
       <MobileBottomNav />
+      <BusinessFooter />
       <ClientIssueReporter />
     </div>
   );

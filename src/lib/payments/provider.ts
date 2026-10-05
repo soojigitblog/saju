@@ -5,7 +5,7 @@ import "server-only";
  * MVP supports Toss (+ Mock for tests). Do not build a multi-PSP framework.
  */
 
-export type PaymentProviderId = "TOSS" | "MOCK";
+export type PaymentProviderId = "TOSS" | "PORTONE" | "MOCK";
 
 export type ConfirmPaymentInput = {
   paymentKey: string;

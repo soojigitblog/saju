@@ -44,7 +44,7 @@ function assertOrderOwner(order: Order, guestSessionId: string): void {
  * Server confirm — never trust client amount as source of truth.
  * DB order.amount is authoritative; callback + provider must match.
  */
-export async function confirmTossPaymentForOwner(input: {
+export async function confirmPaymentForOwner(input: {
   guestSessionId: string;
   /** Toss orderId (= order_no) or internal order UUID */
   orderIdParam: string;
@@ -229,7 +229,7 @@ export async function confirmTossPaymentForOwner(input: {
 
   const { payment, created } = await createPaymentIdempotent({
     order_id: order.id,
-    provider: "TOSS",
+    provider: confirmed.provider as "TOSS" | "PORTONE" | "KAKAO" | "NAVER",
     payment_key: confirmed.paymentKey,
     payment_method: confirmed.method,
     provider_status: confirmed.status,
@@ -326,6 +326,9 @@ export async function confirmTossPaymentForOwner(input: {
   };
 }
 
+/** Legacy QA helper name; provider selection remains server-side. */
+export const confirmTossPaymentForOwner = confirmPaymentForOwner;
+
 /**
  * Toss webhook fallback. The webhook payload is not treated as payment proof:
  * this delegates to the normal provider confirmation with the server-side
@@ -348,7 +351,7 @@ export async function confirmTossPaymentFromWebhook(input: {
     );
   }
   const guestSessionId = order.guest_session_id;
-  return confirmTossPaymentForOwner({
+  return confirmPaymentForOwner({
     guestSessionId,
     orderIdParam: order.order_no,
     paymentKey: input.paymentKey,

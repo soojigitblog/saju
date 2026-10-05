@@ -17,7 +17,9 @@ export type CheckoutPageDTO = {
   productSlug: string | null;
   customerName: string | null;
   clientKey: string | null;
-  paymentMode: "toss" | "mock";
+  paymentMode: "toss" | "portone" | "mock";
+  portoneStoreId: string | null;
+  portoneChannelKey: string | null;
   customerKey: string;
   testMode: boolean;
 };
@@ -68,7 +70,9 @@ export async function getCheckoutPageForOwner(input: {
   const clientKey =
     paymentMode === "toss" ? getTossClientKey() || null : null;
 
-  if (paymentMode === "toss" && !clientKey) {
+  const portoneStoreId = process.env.NEXT_PUBLIC_PORTONE_STORE_ID?.trim() || null;
+  const portoneChannelKey = process.env.NEXT_PUBLIC_PORTONE_KSNET_CHANNEL_KEY?.trim() || null;
+  if ((paymentMode === "toss" && !clientKey) || (paymentMode === "portone" && (!portoneStoreId || !portoneChannelKey))) {
     throw new FreeFlowError(
       "PAYMENT_CONFIG_ERROR",
       "결제 설정이 완료되지 않았습니다.",
@@ -89,6 +93,8 @@ export async function getCheckoutPageForOwner(input: {
     customerName: profile?.nickname ?? null,
     clientKey,
     paymentMode,
+    portoneStoreId,
+    portoneChannelKey,
     customerKey,
     testMode: paymentMode === "toss" && isTossTestKeyPair(),
   };

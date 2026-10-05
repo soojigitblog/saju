@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { cookies } from "next/headers";
 import { getGuestSessionId } from "@/lib/guest/cookie";
-import { confirmTossPaymentForOwner } from "@/lib/services/confirm-payment";
+import { confirmPaymentForOwner } from "@/lib/services/confirm-payment";
 import { FreeFlowError } from "@/lib/services/free-flow-errors";
 import { assertSameOrigin } from "@/lib/security/same-origin";
 import { trackEvent } from "@/lib/repositories/analytics";
@@ -73,7 +73,7 @@ export async function POST(request: Request) {
     const analyticsId =
       jar.get("fortune_analytics_session")?.value ?? guestSessionId;
 
-    const result = await confirmTossPaymentForOwner({
+    const result = await confirmPaymentForOwner({
       guestSessionId,
       orderIdParam: parsed.data.orderId,
       paymentKey: parsed.data.paymentKey,

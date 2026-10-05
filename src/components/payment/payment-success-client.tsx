@@ -21,17 +21,19 @@ type ConfirmParams = {
   tossOrderId: string | null;
   amount: number;
   valid: boolean;
+  provider: "toss" | "portone";
 };
 
 function readConfirmParams(searchParams: URLSearchParams): ConfirmParams {
   const paymentKey = searchParams.get("paymentKey");
+  const portonePaymentId = searchParams.get("paymentId");
   const tossOrderId = searchParams.get("orderId");
   const amountRaw = searchParams.get("amount");
   const amount = amountRaw ? Number(amountRaw) : NaN;
   const valid = Boolean(
-    paymentKey && tossOrderId && Number.isFinite(amount)
+    (paymentKey || portonePaymentId) && tossOrderId && Number.isFinite(amount)
   );
-  return { paymentKey, tossOrderId, amount, valid };
+  return { paymentKey: paymentKey ?? portonePaymentId, tossOrderId, amount, valid, provider: searchParams.get("provider") === "portone" ? "portone" : "toss" };
 }
 
 export function PaymentSuccessClient() {
@@ -98,7 +100,7 @@ export function PaymentSuccessClient() {
 
     async function run() {
       try {
-        const res = await fetch("/api/payments/toss/confirm", {
+        const res = await fetch(`/api/payments/${params.provider}/confirm`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -175,7 +177,7 @@ export function PaymentSuccessClient() {
     }
 
     void run();
-  }, [params.valid, params.paymentKey, params.tossOrderId, params.amount]);
+  }, [params.valid, params.paymentKey, params.tossOrderId, params.amount, params.provider]);
 
   async function onRetryGeneration() {
     if (!orderId) return;

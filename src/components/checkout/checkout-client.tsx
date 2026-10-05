@@ -124,6 +124,24 @@ export function CheckoutClient({ checkout }: Props) {
         router.push(`/payment/success?${qs.toString()}`);
         return;
       }
+      if (checkout.paymentMode === "portone") {
+        if (!checkout.portoneStoreId || !checkout.portoneChannelKey) throw new Error("PORTONE_CONFIG_MISSING");
+        const { requestPayment } = await import("@portone/browser-sdk/v2");
+        const result = await requestPayment({
+          storeId: checkout.portoneStoreId,
+          channelKey: checkout.portoneChannelKey,
+          paymentId: `po_${checkout.orderNo}`,
+          orderName: checkout.productName,
+          totalAmount: checkout.amount,
+          currency: "KRW",
+          payMethod: "CARD",
+          productType: "DIGITAL",
+          redirectUrl: successUrl,
+          customData: { orderNo: checkout.orderNo },
+        });
+        if (result?.paymentId) router.push(`/payment/success?provider=portone&paymentId=${encodeURIComponent(result.paymentId)}&orderId=${encodeURIComponent(checkout.orderNo)}&amount=${checkout.amount}`);
+        return;
+      }
 
       const widgets = widgetsRef.current;
       if (!widgets) {
@@ -184,6 +202,8 @@ export function CheckoutClient({ checkout }: Props) {
             />
             <div id="toss-agreement" className="w-full" />
           </div>
+        ) : checkout.paymentMode === "portone" ? (
+          <MysticPanel className="mt-6 border-dashed"><p className="text-sm font-medium">카드 결제</p><p className="mt-2 text-xs text-[var(--text-muted)]">PortOne KSNET 샌드박스 결제창에서 카드 결제를 진행합니다.</p></MysticPanel>
         ) : (
           <MysticPanel className="mt-6 border-dashed">
             <p className="text-sm font-medium text-[var(--text-primary)]">
@@ -195,28 +215,9 @@ export function CheckoutClient({ checkout }: Props) {
           </MysticPanel>
         )}
 
-        <label className="mt-6 flex items-start gap-3 text-sm text-[var(--text-secondary)]">
-          <input
-            type="checkbox"
-            className="mt-1"
-            checked={agree}
-            onChange={(e) => setAgree(e.target.checked)}
-          />
-          <span>
-            <Link href="/terms" className="underline">
-              이용약관
-            </Link>
-            ,{" "}
-            <Link href="/privacy" className="underline">
-              개인정보처리방침
-            </Link>
-            ,{" "}
-            <Link href="/refund" className="underline">
-              환불정책
-            </Link>
-            에 동의합니다. (마케팅 동의는 별도)
-          </span>
-        </label>
+        <div className="mt-6 space-y-3 text-sm text-[var(--text-secondary)]">
+          <label className="flex items-start gap-3"><input type="checkbox" className="mt-1" checked={agree} onChange={(e) => setAgree(e.target.checked)} /><span><Link href="/terms" className="underline">이용약관</Link>, <Link href="/privacy" className="underline">개인정보처리방침</Link>, <Link href="/refund-policy" className="underline">환불정책</Link>과 상품·가격·디지털 콘텐츠 제공 시점 확인에 동의합니다. (필수)</span></label>
+        </div>
 
         {error ? (
           <p
