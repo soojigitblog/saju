@@ -114,6 +114,15 @@ export function isPaidReportGenerationEnabled(): boolean {
   return isPaidReportLiveEnabled();
 }
 
+/**
+ * Customer-facing Adult V2 is intentionally a separate rollout gate from
+ * checkout, generation, and the internal /report/v2-preview route.  Keeping
+ * the default off means existing paid reports always retain their V1 renderer.
+ */
+export function isAdultReportV2Enabled(): boolean {
+  return readEnvBool("ADULT_REPORT_V2", false);
+}
+
 export type PaidGenerationActor = "customer" | "qa" | "admin" | "test";
 
 /**

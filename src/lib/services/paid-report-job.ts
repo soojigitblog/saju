@@ -5,6 +5,7 @@ import {
   assertPaidGeminiConfigured,
   estimateAiCostUsd,
   getAiModelPaid,
+  isAdultReportV2Enabled,
   isPaidReportGenerationEnabled,
   resolveAiProviderForPaid,
   resolvePaidProvider,
@@ -53,6 +54,7 @@ import {
 import { stampServerPaidReportMetadata } from "@/lib/services/paid-report-metadata";
 import { PAID_REPORT_WAITING_ERROR_CODE } from "@/lib/services/paid-report-waiting";
 import { isTossTestSandboxCheckoutAllowed } from "@/lib/payments/toss-sandbox";
+import { generateAdultV2ReportData } from "@/lib/adult-v2/generate-report";
 
 export type PaidReportJobResult = {
   reportId: string | null;
@@ -332,6 +334,12 @@ export async function startPaidReportJob(input: {
   }
 
   const isPaidTarot = product.productType === "tarot_paid";
+  // The complete-life product is the only V2 target. Other products and all
+  // legacy reports retain their existing contract and renderer.
+  const useAdultV2 =
+    isAdultReportV2Enabled() &&
+    product.productType === "fortune" &&
+    product.slug === "2026-total";
   const baseGenerationKey = buildGenerationKey({
     calculationHash: chart.engine.calculationHash,
     promptVersionId,
@@ -340,7 +348,7 @@ export async function startPaidReportJob(input: {
     resultType: "paid",
     productSlug: product.slug,
   });
-  const ledgerKey = `${baseGenerationKey}:order:${order.id}`;
+  const ledgerKey = `${baseGenerationKey}:order:${order.id}${useAdultV2 ? ":adult-v2" : ""}`;
 
   const existingLedger = await getAiGenerationByKey(ledgerKey);
   if (existingLedger?.status === "COMPLETED" && !input.forceRetry) {
@@ -426,7 +434,22 @@ export async function startPaidReportJob(input: {
       providerRequestId?: string;
     };
 
-    if (isPaidTarot) {
+    if (useAdultV2) {
+      const generated = await generateAdultV2ReportData({
+        chart,
+        subject: profile.nickname,
+        year: new Date().getFullYear(),
+        provider,
+        model,
+      });
+      resultBody = generated as unknown as Record<string, unknown>;
+      meta = {
+        provider: generated.meta.provider,
+        model: generated.meta.model,
+        promptVersionId: generated.meta.interpretationPromptVersion,
+        usage: { inputTokens: null, outputTokens: null, totalTokens: null },
+      };
+    } else if (isPaidTarot) {
       const { tarotContext } = await resolvePaidTarotContext({
         sourceTarotReadingId:
           (order as { source_tarot_reading_id?: string | null })
@@ -505,6 +528,7 @@ export async function startPaidReportJob(input: {
 
     const artifactUrls =
       !isPaidTarot &&
+      !useAdultV2 &&
       product.productType === "fortune" &&
       isKnownPaidFortuneProductSlug(product.slug)
         ? consultingArtifactUrls(report.id)

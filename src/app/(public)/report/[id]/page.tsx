@@ -6,6 +6,7 @@ import { getProfileById } from "@/lib/repositories/profiles";
 import { PaidReportView } from "@/components/report/paid-report-view";
 import { PaidConsultingReportView } from "@/components/report/paid-consulting-report-view";
 import { PaidTarotReportView } from "@/components/report/paid-tarot-report-view";
+import { AdultV2ReportView } from "@/components/report/adult-v2-preview";
 import { MysticPage } from "@/components/mystic/celestial-background";
 import { Button } from "@/components/ui/button";
 import { mockPaidReport } from "@/lib/mock-data";
@@ -15,6 +16,11 @@ import { isTossTestSandboxCheckoutAllowed } from "@/lib/payments/toss-sandbox";
 import type { PaidReport } from "@/types";
 import type { PaidFortuneReport } from "@/lib/ai/schemas/paid-report";
 import type { PaidCrossReading } from "@/lib/ai/schemas/paid-cross-reading";
+import { isAdultReportV2Enabled } from "@/lib/ai/config";
+import {
+  isAdultV2ReportData,
+  type AdultV2ReportData,
+} from "@/lib/adult-v2/report-data";
 
 export const dynamic = "force-dynamic";
 
@@ -152,6 +158,7 @@ type PageModel =
       orderNo: string;
       productName: string;
     }
+  | { kind: "adult_v2"; data: AdultV2ReportData }
   | {
       kind: "message";
       title: string;
@@ -221,6 +228,7 @@ async function loadPage(input: {
     const raw = report.result_json as {
       reportKind?: string;
       reportRenderVersion?: string;
+      reportVersion?: string;
       title?: string;
       executiveSummary?: string;
     };
@@ -233,6 +241,28 @@ async function loadPage(input: {
           order.product_name_snapshot ?? "사주×타로 심층 교차리딩",
         orderNo: order.order_no,
       };
+    }
+
+    if (raw?.reportVersion === "adult-v2") {
+      if (!isAdultReportV2Enabled()) {
+        return {
+          kind: "message",
+          title: "리포트 준비 중",
+          body: "이 리포트는 현재 제공 준비 중입니다. 결제 상태는 그대로 유지됩니다.",
+          href: "/my-results",
+          label: "내 결과",
+        };
+      }
+      if (!isAdultV2ReportData(report.result_json)) {
+        return {
+          kind: "message",
+          title: "리포트 생성에 실패했습니다",
+          body: "결제는 확인되었습니다. 리포트를 다시 준비하고 있습니다.",
+          href: "/my-results",
+          label: "내 결과",
+        };
+      }
+      return { kind: "adult_v2", data: report.result_json };
     }
 
     if (isConsultingReportRenderVersion(raw?.reportRenderVersion)) {
@@ -340,6 +370,10 @@ export default async function ReportPage({
         productName={model.productName}
       />
     );
+  }
+
+  if (model.kind === "adult_v2") {
+    return <AdultV2ReportView data={model.data} />;
   }
 
   return (

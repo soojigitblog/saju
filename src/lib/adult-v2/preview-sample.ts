@@ -39,11 +39,15 @@ export type AdultV2PreviewData = {
     width: string;
   }[];
   relationship: { opening: string; insights: readonly { title: string; body: string }[] };
+  family?: string;
+  actionGuide?: readonly { title: string; body: string }[];
   lifeMap: {
     axes: readonly { label: string; x: number; y: number }[];
     strongestThemes: string;
   };
   crossReading: readonly { label: string; body: string }[];
+  /** Preview-only card label. Production only renders a card when a real draw exists. */
+  tarotCardLabel?: string | null;
 };
 
 export const ADULT_V2_PREVIEW_SAMPLE: AdultV2PreviewData = {
@@ -107,4 +111,5 @@ export const ADULT_V2_PREVIEW_SAMPLE: AdultV2PreviewData = {
     { label: "두 결과가 만나는 지점", body: "바깥의 요구에 바로 반응하기보다, 내 생활에 맞는 속도와 기준을 먼저 정하는 데 두 신호가 만납니다." },
     { label: "지금의 행동 제안", body: "이번 주에는 계속할 일 한 가지와 내려놓을 일 한 가지를 적어, 실제 일정표에서 자리를 바꿔보세요." },
   ],
+  tarotCardLabel: "THE STAR",
 };
