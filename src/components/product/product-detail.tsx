@@ -190,7 +190,7 @@ export function ProductDetail({
             ))}
           </ul>
           <p className="mt-4 border-t border-[var(--border-subtle)] pt-3 text-xs leading-relaxed text-[var(--text-muted)]">
-            결제 후 입력한 사주 정보를 바탕으로 개인 리포트가 생성되며, 내 리포트에서 다시 확인할 수 있습니다.
+            상품 유형: 개인 맞춤형 디지털 콘텐츠 · 배송 상품이 아닙니다. 결제 확인 후 입력한 사주 정보를 바탕으로 리포트가 생성되며, 웹사이트 「내 결과」에서 다시 확인할 수 있습니다. 사주 명리 데이터를 바탕으로 한 참고용 콘텐츠이며 미래 결과를 보장하지 않습니다.
           </p>
         </MysticPanel>
 
@@ -232,7 +232,7 @@ export function ProductDetail({
           </p>
           <p className="mt-2 text-xs text-[var(--text-muted)]">
             환불·취소는{" "}
-            <a href="/refund" className="underline underline-offset-2">
+            <a href="/refund-policy" className="underline underline-offset-2">
               환불정책
             </a>
             을 참고해 주세요.
