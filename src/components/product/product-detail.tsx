@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -44,6 +45,7 @@ export function ProductDetail({
   purchaseBlockedMessage = null,
   checkoutMethod = "toss",
   tossTestMode = false,
+  pgReviewCheckoutHref = null,
 }: {
   product: Product;
   linkedFreeResultId?: string | null;
@@ -52,6 +54,8 @@ export function ProductDetail({
   purchaseBlockedMessage?: string | null;
   checkoutMethod?: "toss" | "bank";
   tossTestMode?: boolean;
+  /** Server-gated review-only route. Never creates an order or payment. */
+  pgReviewCheckoutHref?: string | null;
 }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -281,19 +285,25 @@ export function ProductDetail({
 
         <div className="fixed inset-x-0 bottom-[3.25rem] z-40 border-t border-[var(--border-subtle)] bg-[color-mix(in_oklab,var(--bg-primary)_92%,transparent)] px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur-md md:bottom-0">
           <div className="mx-auto max-w-lg">
-            <Button
-              size="full"
-              onClick={() => void onPurchase()}
-              disabled={loading || purchaseBlocked || !linkedFreeResultId}
-            >
-              {purchaseBlocked
-                ? "판매 준비 중"
+            {purchaseBlocked && pgReviewCheckoutHref ? (
+              <Button size="full" asChild>
+                <Link href={pgReviewCheckoutHref}>PG 심사용 결제 화면 보기</Link>
+              </Button>
+            ) : (
+              <Button
+                size="full"
+                onClick={() => void onPurchase()}
+                disabled={loading || purchaseBlocked || !linkedFreeResultId}
+              >
+                {purchaseBlocked
+                  ? "판매 준비 중"
                 : loading
                   ? "주문 준비 중..."
                   : useToss
                     ? "카드로 결제하기"
                     : "계좌이체로 구매하기"}
-            </Button>
+              </Button>
+            )}
           </div>
         </div>
       </div>

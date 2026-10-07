@@ -12,6 +12,7 @@ import { MOCK_PRODUCT_IDS } from "@/lib/mock-data";
 import {
   isTossTestSandboxCheckoutAllowed,
   isCustomerPaidCheckoutOpen,
+  isPgReviewMode,
 } from "@/lib/payments/checkout-policy";
 
 const sampleInput = {
@@ -40,11 +41,19 @@ describe("Toss test sandbox checkout", () => {
     process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY = "test_ck_sandbox_client";
     process.env.TOSS_SECRET_KEY = "test_sk_sandbox_secret";
     process.env.ALLOW_MOCK_AI = "1";
+    delete process.env.PG_REVIEW_MODE;
   });
 
   it("opens customer checkout with Toss TEST keys while live sales are off", () => {
     expect(isTossTestSandboxCheckoutAllowed()).toBe(true);
     expect(isCustomerPaidCheckoutOpen()).toBe(true);
+  });
+
+  it("keeps PG review mode separate from customer sales", () => {
+    process.env.ALLOW_TOSS_CHECKOUT = "0";
+    process.env.PG_REVIEW_MODE = "true";
+    expect(isPgReviewMode()).toBe(true);
+    expect(isCustomerPaidCheckoutOpen()).toBe(false);
   });
 
   it("creates a TOSS order without bank depositor name", async () => {

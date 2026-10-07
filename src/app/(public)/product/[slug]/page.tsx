@@ -4,7 +4,11 @@ import { getProductBySlug } from "@/lib/repositories/products";
 import { getGuestSessionId } from "@/lib/guest/cookie";
 import { getFreeResultById } from "@/lib/repositories/free-results";
 import { getProfileById } from "@/lib/repositories/profiles";
-import { isCustomerPaidCheckoutOpen, isTossTestSandboxCheckoutAllowed } from "@/lib/payments/checkout-policy";
+import {
+  isCustomerPaidCheckoutOpen,
+  isPgReviewMode,
+  isTossTestSandboxCheckoutAllowed,
+} from "@/lib/payments/checkout-policy";
 import { isKnownPaidFortuneProductSlug } from "@/lib/report/paid-report-kind";
 
 export async function generateMetadata({
@@ -67,6 +71,11 @@ export default async function ProductPage({
       purchaseBlockedMessage={
         purchaseBlocked
           ? "현재 최종 점검 중입니다. 유료 리포트 판매는 잠시 후 오픈됩니다."
+          : null
+      }
+      pgReviewCheckoutHref={
+        paidSaleProduct && isPgReviewMode()
+          ? `/pg-review/checkout/${product.slug}`
           : null
       }
       checkoutMethod="toss"
