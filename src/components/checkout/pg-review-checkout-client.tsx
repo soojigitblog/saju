@@ -73,7 +73,7 @@ export function PgReviewCheckoutClient({ product }: { product: PgReviewProduct }
 
         {notice ? <p role="status" className="mt-4 border border-[var(--border-gold)]/40 bg-[var(--bg-card)] px-4 py-3 text-sm text-[var(--text-secondary)]">{notice}</p> : null}
 
-        <div className="fixed inset-x-0 bottom-[3.25rem] z-40 border-t border-[var(--border-subtle)] bg-[color-mix(in_oklab,var(--bg-primary)_92%,transparent)] px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur-md md:bottom-0">
+        <div className="fixed inset-x-0 bottom-[3.25rem] z-40 border-t border-[var(--border-subtle)] bg-[color-mix(in_oklab,var(--bg-primary)_92%,transparent)] px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur-md md:static md:mt-8">
           <div className="mx-auto max-w-lg">
             <Button size="full" disabled={!allAgreed} onClick={() => setNotice("PG 심사/연동 준비 중입니다. 이 화면에서는 실제 결제 승인 요청을 실행하지 않습니다.")}> 
               {allAgreed ? "결제 실행 전 확인" : "필수 동의 후 다음 단계"}
