@@ -178,6 +178,9 @@ export function ProductDetail({
           <p className="text-sm leading-relaxed text-[var(--text-secondary)]">
             {product.description}
           </p>
+          <p className="border-l-2 border-[var(--gold-primary)] pl-3 text-sm leading-relaxed text-[var(--text-secondary)]">
+            개인 맞춤형 디지털 콘텐츠입니다. 결제 확인 후 입력한 사주 정보를 바탕으로 리포트가 생성되며, 웹사이트 「내 결과」에서 다시 열람할 수 있습니다.
+          </p>
         </div>
 
         <MysticPanel className="mt-8">
