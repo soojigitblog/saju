@@ -17,20 +17,33 @@ export type AiProviderName = "gemini" | "openai" | "mock";
 /** Billing / quota policy tier — separate from provider name. */
 export type AiBillingTier = "free" | "paid";
 
-const DEFAULT_OPENAI_FREE = "gpt-5.6-luna";
-const DEFAULT_OPENAI_PAID = "gpt-5.6-terra";
+/** Stable public Responses API models. Environment overrides remain supported. */
+const DEFAULT_OPENAI_FREE = "gpt-5-mini";
+const DEFAULT_OPENAI_PAID = "gpt-5";
 /** Official Gemini Flash with Structured Outputs. */
 const DEFAULT_GEMINI_FREE = "gemini-3.6-flash";
 const DEFAULT_GEMINI_PAID = "gemini-3.6-flash";
 
+function readSingleLineSecret(name: string): string | undefined {
+  const value = process.env[name]?.trim();
+  if (!value) return undefined;
+
+  // A copied multi-line key becomes an invalid HTTP Authorization header and
+  // SDK errors may otherwise echo the secret back into application logs.
+  if (/\r|\n/.test(value)) {
+    throw new Error(
+      `CONFIGURATION_ERROR: ${name} must contain exactly one single-line API key.`
+    );
+  }
+  return value;
+}
+
 export function getOpenAiApiKey(): string | undefined {
-  const key = process.env.OPENAI_API_KEY?.trim();
-  return key || undefined;
+  return readSingleLineSecret("OPENAI_API_KEY");
 }
 
 export function getGeminiApiKey(): string | undefined {
-  const key = process.env.GEMINI_API_KEY?.trim();
-  return key || undefined;
+  return readSingleLineSecret("GEMINI_API_KEY");
 }
 
 /**
@@ -39,16 +52,15 @@ export function getGeminiApiKey(): string | undefined {
  */
 export function getGeminiApiKeyForTier(tier: AiBillingTier): string | undefined {
   if (tier === "paid") {
-    return process.env.GEMINI_API_KEY_PAID?.trim() || undefined;
+    return readSingleLineSecret("GEMINI_API_KEY_PAID");
   }
-  return process.env.GEMINI_API_KEY_FREE?.trim() || getGeminiApiKey();
+  return readSingleLineSecret("GEMINI_API_KEY_FREE") || getGeminiApiKey();
 }
 
 export function getOpenAiApiKeyForTier(tier: AiBillingTier): string | undefined {
-  const tierKey =
-    tier === "free"
-      ? process.env.OPENAI_API_KEY_FREE?.trim()
-      : process.env.OPENAI_API_KEY_PAID?.trim();
+  const tierKey = readSingleLineSecret(
+    tier === "free" ? "OPENAI_API_KEY_FREE" : "OPENAI_API_KEY_PAID"
+  );
   if (tier === "paid") {
     return tierKey || undefined;
   }

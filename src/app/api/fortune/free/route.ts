@@ -10,6 +10,17 @@ export const dynamic = "force-dynamic";
 
 const MAX_BODY = 8_192;
 
+function safeErrorField(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  return value
+    .replace(
+      /Bearer\s+[\s\S]*?(?="\s+is an invalid header value)/gi,
+      "Bearer [REDACTED]"
+    )
+    .replace(/\bsk-(?:proj-)?[A-Za-z0-9_-]+\b/g, "[REDACTED_API_KEY]")
+    .replace(/\bsb_(?:secret|publishable)_[A-Za-z0-9_-]+\b/g, "[REDACTED_SUPABASE_KEY]");
+}
+
 export async function POST(request: Request) {
   try {
     assertSameOrigin(request);
@@ -46,6 +57,7 @@ export async function POST(request: Request) {
   }
 
   try {
+    console.info("[FORTUNE] submit started");
     const guestSessionId = await ensureGuestSessionId();
     const forwarded = request.headers.get("x-forwarded-for");
     const ipHint = forwarded?.split(",")[0]?.trim() ?? null;
@@ -68,6 +80,7 @@ export async function POST(request: Request) {
       /* analytics best-effort */
     }
 
+    console.info("[FORTUNE] redirect success");
     return NextResponse.json({
       freeResultId: result.freeResultId,
       status: result.status,
@@ -79,21 +92,16 @@ export async function POST(request: Request) {
         { status: error.status }
       );
     }
-    console.error("[api/fortune/free] UNKNOWN", {
-      name: error instanceof Error ? error.name : typeof error,
-      message: error instanceof Error ? error.message : String(error),
-      details:
-        error && typeof error === "object" && "details" in error
-          ? (error as { details?: unknown }).details
-          : undefined,
-      hint:
-        error && typeof error === "object" && "hint" in error
-          ? (error as { hint?: unknown }).hint
-          : undefined,
-      code:
-        error && typeof error === "object" && "code" in error
-          ? (error as { code?: unknown }).code
-          : undefined,
+    console.error("[FORTUNE_GENERATION_FAILED]", {
+      step: "request handling",
+      message: safeErrorField(error instanceof Error ? error.message : String(error)),
+      stack: safeErrorField(error instanceof Error ? error.stack : undefined),
+      cause:
+        error instanceof Error && error.cause instanceof Error
+          ? safeErrorField(error.cause.message)
+          : error instanceof Error && typeof error.cause === "string"
+            ? safeErrorField(error.cause)
+            : undefined,
     });
     return NextResponse.json(
       {

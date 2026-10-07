@@ -58,6 +58,47 @@ export type CreateFreeFortuneResult = {
   status: "PENDING" | "GENERATING" | "COMPLETED" | "FAILED";
 };
 
+type FortuneGenerationStep =
+  | "submit started"
+  | "saju calculation success"
+  | "ai request started"
+  | "ai response received"
+  | "result parsing success"
+  | "supabase insert started"
+  | "supabase insert success"
+  | "redirect success";
+
+function logFortuneStep(step: FortuneGenerationStep) {
+  console.info(`[FORTUNE] ${step}`);
+}
+
+function sanitizeDiagnostic(value: string): string {
+  return value
+    .replace(
+      /Bearer\s+[\s\S]*?(?="\s+is an invalid header value)/gi,
+      "Bearer [REDACTED]"
+    )
+    .replace(/\bsk-(?:proj-)?[A-Za-z0-9_-]+\b/g, "[REDACTED_API_KEY]")
+    .replace(/\bsb_(?:secret|publishable)_[A-Za-z0-9_-]+\b/g, "[REDACTED_SUPABASE_KEY]");
+}
+
+function safeErrorDetails(error: unknown) {
+  const value = error instanceof Error ? error : undefined;
+  const cause = value?.cause;
+  return {
+    message: sanitizeDiagnostic(value?.message ?? String(error)),
+    stack: value?.stack ? sanitizeDiagnostic(value.stack) : undefined,
+    cause:
+      cause instanceof Error
+        ? sanitizeDiagnostic(cause.message)
+        : typeof cause === "string"
+          ? sanitizeDiagnostic(cause)
+          : cause == null
+            ? undefined
+            : "non-error cause omitted",
+  };
+}
+
 /**
  * Orchestrates free fortune creation.
  * Never holds a DB transaction across the OpenAI call.
@@ -70,6 +111,31 @@ export async function createFreeFortune(input: {
   guestSessionId: string;
   ipHash?: string;
 }): Promise<CreateFreeFortuneResult> {
+  let step: FortuneGenerationStep = "submit started";
+  logFortuneStep(step);
+
+  try {
+    return await createFreeFortuneInternal(input, (nextStep) => {
+      step = nextStep;
+      logFortuneStep(step);
+    });
+  } catch (error) {
+    const details = safeErrorDetails(error);
+    console.error("[FORTUNE_GENERATION_FAILED]", {
+      step,
+      message: details.message,
+      stack: details.stack,
+      cause: details.cause,
+    });
+    throw error;
+  }
+}
+
+async function createFreeFortuneInternal(input: {
+  raw: unknown;
+  guestSessionId: string;
+  ipHash?: string;
+}, onStep: (step: FortuneGenerationStep) => void): Promise<CreateFreeFortuneResult> {
   const parsed = freeFortuneRequestSchema.safeParse(input.raw);
   if (!parsed.success) {
     throw new FreeFlowError(
@@ -110,6 +176,7 @@ export async function createFreeFortune(input: {
       500
     );
   }
+  onStep("saju calculation success");
 
   let chartRow = await findFortuneChartByProfileAndHash({
     profileId: profile.id,
@@ -160,10 +227,12 @@ export async function createFreeFortune(input: {
         generationKey,
         model,
         attemptCount: Math.max(1, (existing.attempt_count ?? 0) + 1),
+        onStep,
       });
     }
   }
 
+  onStep("supabase insert started");
   const pending = await createFreeResult({
     profile_id: profile.id,
     chart_id: chartRow.id,
@@ -174,6 +243,7 @@ export async function createFreeFortune(input: {
     generation_status: "PENDING",
     attempt_count: 0,
   });
+  onStep("supabase insert success");
 
   const canonical = await getFreeResultByGenerationKey(generationKey);
   const freeResultId = canonical?.id ?? pending.id;
@@ -193,6 +263,7 @@ export async function createFreeFortune(input: {
         generationKey,
         model,
         attemptCount: Math.max(1, (canonical.attempt_count ?? 0) + 1),
+        onStep,
       });
     }
   }
@@ -205,6 +276,7 @@ export async function createFreeFortune(input: {
     generationKey,
     model,
     attemptCount: 1,
+    onStep,
   });
 }
 
@@ -266,6 +338,7 @@ export async function retryFailedFreeFortune(input: {
     generationKey,
     model,
     attemptCount: (existing.attempt_count ?? 0) + 1,
+    onStep: logFortuneStep,
   });
 }
 
@@ -315,13 +388,16 @@ async function runAiGeneration(input: {
   generationKey: string;
   model: string;
   attemptCount: number;
+  onStep?: (step: FortuneGenerationStep) => void;
 }): Promise<CreateFreeFortuneResult> {
+  input.onStep?.("supabase insert started");
   await updateFreeResult(input.freeResultId, {
     generation_status: "GENERATING",
     attempt_count: input.attemptCount,
     error_code: null,
     error_message: null,
   });
+  input.onStep?.("supabase insert success");
 
   let generationId: string | null = null;
   try {
@@ -347,6 +423,7 @@ async function runAiGeneration(input: {
   try {
     const profile = await getProfileById(input.profileId);
     const interpreter = createFortuneInterpreter("auto");
+    input.onStep?.("ai request started");
     const result = await generateFreeInterpretation(
       input.chart,
       {
@@ -370,7 +447,10 @@ async function runAiGeneration(input: {
         },
       }
     );
+    input.onStep?.("ai response received");
+    input.onStep?.("result parsing success");
 
+    input.onStep?.("supabase insert started");
     await updateFreeResult(input.freeResultId, {
       generation_status: "COMPLETED",
       result_json: result as unknown as Json,
@@ -382,6 +462,7 @@ async function runAiGeneration(input: {
       error_code: null,
       error_message: null,
     });
+    input.onStep?.("supabase insert success");
 
     if (generationId) {
       try {
@@ -408,15 +489,18 @@ async function runAiGeneration(input: {
         : error instanceof Error
           ? error.message.slice(0, 800)
           : "unknown";
+    const safeDiagnostic = sanitizeDiagnostic(diagnostic);
     const safeMessage =
       code === "OPENAI_RATE_LIMIT"
         ? "현재 분석 요청이 많습니다. 잠시 후 다시 시도해 주세요."
         : "결과 생성 중 문제가 발생했습니다. 잠시 후 다시 시도해 주세요.";
 
-    console.error("[createFreeFortune] generation failed", {
-      freeResultId: input.freeResultId,
-      code,
-      diagnostic,
+    const details = safeErrorDetails(error);
+    console.error("[FORTUNE_GENERATION_FAILED]", {
+      step: "ai request started",
+      message: details.message,
+      stack: details.stack,
+      cause: details.cause,
     });
 
     await updateFreeResult(input.freeResultId, {
@@ -430,7 +514,7 @@ async function runAiGeneration(input: {
         await updateAiGeneration(generationId, {
           status: "FAILED",
           error_code: code,
-          error_message: diagnostic,
+          error_message: safeDiagnostic,
           completed_at: new Date().toISOString(),
         });
       } catch {

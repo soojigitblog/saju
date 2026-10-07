@@ -2,7 +2,6 @@ import "server-only";
 
 import { getDataMode } from "@/lib/repositories/data-mode";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { createClient } from "@/lib/supabase/server";
 import { FORTUNE_ENGINE_VERSION } from "@/lib/fortune-engine/version";
 import { mockStore } from "@/lib/mock-store";
 import type { FortuneChart } from "@/lib/fortune-engine/types";
@@ -35,18 +34,9 @@ export async function createFortuneChart(input: {
     return saved;
   }
 
-  try {
-    const supabase = await createClient();
-    const { data, error } = await supabase
-      .from("fortune_charts")
-      .insert(row)
-      .select("*")
-      .single();
-    if (!error && data) return data;
-  } catch {
-    // guest path uses admin
-  }
-
+  // Free-fortune requests are guest-owned, so RLS cannot authorize a browser
+  // client here. This server-only flow uses the privileged client explicitly;
+  // any insert error is checked and propagated to the route logger.
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("fortune_charts")

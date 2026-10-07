@@ -21,4 +21,9 @@ describe("OpenAI tier routing", () => {
     delete process.env.OPENAI_API_KEY_PAID;
     expect(() => getOpenAIClient("paid")).toThrow(/paid API key/i);
   });
+
+  it("rejects a multi-line API key before the SDK can build an Authorization header", () => {
+    process.env.OPENAI_API_KEY = "first-key\nsecond-key";
+    expect(() => getOpenAIClient("free")).toThrow(/single-line API key/i);
+  });
 });
